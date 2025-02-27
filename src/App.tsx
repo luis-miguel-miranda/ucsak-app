@@ -1,234 +1,172 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Container,
   Paper,
   Typography,
-  Button,
-  Stack,
+  Grid,
+  Card,
+  CardContent,
+  CardActionArea,
+  Tabs,
+  Tab,
   Box,
-  Dialog,
-  IconButton,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  FormGroup,
-  FormLabel,
+  AppBar,
+  CssBaseline,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import WarningIcon from '@mui/icons-material/Warning';
-import { Checkbox } from '@mui/material';
+import StorageIcon from '@mui/icons-material/Storage';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CommandIcon from '@mui/icons-material/Code';
+import InfoIcon from '@mui/icons-material/Info';
+import DataContractsView from './views/DataContractsView';
+import DataProductsView from './views/DataProductsView';
+import CatalogCommanderView from './views/CatalogCommanderView';
+import AboutView from './views/AboutView';
+import BusinessGlossariesView from './views/BusinessGlossariesView';
 
-interface DataContract {
-  id: string;
-  name: string;
-  status: 'verified' | 'unverified';
-  createdAt: Date;
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
 }
 
 function App() {
-  const [contracts, setContracts] = useState<DataContract[]>([]);
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [summaryData, setSummaryData] = useState({
+    totalDataProducts: 42,
+    totalContracts: 156,
+    activeWorkflows: 23,
+  });
 
-  // Summary calculations
-  const totalContracts = contracts.length;
-  const verifiedContracts = contracts.filter(c => c.status === 'verified').length;
-
-  const handleCreateContract = () => {
-    // Implementation for creating new contract
-    const newContract: DataContract = {
-      id: Date.now().toString(),
-      name: `Contract ${contracts.length + 1}`,
-      status: 'unverified',
-      createdAt: new Date()
-    };
-    setContracts([...contracts, newContract]);
-    setCreateDialogOpen(false);
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
   };
 
-  const handleDeleteContract = (id: string) => {
-    setContracts(contracts.filter(c => c.id !== id));
-  };
+  const renderHomePage = () => (
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Typography variant="h3" gutterBottom align="center">
+        Welcome to Unity Catalog Swiss Army Knife
+      </Typography>
+      <Typography variant="h6" gutterBottom align="center" color="text.secondary" sx={{ mb: 6 }}>
+        Your all-in-one tool for managing Databricks Unity Catalog resources
+      </Typography>
 
-  const handleVerifyContract = (id: string) => {
-    setContracts(contracts.map(c => 
-      c.id === id ? { ...c, status: 'verified' } : c
-    ));
-  };
+      <Grid container spacing={4}>
+        {/* Summary Tiles */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>Data Products</Typography>
+              <Typography variant="h3">{summaryData.totalDataProducts}</Typography>
+              <Typography color="text.secondary">Total Data Products</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-  useEffect(() => {
-    fetch('/api/time')
-      .then(response => response.json())
-      .then(data => setCurrentTime(data.time));
-  }, []);
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>Data Contracts</Typography>
+              <Typography variant="h3">{summaryData.totalContracts}</Typography>
+              <Typography color="text.secondary">Active Contracts</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>Active Workflows</Typography>
+              <Typography variant="h3">{summaryData.activeWorkflows}</Typography>
+              <Typography color="text.secondary">Running Processes</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Navigation Tiles */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardActionArea onClick={() => setSelectedTab(1)}>
+              <CardContent>
+                <StorageIcon sx={{ fontSize: 40, mb: 2 }} />
+                <Typography variant="h5" gutterBottom>Data Products</Typography>
+                <Typography color="text.secondary">
+                  Manage and monitor your data products
+                </Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardActionArea onClick={() => setSelectedTab(2)}>
+              <CardContent>
+                <DescriptionIcon sx={{ fontSize: 40, mb: 2 }} />
+                <Typography variant="h5" gutterBottom>Data Contracts</Typography>
+                <Typography color="text.secondary">
+                  Create and manage data contracts
+                </Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardActionArea onClick={() => setSelectedTab(3)}>
+              <CardContent>
+                <CommandIcon sx={{ fontSize: 40, mb: 2 }} />
+                <Typography variant="h5" gutterBottom>Catalog Commander</Typography>
+                <Typography color="text.secondary">
+                  Advanced catalog management tools
+                </Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Grid>
+      </Grid>
+    </Container>
+  );
 
   return (
-    <Container maxWidth="lg">
-      {/* Summary Section */}
-      <Paper sx={{ p: 3, mb: 3, mt: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Data Contracts Dashboard
-        </Typography>
-        <Stack direction="row" spacing={4}>
-          <Box>
-            <Typography variant="h6">Total Contracts</Typography>
-            <Typography variant="h3">{totalContracts}</Typography>
-          </Box>
-          <Box>
-            <Typography variant="h6">Verified Contracts</Typography>
-            <Typography variant="h3">{verifiedContracts}</Typography>
-          </Box>
-        </Stack>
-      </Paper>
-      <Typography variant="h6">The current time is {currentTime}.</Typography>
-
-      {/* Controls Section */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          Create New Contract
-        </Button>
+    <Box sx={{ display: 'flex' }}>
+      <CssBaseline />
+      <AppBar position="fixed" sx={{ bgcolor: 'white' }}>
+        <Tabs value={selectedTab} onChange={handleTabChange}>
+          <Tab label="Home" />
+          <Tab label="Data Products" />
+          <Tab label="Data Contracts" />
+          <Tab label="Business Glossaries" />
+          <Tab label="Catalog Commander" />
+          <Tab label="About" />
+        </Tabs>
+      </AppBar>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8 }}>
+        {selectedTab === 0 && renderHomePage()}
+        {selectedTab === 1 && <DataProductsView />}
+        {selectedTab === 2 && <DataContractsView />}
+        {selectedTab === 3 && <BusinessGlossariesView />}
+        {selectedTab === 4 && <CatalogCommanderView />}
+        {selectedTab === 5 && <AboutView />}
       </Box>
-
-      {/* Contracts List */}
-      <Stack spacing={2}>
-        {contracts.map(contract => (
-          <Paper key={contract.id} sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="h6">{contract.name}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Created: {contract.createdAt.toLocaleDateString()}
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={1}>
-                <IconButton
-                  color={contract.status === 'verified' ? 'success' : 'default'}
-                  onClick={() => handleVerifyContract(contract.id)}
-                >
-                  {contract.status === 'verified' ? <VerifiedIcon /> : <WarningIcon />}
-                </IconButton>
-                <IconButton
-                  color="error"
-                  onClick={() => handleDeleteContract(contract.id)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Stack>
-            </Stack>
-          </Paper>
-        ))}
-      </Stack>
-
-      {/* Enhanced Create Contract Dialog */}
-      <Dialog 
-        open={isCreateDialogOpen} 
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <Box sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Create New Data Contract
-          </Typography>
-          
-          <Stack spacing={3}>
-            <TextField
-              label="Contract Name"
-              fullWidth
-              required
-              helperText="A unique identifier for this data contract"
-            />
-
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              helperText="Describe the purpose and scope of this data contract"
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Data Format</InputLabel>
-              <Select
-                label="Data Format"
-                defaultValue="json"
-              >
-                <MenuItem value="json">JSON</MenuItem>
-                <MenuItem value="avro">Avro</MenuItem>
-                <MenuItem value="parquet">Parquet</MenuItem>
-                <MenuItem value="csv">CSV</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth>
-              <InputLabel>Schema Version</InputLabel>
-              <Select
-                label="Schema Version"
-                defaultValue="1.0"
-              >
-                <MenuItem value="1.0">1.0</MenuItem>
-                <MenuItem value="1.1">1.1</MenuItem>
-                <MenuItem value="2.0">2.0</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Schema Definition"
-              fullWidth
-              multiline
-              rows={6}
-              helperText="Enter the schema definition in the selected format"
-            />
-
-            <FormControl>
-              <FormLabel>Validation Rules</FormLabel>
-              <FormGroup>
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="Required Fields Validation"
-                />
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="Data Type Validation"
-                />
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="Range Validation"
-                />
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="Pattern Matching"
-                />
-              </FormGroup>
-            </FormControl>
-
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button 
-                onClick={() => setCreateDialogOpen(false)}
-                color="inherit"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleCreateContract}
-              >
-                Create Contract
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
-      </Dialog>
-    </Container>
+    </Box>
   );
 }
 

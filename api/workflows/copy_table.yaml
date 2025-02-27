@@ -1,0 +1,7 @@
+name: "Copy Table Workflow"
+format: "MULTI_TASK"
+tasks:
+  - task_key: "task1"
+    notebook_task:
+      notebook_path: "/path/to/notebook"
+    existing_cluster_id: "cluster-id"
