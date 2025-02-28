@@ -16,7 +16,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -27,6 +26,8 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import PageHeader from '../components/PageHeader';
 
 interface GlossaryTerm {
   id: string;
@@ -107,6 +108,11 @@ function BusinessGlossariesView() {
 
   return (
     <Container maxWidth="xl">
+      <PageHeader
+        icon={<MenuBookIcon />}
+        title="Business Glossaries"
+        subtitle="Manage business terms and definitions"
+      />
       <Grid container spacing={2}>
         {/* Domain Selection and Actions */}
         <Grid item xs={12}>

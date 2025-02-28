@@ -6,9 +6,7 @@ import {
   Typography,
   ButtonGroup,
   Button,
-  Box,
   Divider,
-  CircularProgress,
 } from '@mui/material';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { TreeItem2 } from '@mui/x-tree-view/TreeItem2';
@@ -16,12 +14,14 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
-import FolderIcon from '@mui/icons-material/Folder';
-import SchemaIcon from '@mui/icons-material/AccountTree';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import StorageIcon from '@mui/icons-material/Storage';
+import DatabaseIcon from '@mui/icons-material/Storage';
+import TableViewIcon from '@mui/icons-material/TableView';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import CommandIcon from '@mui/icons-material/Code';
+import PageHeader from '../components/PageHeader';
 
 interface CatalogItem {
   id: string;
@@ -37,13 +37,13 @@ function CustomTreeItem(props: any) {
   const getIcon = () => {
     switch (type) {
       case 'catalog':
-        return <FolderIcon sx={{ color: 'text.secondary' }} />;
+        return <StorageIcon sx={{ color: 'text.secondary' }} />;
       case 'schema':
-        return <SchemaIcon sx={{ color: 'text.secondary' }} />;
+        return <DatabaseIcon sx={{ color: 'text.secondary' }} />;
       case 'table':
-        return <TableChartIcon sx={{ color: 'text.secondary' }} />;
+        return <TableViewIcon sx={{ color: 'text.secondary' }} />;
       case 'view':
-        return <ViewListIcon sx={{ color: 'text.secondary' }} />;
+        return <ViewColumnIcon sx={{ color: 'text.secondary' }} />;
       default:
         return null;
     }
@@ -181,24 +181,6 @@ function CatalogCommanderView() {
     });
   };
 
-  // Add helper function to update hasChildren flag
-  const updateNodeHasChildren = (nodeId: string, hasChildren: boolean) => {
-    setCatalogData(prevData => {
-      const updateNode = (items: CatalogItem[]): CatalogItem[] => {
-        return items.map(item => {
-          if (item.id === nodeId) {
-            return { ...item, hasChildren };
-          }
-          if (item.children) {
-            return { ...item, children: updateNode(item.children) };
-          }
-          return item;
-        });
-      };
-      return updateNode([...prevData]);
-    });
-  };
-
   const handleOperation = (operation: string) => {
     // Implement operations here
     console.log(`${operation} operation triggered`);
@@ -248,6 +230,11 @@ function CatalogCommanderView() {
 
   return (
     <Container maxWidth="xl">
+      <PageHeader
+        icon={<CommandIcon />}
+        title="Catalog Commander"
+        subtitle="Advanced catalog management tools"
+      />
       <Grid container spacing={2}>
         {/* Command Buttons */}
         <Grid item xs={12}>

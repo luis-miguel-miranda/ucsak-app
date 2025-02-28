@@ -28,6 +28,8 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PageHeader from '../components/PageHeader';
 
 interface DataContract {
   id: string;
@@ -136,6 +138,11 @@ function DataContractsView() {
 
   return (
     <Container maxWidth="xl">
+      <PageHeader
+        icon={<DescriptionIcon />}
+        title="Data Contracts"
+        subtitle="Create and manage data contracts"
+      />
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h4">Data Contracts</Typography>
