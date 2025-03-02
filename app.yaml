@@ -1,0 +1,14 @@
+command: [
+  "flask",
+  "run"
+]
+
+env:
+  - name: "DATABRICKS_WAREHOUSE_ID"
+    valueFrom: "a1f8abda082a0a53"
+  - name: "DATABRICKS_HTTP_PATH"
+    valueFrom: "/sql/1.0/warehouses/a1f8abda082a0a53"
+  - name: "DATABRICKS_CATALOG"
+    valueFrom: "app_data"
+  - name: "DATABRICKS_SCHEMA"
+    valueFrom: "app_ucsak"

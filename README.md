@@ -49,6 +49,13 @@ Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
+### `npm start-api`
+
+Runs the Python based API server in the development mode.
+
+The page will reload if you make edits.\
+You will also see any lint errors in the console.
+
 ### `npm test`
 
 Launches the test runner in the interactive watch mode.\
@@ -88,9 +95,14 @@ The application requires a `.env` file in the `api` directory for configuration.
 |----------|-------------|---------------|
 | DATABRICKS_HOST | Your Databricks workspace URL | https://your-workspace.cloud.databricks.com |
 | DATABRICKS_TOKEN | Personal access token for authentication | dapi1234567890abcdef |
+| DATABRICKS_HTTP_PATH | SQL warehouse HTTP path | /sql/1.0/warehouses/abc123 |
 | DATABRICKS_CATALOG | Default catalog to use | main |
 | DATABRICKS_SCHEMA | Default schema to use | default |
 | FLASK_DEBUG | Enable Flask debug mode | True |
 | FLASK_ENV | Flask environment setting | development |
 
 Example `.env` file:
+
+### Backend Setup
+
+The Flask application is configured to run from the project root directory using a `.flaskenv` file. This allows you to run both the frontend and backend from the same directory.

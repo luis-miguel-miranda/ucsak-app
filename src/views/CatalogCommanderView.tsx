@@ -7,6 +7,13 @@ import {
   ButtonGroup,
   Button,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Box,
+  LinearProgress,
+  IconButton,
 } from '@mui/material';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { TreeItem2 } from '@mui/x-tree-view/TreeItem2';
@@ -21,7 +28,9 @@ import DatabaseIcon from '@mui/icons-material/Storage';
 import TableViewIcon from '@mui/icons-material/TableView';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import CommandIcon from '@mui/icons-material/Code';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import PageHeader from '../components/PageHeader';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 
 interface CatalogItem {
   id: string;
@@ -70,6 +79,18 @@ function CatalogCommanderView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingNodes, setLoadingNodes] = useState<Set<string>>(new Set());
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
+  const [datasetContent, setDatasetContent] = useState<{
+    schema: Array<{ name: string; type: string; nullable: boolean }>;
+    data: any[];
+    total_rows: number;
+  } | null>(null);
+  const [loadingData, setLoadingData] = useState(false);
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 25,
+    page: 0
+  });
 
   useEffect(() => {
     const fetchCatalogs = async () => {
@@ -186,6 +207,24 @@ function CatalogCommanderView() {
     console.log(`${operation} operation triggered`);
   };
 
+  const handleViewDataset = async (path: string) => {
+    setSelectedDataset(path);
+    setLoadingData(true);
+    setViewDialogOpen(true);
+
+    try {
+      const response = await fetch(`/api/catalogs/dataset/${encodeURIComponent(path)}`);
+      if (!response.ok) throw new Error('Failed to fetch dataset');
+      const data = await response.json();
+      setDatasetContent(data);
+    } catch (err) {
+      console.error('Error loading dataset:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load dataset');
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   const renderTreeContent = () => {
     if (loading) {
       return <Typography>Loading catalogs...</Typography>;
@@ -228,6 +267,86 @@ function CatalogCommanderView() {
     return node;
   };
 
+  const renderActions = () => (
+    <>
+      <Button
+        startIcon={<VisibilityIcon />}
+        onClick={() => handleViewDataset(getSelectedNodeDetails()?.id || '')}
+        disabled={!selectedLeft.length || getSelectedNodeDetails()?.type !== 'table'}
+      >
+        View
+      </Button>
+      <Button
+        startIcon={<DriveFileMoveIcon />}
+        onClick={() => handleOperation('move')}
+      >
+        Move
+      </Button>
+      <Button
+        startIcon={<DeleteIcon />}
+        onClick={() => handleOperation('delete')}
+        color="error"
+      >
+        Delete
+      </Button>
+      <Button
+        startIcon={<EditIcon />}
+        onClick={() => handleOperation('rename')}
+      >
+        Rename
+      </Button>
+      <Button
+        startIcon={<InfoIcon />}
+        onClick={() => handleOperation('info')}
+      >
+        Info
+      </Button>
+    </>
+  );
+
+  // Add the dataset viewer dialog
+  const DatasetViewerDialog = () => {
+    if (!datasetContent) return null;
+
+    const columns: GridColDef[] = datasetContent.schema.map(col => ({
+      field: col.name,
+      headerName: `${col.name} (${col.type})`,
+      flex: 1,
+      minWidth: 150,
+    }));
+
+    return (
+      <Dialog 
+        open={viewDialogOpen}
+        onClose={() => setViewDialogOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogTitle>
+          Dataset View: {selectedDataset}
+          {loadingData && <LinearProgress sx={{ mt: 1 }} />}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ height: 600, width: '100%', mt: 2 }}>
+            <DataGrid
+              rows={datasetContent.data.map((row, index) => ({ id: index, ...row }))}
+              columns={columns}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[25]}
+              disableRowSelectionOnClick
+              density="compact"
+              loading={loadingData}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+
   return (
     <Container maxWidth="xl">
       <PageHeader
@@ -239,31 +358,7 @@ function CatalogCommanderView() {
         {/* Command Buttons */}
         <Grid item xs={12}>
           <ButtonGroup variant="contained" sx={{ mb: 2 }}>
-            <Button
-              startIcon={<DriveFileMoveIcon />}
-              onClick={() => handleOperation('move')}
-            >
-              Move
-            </Button>
-            <Button
-              startIcon={<DeleteIcon />}
-              onClick={() => handleOperation('delete')}
-              color="error"
-            >
-              Delete
-            </Button>
-            <Button
-              startIcon={<EditIcon />}
-              onClick={() => handleOperation('rename')}
-            >
-              Rename
-            </Button>
-            <Button
-              startIcon={<InfoIcon />}
-              onClick={() => handleOperation('info')}
-            >
-              Info
-            </Button>
+            {renderActions()}
           </ButtonGroup>
         </Grid>
 
@@ -385,6 +480,7 @@ function CatalogCommanderView() {
           </Paper>
         </Grid>
       </Grid>
+      <DatasetViewerDialog />
     </Container>
   );
 }
