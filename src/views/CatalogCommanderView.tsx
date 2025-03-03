@@ -13,7 +13,6 @@ import {
   DialogActions,
   Box,
   LinearProgress,
-  IconButton,
 } from '@mui/material';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { TreeItem2 } from '@mui/x-tree-view/TreeItem2';
@@ -357,7 +356,10 @@ function CatalogCommanderView() {
       <Grid container spacing={2}>
         {/* Command Buttons */}
         <Grid item xs={12}>
-          <ButtonGroup variant="contained" sx={{ mb: 2 }}>
+          <ButtonGroup 
+            variant="contained" 
+            sx={{ mb: 2, '& > button': { mx: 0.5 } }}
+          >
             {renderActions()}
           </ButtonGroup>
         </Grid>

@@ -5,7 +5,9 @@ command: [
 
 env:
   - name: "DATABRICKS_WAREHOUSE_ID"
-    valueFrom: "sql_warehouse"
+    value: "a1f8abda082a0a53"
+  - name: "DATABRICKS_HTTP_PATH"
+    value: "/sql/1.0/warehouses/a1f8abda082a0a53"
   - name: "DATABRICKS_CATALOG"
     value: "app_data"
   - name: "DATABRICKS_SCHEMA"

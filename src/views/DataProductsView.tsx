@@ -23,17 +23,13 @@ import {
   Box,
   Chip,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
 import PageHeader from '../components/PageHeader';
-import { DataProduct, Port } from '../types/DataProduct';
+import { DataProduct } from '../types/DataProduct';
 
 function DataProductsView() {
   const [products, setProducts] = useState<DataProduct[]>([]);
