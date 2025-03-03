@@ -13,25 +13,26 @@ import {
   DialogActions,
   Box,
   LinearProgress,
+  Stack,
 } from '@mui/material';
-import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
-import { TreeItem2 } from '@mui/x-tree-view/TreeItem2';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import StorageIcon from '@mui/icons-material/Storage';
-import DatabaseIcon from '@mui/icons-material/Storage';
-import TableViewIcon from '@mui/icons-material/TableView';
-import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import CatalogIcon from '@mui/icons-material/Inventory2Outlined';
+import SchemaIcon from '@mui/icons-material/StorageOutlined';
+import TableIcon from '@mui/icons-material/TableChartOutlined';
+import ViewIcon from '@mui/icons-material/TableViewOutlined';
 import CommandIcon from '@mui/icons-material/Code';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PageHeader from '../components/PageHeader';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
+import { TreeItem2, TreeItem2Props } from '@mui/x-tree-view/TreeItem2';
 
-interface CatalogItem {
+type CatalogItem = {
   id: string;
   name: string;
   type: 'catalog' | 'schema' | 'table' | 'view';
@@ -39,34 +40,66 @@ interface CatalogItem {
   hasChildren?: boolean;    // Flag to indicate if node can have children
 }
 
-function CustomTreeItem(props: any) {
-  const { type } = props;
-  
-  const getIcon = () => {
-    switch (type) {
-      case 'catalog':
-        return <StorageIcon sx={{ color: 'text.secondary' }} />;
-      case 'schema':
-        return <DatabaseIcon sx={{ color: 'text.secondary' }} />;
-      case 'table':
-        return <TableViewIcon sx={{ color: 'text.secondary' }} />;
-      case 'view':
-        return <ViewColumnIcon sx={{ color: 'text.secondary' }} />;
-      default:
-        return null;
+interface CustomLabelProps {
+  children: string;
+  className: string;
+  datasetType: 'catalog' | 'schema' | 'table' | 'view';
+}
+
+function CustomLabel({ children, className, datasetType }: CustomLabelProps) {
+
+  const getTypeIcon = () => {
+    if (!datasetType) return null;  // Early return if no item
+    switch (datasetType) {
+      case 'catalog': return <CatalogIcon fontSize="small" sx={{ color: 'text.secondary' }} />;
+      case 'schema': return <SchemaIcon fontSize="small" sx={{ color: 'text.secondary' }} />;
+      case 'table': return <TableIcon fontSize="small" sx={{ color: 'text.secondary' }} />;
+      case 'view': return <ViewIcon fontSize="small" sx={{ color: 'text.secondary' }} />;
+      default: return null;
     }
   };
+
+  const getLabel = () => {
+    if (!children) return '';
+    return children.replace(/\s*\[.*\]$/, '');
+  }
+
+  return (
+    <Stack 
+      direction="row" 
+      alignItems="left"
+      spacing={1}
+      className={className}>
+      {getTypeIcon()}
+      <Typography>{getLabel()}</Typography>
+    </Stack>
+  );
+}
+
+const CustomTreeItem = React.forwardRef(function CustomTreeItem(
+  props: TreeItem2Props,
+  ref: React.Ref<HTMLLIElement>,
+) {
+  const getDatasetType = () => {
+    if (!props.label) return '';
+    const label = String(props.label);
+    const match = label.match(/\[(.*?)\]$/);
+    return match ? match[1] : '';
+  }
 
   return (
     <TreeItem2
       {...props}
-      ContentProps={{
-        ...props.ContentProps,
-        startIcon: getIcon()
+      ref={ref}
+      slots={{
+        label: CustomLabel,
+      }}
+      slotProps={{
+        label: { datasetType: getDatasetType() } as CustomLabelProps,
       }}
     />
   );
-}
+});
 
 function CatalogCommanderView() {
   const [selectedLeft, setSelectedLeft] = useState<string[]>([]);
@@ -148,7 +181,7 @@ function CatalogCommanderView() {
 
   const handleNodeExpand = async (nodeIds: string[]) => {
     const newExpandedIds = nodeIds.filter(id => !expandedLeft.includes(id));
-    
+
     for (const nodeId of newExpandedIds) {
       const node = findNode(catalogData, nodeId);
       // Check if node has only the placeholder child
@@ -235,9 +268,9 @@ function CatalogCommanderView() {
       <RichTreeView
         items={catalogData}
         getItemLabel={(item) => (
-            loadingNodes.has(item.id) 
+          loadingNodes.has(item.id)
             ? `${item.name} (loading...)`
-            : item.name
+            : `${item.name} [${item.type}]`
         )}
         slots={{
           item: CustomTreeItem,
@@ -315,7 +348,7 @@ function CatalogCommanderView() {
     }));
 
     return (
-      <Dialog 
+      <Dialog
         open={viewDialogOpen}
         onClose={() => setViewDialogOpen(false)}
         maxWidth="xl"
@@ -356,8 +389,8 @@ function CatalogCommanderView() {
       <Grid container spacing={2}>
         {/* Command Buttons */}
         <Grid item xs={12}>
-          <ButtonGroup 
-            variant="contained" 
+          <ButtonGroup
+            variant="contained"
             sx={{ mb: 2, '& > button': { mx: 0.5 } }}
           >
             {renderActions()}
@@ -410,9 +443,9 @@ function CatalogCommanderView() {
             <RichTreeView
               items={catalogData}
               getItemLabel={(item) => (
-                loadingNodes.has(item.id) 
-                ? `${item.name} (loading...)`
-                : item.name
+                loadingNodes.has(item.id)
+                  ? `${item.name} (loading...)`
+                  : item.name
               )}
               slots={{
                 item: CustomTreeItem,
