@@ -25,7 +25,7 @@ import DataProductsView from './views/DataProductsView';
 import CatalogCommanderView from './views/CatalogCommanderView';
 import AboutView from './views/AboutView';
 import BusinessGlossariesView from './views/BusinessGlossariesView';
-import MasterDataView from './views/MasterDataView';
+import MasterDataManagementView from './views/MasterDataManagementView';
 
 function App() {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -165,7 +165,7 @@ function App() {
             <CardActionArea onClick={() => setSelectedTab(4)}>
               <CardContent>
                 <CompareArrowsIcon sx={{ fontSize: 40, mb: 2 }} />
-                <Typography variant="h5" gutterBottom>Master Data</Typography>
+                <Typography variant="h5" gutterBottom>Master Data Management</Typography>
                 <Typography color="text.secondary">
                   Analyze and manage entity overlaps
                 </Typography>
@@ -214,7 +214,7 @@ function App() {
           <Tab icon={<StorageIcon />} iconPosition="start" label="Data Products" />
           <Tab icon={<DescriptionIcon />} iconPosition="start" label="Data Contracts" />
           <Tab icon={<MenuBookIcon />} iconPosition="start" label="Business Glossaries" />
-          <Tab icon={<CompareArrowsIcon />} iconPosition="start" label="Master Data" />
+          <Tab icon={<CompareArrowsIcon />} iconPosition="start" label="Master Data Management" />
           <Tab icon={<CommandIcon />} iconPosition="start" label="Catalog Commander" />
           <Tab icon={<HelpIcon />} iconPosition="start" label="About" />
         </Tabs>
@@ -224,7 +224,7 @@ function App() {
         {selectedTab === 1 && <DataProductsView />}
         {selectedTab === 2 && <DataContractsView />}
         {selectedTab === 3 && <BusinessGlossariesView />}
-        {selectedTab === 4 && <MasterDataView />}
+        {selectedTab === 4 && <MasterDataManagementView />}
         {selectedTab === 5 && <CatalogCommanderView />}
         {selectedTab === 6 && <AboutView />}
       </Box>

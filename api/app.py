@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
-from routes import catalog_routes, data_contract_routes, data_product_routes, workflow_routes
+from routes import catalog_routes, data_contract_routes, data_product_routes, workflow_routes, glossary_routes
 from flask_cors import CORS
 
 load_dotenv()
@@ -17,6 +17,7 @@ catalog_routes.register_routes(app)
 data_contract_routes.register_routes(app)
 data_product_routes.register_routes(app)
 workflow_routes.register_routes(app)
+glossary_routes.register_routes(app)
 
 @app.route('/api/time')
 def get_current_time():

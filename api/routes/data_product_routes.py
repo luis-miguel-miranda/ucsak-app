@@ -7,7 +7,112 @@ import uuid
 bp = Blueprint('data_products', __name__)
 
 # In-memory storage for development - replace with database in production
-data_products = {}
+data_products = {
+    "dp1": {
+        "id": "dp1",
+        "name": "Customer 360",
+        "owner": "Marketing Team",
+        "type": "consumer-aligned",
+        "status": "active",
+        "description": "Unified customer view across all channels",
+        "tags": ["customer", "marketing", "sales"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-02-15T00:00:00Z"
+    },
+    "dp2": {
+        "id": "dp2",
+        "name": "Sales Transactions",
+        "owner": "Finance Team",
+        "type": "source-aligned",
+        "status": "active",
+        "description": "Raw sales transaction data from ERP",
+        "tags": ["sales", "finance", "transactions"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-01-15T00:00:00Z",
+        "updated_at": "2024-02-20T00:00:00Z"
+    },
+    "dp3": {
+        "id": "dp3",
+        "name": "Product Catalog",
+        "owner": "Product Team",
+        "type": "source-aligned",
+        "status": "active",
+        "description": "Master product catalog and metadata",
+        "tags": ["products", "catalog", "master-data"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-01-20T00:00:00Z",
+        "updated_at": "2024-02-25T00:00:00Z"
+    },
+    "dp4": {
+        "id": "dp4",
+        "name": "Marketing Analytics",
+        "owner": "Marketing Team",
+        "type": "aggregate",
+        "status": "in-development",
+        "description": "Marketing campaign performance metrics",
+        "tags": ["marketing", "analytics", "campaigns"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-02-01T00:00:00Z",
+        "updated_at": "2024-02-28T00:00:00Z"
+    },
+    "dp5": {
+        "id": "dp5",
+        "name": "Supply Chain Metrics",
+        "owner": "Operations Team",
+        "type": "aggregate",
+        "status": "active",
+        "description": "Supply chain performance indicators",
+        "tags": ["supply-chain", "operations", "metrics"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-02-05T00:00:00Z",
+        "updated_at": "2024-03-01T00:00:00Z"
+    },
+    "dp6": {
+        "id": "dp6",
+        "name": "Customer Churn Model",
+        "owner": "Data Science Team",
+        "type": "consumer-aligned",
+        "status": "in-development",
+        "description": "Predictive model for customer churn",
+        "tags": ["ml", "churn", "predictions"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-02-10T00:00:00Z",
+        "updated_at": "2024-03-05T00:00:00Z"
+    },
+    "dp7": {
+        "id": "dp7",
+        "name": "Financial Reports",
+        "owner": "Finance Team",
+        "type": "consumer-aligned",
+        "status": "active",
+        "description": "Regulatory financial reporting datasets",
+        "tags": ["finance", "reporting", "compliance"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-02-15T00:00:00Z",
+        "updated_at": "2024-03-10T00:00:00Z"
+    },
+    "dp8": {
+        "id": "dp8",
+        "name": "IoT Sensor Data",
+        "owner": "IoT Team",
+        "type": "source-aligned",
+        "status": "active",
+        "description": "Raw sensor data from IoT devices",
+        "tags": ["iot", "sensors", "raw-data"],
+        "input_ports": [],
+        "output_ports": [],
+        "created_at": "2024-02-20T00:00:00Z",
+        "updated_at": "2024-03-15T00:00:00Z"
+    }
+}
 
 @bp.route('/api/data-products', methods=['GET'])
 def get_data_products():

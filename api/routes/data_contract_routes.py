@@ -1,9 +1,120 @@
-from flask import request, jsonify
+from flask import Blueprint, jsonify, request
 from data_contracts import DataContractManager, ContractStatus, ColumnDefinition, DatasetSchema, Dataset
+from datetime import datetime
+
+bp = Blueprint('data_contracts', __name__)
 
 contract_manager = DataContractManager()
 
+# In-memory storage for development
+data_contracts = {
+    "contract1": {
+        "id": "contract1",
+        "name": "Customer Data Contract",
+        "description": "Data contract for customer master data",
+        "version": "1.0",
+        "status": "active",
+        "owner": "Data Governance Team",
+        "created": "2024-01-01T00:00:00Z",
+        "updated": "2024-01-15T00:00:00Z",
+        "schema": {
+            "fields": [
+                {
+                    "name": "customer_id",
+                    "type": "string",
+                    "required": True,
+                    "description": "Unique identifier for customer"
+                },
+                {
+                    "name": "full_name",
+                    "type": "string",
+                    "required": True,
+                    "description": "Customer's full name"
+                },
+                {
+                    "name": "email",
+                    "type": "string",
+                    "required": True,
+                    "description": "Primary email address"
+                }
+            ]
+        },
+        "dataProducts": ["product1", "product2"]
+    },
+    "contract2": {
+        "id": "contract2",
+        "name": "Product Catalog Contract",
+        "description": "Data contract for product information",
+        "version": "1.0",
+        "status": "active",
+        "owner": "Product Team",
+        "created": "2024-01-02T00:00:00Z",
+        "updated": "2024-01-15T00:00:00Z",
+        "schema": {
+            "fields": [
+                {
+                    "name": "product_id",
+                    "type": "string",
+                    "required": True,
+                    "description": "Unique product identifier"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "required": True,
+                    "description": "Product name"
+                },
+                {
+                    "name": "price",
+                    "type": "decimal",
+                    "required": True,
+                    "description": "Current price"
+                }
+            ]
+        },
+        "dataProducts": ["product1"]
+    }
+}
+
+@bp.route('/api/data-contracts', methods=['GET'])
+def get_contracts():
+    """Get all data contracts"""
+    return jsonify(list(data_contracts.values()))
+
+@bp.route('/api/data-contracts/<contract_id>', methods=['GET'])
+def get_contract(contract_id):
+    """Get a specific data contract"""
+    if contract_id not in data_contracts:
+        return jsonify({"error": "Contract not found"}), 404
+    return jsonify(data_contracts[contract_id])
+
+@bp.route('/api/data-contracts', methods=['POST'])
+def create_contract():
+    """Create a new data contract"""
+    data = request.json
+    contract_id = f"contract{len(data_contracts) + 1}"
+    now = datetime.utcnow().isoformat() + 'Z'
+    
+    new_contract = {
+        "id": contract_id,
+        "name": data['name'],
+        "description": data['description'],
+        "version": "1.0",
+        "status": "draft",
+        "owner": data['owner'],
+        "created": now,
+        "updated": now,
+        "schema": data['schema'],
+        "dataProducts": data.get('dataProducts', [])
+    }
+    
+    data_contracts[contract_id] = new_contract
+    return jsonify(new_contract), 201
+
 def register_routes(app):
+    """Register routes with the app"""
+    app.register_blueprint(bp)
+
     @app.route('/api/contracts', methods=['POST'])
     def create_contract():
         data = request.json

@@ -269,7 +269,7 @@ function CatalogCommanderView() {
         items={catalogData}
         getItemLabel={(item) => (
           loadingNodes.has(item.id)
-            ? `${item.name} (loading...)`
+            ? `${item.name} (loading...) [${item.type}]`
             : `${item.name} [${item.type}]`
         )}
         slots={{
