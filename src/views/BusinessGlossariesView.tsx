@@ -34,13 +34,18 @@ import PageHeader from '../components/PageHeader';
 interface GlossaryTerm {
   id: string;
   name: string;
-  description: string;
+  definition: string;
   domain: string;
   owner: string;
-  status: 'active' | 'draft' | 'deprecated';
+  status: string;
   created: string;
   updated: string;
-  taggedAssets: Array<{
+  synonyms: string[];
+  related_terms: string[];
+  tags: string[];
+  examples: string[];
+  source?: string;
+  taggedAssets?: Array<{
     id: string;
     name: string;
     type: 'table' | 'view' | 'column';
@@ -56,6 +61,7 @@ interface Domain {
 function BusinessGlossariesView() {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
+  const [filteredTerms, setFilteredTerms] = useState<GlossaryTerm[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedTerm, setSelectedTerm] = useState<GlossaryTerm | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -69,12 +75,19 @@ function BusinessGlossariesView() {
   }, []);
 
   useEffect(() => {
-    fetchTerms();
-  }, [selectedDomain]);
+    if (selectedDomain) {
+      // Filter terms by selected domain
+      const filteredTerms = terms.filter(term => term.domain === selectedDomain);
+      setFilteredTerms(filteredTerms);
+    } else {
+      // No domain filter, show all terms
+      setFilteredTerms(terms);
+    }
+  }, [selectedDomain, terms]);
 
   const fetchDomains = async () => {
     try {
-      const response = await fetch('/api/glossary/domains');
+      const response = await fetch('/api/business-glossary/domains');
       if (!response.ok) throw new Error('Failed to fetch domains');
       const data = await response.json();
       setDomains(data);
@@ -86,33 +99,100 @@ function BusinessGlossariesView() {
   const fetchTerms = async () => {
     try {
       setLoading(true);
-      const url = selectedDomain 
-        ? `/api/glossary/terms?domain=${selectedDomain}`
-        : '/api/glossary/terms';
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch terms');
+      const response = await fetch('/api/business-glossary/terms');
+      if (!response.ok) throw new Error('Failed to fetch glossary terms');
       const data = await response.json();
       setTerms(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load terms');
+      setError(err instanceof Error ? err.message : 'Failed to load glossary terms');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveTerm = async (formData: Partial<GlossaryTerm>) => {
+  const fetchTerm = async (id: string) => {
+    try {
+      const response = await fetch(`/api/business-glossary/terms/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch term details');
+      const data = await response.json();
+      setSelectedTerm(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load term details');
+    }
+  };
+
+  const createTerm = async (formData: any) => {
+    try {
+      const response = await fetch('/api/business-glossary/terms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) throw new Error('Failed to create term');
+      fetchTerms();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create term');
+    }
+  };
+
+  const updateTerm = async (id: string, formData: any) => {
+    try {
+      const response = await fetch(`/api/business-glossary/terms/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) throw new Error('Failed to update term');
+      fetchTerms();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update term');
+    }
+  };
+
+  const deleteTerm = async (id: string) => {
+    try {
+      const response = await fetch(`/api/business-glossary/terms/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete term');
+      fetchTerms();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete term');
+    }
+  };
+
+  const handleSaveTerm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    
+    const termData: Partial<GlossaryTerm> = {
+      name: formData.get('name') as string,
+      definition: formData.get('description') as string,
+      domain: formData.get('domain') as string,
+      owner: formData.get('owner') as string,
+      status: 'active',
+      synonyms: [],
+      related_terms: [],
+      tags: [],
+      examples: []
+    };
+    
     try {
       const method = editMode ? 'PUT' : 'POST';
       const url = editMode 
-        ? `/api/glossary/terms/${selectedTerm?.id}`
-        : '/api/glossary/terms';
+        ? `/api/business-glossary/terms/${selectedTerm?.id}`
+        : '/api/business-glossary/terms';
       
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(termData),
       });
 
       if (!response.ok) throw new Error('Failed to save term');
@@ -130,14 +210,7 @@ function BusinessGlossariesView() {
     if (!window.confirm('Are you sure you want to delete this term?')) return;
 
     try {
-      const response = await fetch(`/api/glossary/terms/${selectedTerm.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete term');
-      
-      setSelectedTerm(null);
-      fetchTerms();
+      await deleteTerm(selectedTerm.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete term');
     }
@@ -153,6 +226,10 @@ function BusinessGlossariesView() {
       setEditMode(true);
       setOpenDialog(true);
     }
+  };
+
+  const handleSelectTerm = (term: GlossaryTerm) => {
+    setSelectedTerm(term);
   };
 
   return (
@@ -214,11 +291,11 @@ function BusinessGlossariesView() {
         <Grid item xs={4}>
           <Paper sx={{ height: '70vh', overflow: 'auto' }}>
             <List>
-              {terms.map((term) => (
+              {filteredTerms.map((term) => (
                 <ListItem key={term.id} disablePadding>
                   <ListItemButton
                     selected={selectedTerm?.id === term.id}
-                    onClick={() => setSelectedTerm(term)}
+                    onClick={() => handleSelectTerm(term)}
                   >
                     <ListItemText
                       primary={term.name}
@@ -261,7 +338,7 @@ function BusinessGlossariesView() {
                       Details
                     </Typography>
                     <Typography variant="body2">
-                      Description: {selectedTerm.description}
+                      Description: {selectedTerm.definition}
                     </Typography>
                     <Typography variant="body2">
                       Domain: {selectedTerm.domain}
@@ -285,18 +362,17 @@ function BusinessGlossariesView() {
                       Tagged Assets
                     </Typography>
                     <List dense>
-                      {(selectedTerm?.taggedAssets || []).map((asset) => (
-                        <ListItem key={asset.id}>
-                          <ListItemButton>
-                            <TableChartIcon sx={{ mr: 1 }} />
+                      {selectedTerm.taggedAssets && selectedTerm.taggedAssets.length > 0 ? (
+                        selectedTerm.taggedAssets.map((asset) => (
+                          <ListItem key={asset.id}>
+                            <TableChartIcon sx={{ mr: 1 }} fontSize="small" />
                             <ListItemText
                               primary={asset.name}
                               secondary={asset.path}
                             />
-                          </ListItemButton>
-                        </ListItem>
-                      ))}
-                      {selectedTerm.taggedAssets?.length === 0 && (
+                          </ListItem>
+                        ))
+                      ) : (
                         <Typography color="text.secondary" sx={{ p: 1 }}>
                           No assets tagged
                         </Typography>
@@ -316,18 +392,7 @@ function BusinessGlossariesView() {
 
       {/* Add/Edit Term Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData: Partial<GlossaryTerm> = {
-            name: (e.target as any).name.value,
-            description: (e.target as any).description.value,
-            domain: (e.target as any).domain.value,
-            owner: (e.target as any).owner.value,
-            status: 'active',
-            taggedAssets: editMode ? selectedTerm?.taggedAssets : []
-          };
-          handleSaveTerm(formData);
-        }}>
+        <form onSubmit={handleSaveTerm}>
           <DialogTitle>
             {editMode ? 'Edit Term' : 'Add New Term'}
           </DialogTitle>
@@ -345,7 +410,7 @@ function BusinessGlossariesView() {
                 fullWidth
                 multiline
                 rows={4}
-                defaultValue={editMode ? selectedTerm?.description : ''}
+                defaultValue={editMode ? selectedTerm?.definition : ''}
               />
               <FormControl fullWidth>
                 <InputLabel>Domain</InputLabel>

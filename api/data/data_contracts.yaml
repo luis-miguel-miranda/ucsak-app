@@ -1,0 +1,87 @@
+contracts:
+  - name: "Customer Data Contract"
+    version: "1.0"
+    domain: "customer"
+    owner: "Data Governance Team"
+    description: "Contract for customer master data"
+    validation_rules:
+      - "All customer IDs must be unique"
+      - "Email addresses must be valid"
+    datasets:
+      - name: "customer_data"
+        type: "table"
+        description: "Master customer data"
+        schema:
+          columns:
+            - name: "customer_id"
+              type: "STRING"
+              description: "Unique identifier for customer"
+              nullable: false
+              is_unique: true
+            - name: "full_name"
+              type: "STRING"
+              description: "Customer's full name"
+              nullable: false
+            - name: "email"
+              type: "STRING"
+              description: "Primary email address"
+              nullable: false
+          primary_key: ["customer_id"]
+          version: "1.0"
+        security:
+          classification: "CONFIDENTIAL"
+          pii_data: true
+          compliance_labels: ["GDPR", "CCPA"]
+        quality:
+          rules: ["completeness > 0.95", "accuracy > 0.9"]
+          scores:
+            completeness: 0.98
+            accuracy: 0.95
+          metrics:
+            record_count: 10000
+        lifecycle:
+          retention_period: "1 year"
+          update_frequency: "daily"
+          
+  - name: "Product Catalog Contract"
+    version: "1.0"
+    domain: "product"
+    owner: "Product Team"
+    description: "Contract for product information"
+    validation_rules:
+      - "All product IDs must be unique"
+      - "Prices must be positive"
+    datasets:
+      - name: "product_catalog"
+        type: "table"
+        description: "Product catalog information"
+        schema:
+          columns:
+            - name: "product_id"
+              type: "STRING"
+              description: "Unique product identifier"
+              nullable: false
+              is_unique: true
+            - name: "name"
+              type: "STRING"
+              description: "Product name"
+              nullable: false
+            - name: "price"
+              type: "DOUBLE"
+              description: "Current price"
+              nullable: false
+          primary_key: ["product_id"]
+          version: "1.0"
+        security:
+          classification: "INTERNAL"
+          pii_data: false
+        quality:
+          rules: ["completeness > 0.95", "accuracy > 0.9"]
+          scores:
+            completeness: 0.98
+            accuracy: 0.95
+          metrics:
+            record_count: 5000
+        lifecycle:
+          retention_period: "1 year"
+          update_frequency: "daily" 

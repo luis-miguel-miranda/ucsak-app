@@ -1,0 +1,367 @@
+domains:
+  - id: "finance"
+    name: "Finance"
+    description: "Financial terms and concepts related to business operations"
+  
+  - id: "sales"
+    name: "Sales"
+    description: "Terms related to sales processes and customer acquisition"
+  
+  - id: "marketing"
+    name: "Marketing"
+    description: "Terms related to marketing activities and campaigns"
+  
+  - id: "hr"
+    name: "Human Resources"
+    description: "Terms related to employee management and organizational structure"
+
+terms:
+  # Finance Domain
+  - id: "fin1"
+    name: "Revenue"
+    definition: "Income generated from normal business operations"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-01T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "1"
+        name: "monthly_revenue"
+        type: "table"
+        path: "finance.reporting.monthly_revenue"
+      - id: "2"
+        name: "revenue_by_product"
+        type: "view"
+        path: "finance.analytics.revenue_by_product"
+        
+  - id: "fin2"
+    name: "Operating Expenses"
+    definition: "Day-to-day costs of running the business"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-02T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "3"
+        name: "opex_summary"
+        type: "table"
+        path: "finance.reporting.operating_expenses"
+        
+  - id: "fin3"
+    name: "Gross Margin"
+    definition: "Revenue minus cost of goods sold"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-03T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets: []
+    
+  - id: "fin4"
+    name: "Net Profit"
+    definition: "Total revenue minus all expenses"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-04T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets: []
+    
+  - id: "fin5"
+    name: "Cash Flow"
+    definition: "Net movement of cash and cash equivalents"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-05T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets: []
+    
+  - id: "fin6"
+    name: "Working Capital"
+    definition: "Current assets minus current liabilities"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-21T00:00:00Z"
+    updated: "2024-01-21T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "4"
+        name: "working_capital_daily"
+        type: "table"
+        path: "finance.reporting.working_capital"
+        
+  - id: "fin7"
+    name: "Accounts Receivable"
+    definition: "Money owed by customers for goods/services delivered"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-22T00:00:00Z"
+    updated: "2024-01-22T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "5"
+        name: "ar_aging"
+        type: "table"
+        path: "finance.accounting.accounts_receivable"
+      - id: "6"
+        name: "ar_risk_analysis"
+        type: "view"
+        path: "finance.analytics.ar_risk"
+        
+  - id: "fin8"
+    name: "Accounts Payable"
+    definition: "Money owed to suppliers for goods/services received"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-25T00:00:00Z"
+    updated: "2024-01-25T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "7"
+        name: "ap_aging"
+        type: "table"
+        path: "finance.accounting.accounts_payable"
+        
+  - id: "fin9"
+    name: "Budget Variance"
+    definition: "Difference between planned and actual spending"
+    domain: "finance"
+    owner: "Finance Team"
+    status: "active"
+    created: "2024-01-26T00:00:00Z"
+    updated: "2024-01-26T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "8"
+        name: "budget_variance"
+        type: "view"
+        path: "finance.reporting.budget_variance"
+      - id: "9"
+        name: "department_budgets"
+        type: "table"
+        path: "finance.planning.department_budgets"
+        
+  # Sales Domain
+  - id: "sales1"
+    name: "Qualified Lead"
+    definition: "Potential customer that meets defined criteria"
+    domain: "sales"
+    owner: "Sales Team"
+    status: "active"
+    created: "2024-01-06T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "20"
+        name: "qualified_leads"
+        type: "table"
+        path: "sales.crm.qualified_leads"
+      - id: "21"
+        name: "lead_scoring"
+        type: "view"
+        path: "sales.analytics.lead_scoring"
+        
+  - id: "sales2"
+    name: "Opportunity"
+    definition: "Qualified lead with potential deal value"
+    domain: "sales"
+    owner: "Sales Team"
+    status: "active"
+    created: "2024-01-07T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets: []
+    
+  - id: "sales3"
+    name: "Pipeline Value"
+    definition: "Total value of all active opportunities"
+    domain: "sales"
+    owner: "Sales Team"
+    status: "active"
+    created: "2024-01-08T00:00:00Z"
+    updated: "2024-01-15T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets: []
+    
+  - id: "sales7"
+    name: "Sales Territory Coverage"
+    definition: "Geographic distribution of sales representatives"
+    domain: "sales"
+    owner: "Sales Team"
+    status: "active"
+    created: "2024-01-27T00:00:00Z"
+    updated: "2024-01-27T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "23"
+        name: "territory_assignments"
+        type: "table"
+        path: "sales.operations.territory_assignments"
+        
+  - id: "sales8"
+    name: "Deal Size"
+    definition: "Average value of closed deals"
+    domain: "sales"
+    owner: "Sales Team"
+    status: "active"
+    created: "2024-01-28T00:00:00Z"
+    updated: "2024-01-28T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "24"
+        name: "deal_metrics"
+        type: "view"
+        path: "sales.analytics.deal_metrics"
+        
+  # Marketing Domain
+  - id: "mkt7"
+    name: "Email Campaign Performance"
+    definition: "Metrics for email marketing campaigns"
+    domain: "marketing"
+    owner: "Marketing Team"
+    status: "active"
+    created: "2024-01-29T00:00:00Z"
+    updated: "2024-01-29T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "42"
+        name: "email_metrics"
+        type: "table"
+        path: "marketing.campaigns.email_metrics"
+      - id: "43"
+        name: "email_performance"
+        type: "view"
+        path: "marketing.analytics.email_performance"
+        
+  - id: "mkt8"
+    name: "Social Media Engagement"
+    definition: "Metrics for social media interaction"
+    domain: "marketing"
+    owner: "Marketing Team"
+    status: "active"
+    created: "2024-01-30T00:00:00Z"
+    updated: "2024-01-30T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "44"
+        name: "social_engagement"
+        type: "table"
+        path: "marketing.social.engagement_metrics"
+        
+  # HR Domain
+  - id: "hr6"
+    name: "Performance Review"
+    definition: "Employee performance evaluation process"
+    domain: "hr"
+    owner: "HR Team"
+    status: "active"
+    created: "2024-01-31T00:00:00Z"
+    updated: "2024-01-31T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "60"
+        name: "performance_reviews"
+        type: "table"
+        path: "hr.reviews.employee_performance"
+      - id: "61"
+        name: "review_analytics"
+        type: "view"
+        path: "hr.analytics.performance_metrics"
+        
+  - id: "hr7"
+    name: "Recruitment Pipeline"
+    definition: "Status of active job candidates"
+    domain: "hr"
+    owner: "HR Team"
+    status: "active"
+    created: "2024-02-01T00:00:00Z"
+    updated: "2024-02-01T00:00:00Z"
+    synonyms: []
+    related_terms: []
+    tags: []
+    examples: []
+    source: ""
+    taggedAssets:
+      - id: "62"
+        name: "recruitment_funnel"
+        type: "view"
+        path: "hr.recruiting.candidate_pipeline" 

@@ -17,13 +17,23 @@ interface DatasetDefinition {
 }
 
 export interface DataContract {
-  id?: string;
+  id: string;
   name: string;
+  description: string;
   version: string;
   status: string;
   owner: string;
-  description: string;
-  datasets: DatasetDefinition[];
-  created_at?: string;
-  updated_at?: string;
+  format: string;
+  created: string;
+  updated: string;
+  schema?: {
+    fields: Array<{
+      name: string;
+      type: string;
+      required: boolean;
+      description: string;
+    }>;
+  };
+  validation_rules?: string[];
+  dataProducts: string[];
 } 

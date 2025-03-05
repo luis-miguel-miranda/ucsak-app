@@ -1,214 +1,157 @@
-from datetime import datetime
-from typing import List
 from flask import Blueprint, jsonify, request
-from models.data_product import DataProduct, DataProductType, DataProductStatus
-import uuid
+from controller.data_product_manager import DataProductManager, DataSource, DataOutput, SchemaField
+from datetime import datetime
+import os
+from pathlib import Path
 
 bp = Blueprint('data_products', __name__)
 
-# In-memory storage for development - replace with database in production
-data_products = {
-    "dp1": {
-        "id": "dp1",
-        "name": "Customer 360",
-        "owner": "Marketing Team",
-        "type": "consumer-aligned",
-        "status": "active",
-        "description": "Unified customer view across all channels",
-        "tags": ["customer", "marketing", "sales"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-02-15T00:00:00Z"
-    },
-    "dp2": {
-        "id": "dp2",
-        "name": "Sales Transactions",
-        "owner": "Finance Team",
-        "type": "source-aligned",
-        "status": "active",
-        "description": "Raw sales transaction data from ERP",
-        "tags": ["sales", "finance", "transactions"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-01-15T00:00:00Z",
-        "updated_at": "2024-02-20T00:00:00Z"
-    },
-    "dp3": {
-        "id": "dp3",
-        "name": "Product Catalog",
-        "owner": "Product Team",
-        "type": "source-aligned",
-        "status": "active",
-        "description": "Master product catalog and metadata",
-        "tags": ["products", "catalog", "master-data"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-01-20T00:00:00Z",
-        "updated_at": "2024-02-25T00:00:00Z"
-    },
-    "dp4": {
-        "id": "dp4",
-        "name": "Marketing Analytics",
-        "owner": "Marketing Team",
-        "type": "aggregate",
-        "status": "in-development",
-        "description": "Marketing campaign performance metrics",
-        "tags": ["marketing", "analytics", "campaigns"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-02-01T00:00:00Z",
-        "updated_at": "2024-02-28T00:00:00Z"
-    },
-    "dp5": {
-        "id": "dp5",
-        "name": "Supply Chain Metrics",
-        "owner": "Operations Team",
-        "type": "aggregate",
-        "status": "active",
-        "description": "Supply chain performance indicators",
-        "tags": ["supply-chain", "operations", "metrics"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-02-05T00:00:00Z",
-        "updated_at": "2024-03-01T00:00:00Z"
-    },
-    "dp6": {
-        "id": "dp6",
-        "name": "Customer Churn Model",
-        "owner": "Data Science Team",
-        "type": "consumer-aligned",
-        "status": "in-development",
-        "description": "Predictive model for customer churn",
-        "tags": ["ml", "churn", "predictions"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-02-10T00:00:00Z",
-        "updated_at": "2024-03-05T00:00:00Z"
-    },
-    "dp7": {
-        "id": "dp7",
-        "name": "Financial Reports",
-        "owner": "Finance Team",
-        "type": "consumer-aligned",
-        "status": "active",
-        "description": "Regulatory financial reporting datasets",
-        "tags": ["finance", "reporting", "compliance"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-02-15T00:00:00Z",
-        "updated_at": "2024-03-10T00:00:00Z"
-    },
-    "dp8": {
-        "id": "dp8",
-        "name": "IoT Sensor Data",
-        "owner": "IoT Team",
-        "type": "source-aligned",
-        "status": "active",
-        "description": "Raw sensor data from IoT devices",
-        "tags": ["iot", "sensors", "raw-data"],
-        "input_ports": [],
-        "output_ports": [],
-        "created_at": "2024-02-20T00:00:00Z",
-        "updated_at": "2024-03-15T00:00:00Z"
-    }
-}
+# Create a single instance of the manager
+product_manager = DataProductManager()
+
+# Check for YAML file in data directory
+yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
+if os.path.exists(yaml_path):
+    # Load data from YAML file
+    product_manager.load_from_yaml(str(yaml_path))
 
 @bp.route('/api/data-products', methods=['GET'])
-def get_data_products():
+def get_products():
     """Get all data products"""
-    return jsonify(list(data_products.values()))
+    products = product_manager.list_products()
+    
+    # Format the response to match what the frontend expects
+    formatted_products = []
+    for p in products:
+        formatted_products.append({
+            'id': p.id,
+            'name': p.name,
+            'description': p.description,
+            'domain': p.domain,
+            'owner': p.owner,
+            'status': p.status,
+            'created': p.created.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            'updated': p.updated.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            'type': p.type,
+            'tags': p.tags,
+            'contracts': p.contracts
+        })
+    
+    return jsonify(formatted_products)
 
 @bp.route('/api/data-products/<product_id>', methods=['GET'])
-def get_data_product(product_id):
+def get_product(product_id):
     """Get a specific data product"""
-    if product_id not in data_products:
-        return jsonify({"error": "Data product not found"}), 404
-    return jsonify(data_products[product_id])
+    product = product_manager.get_product(product_id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+    
+    # Format sources
+    sources = []
+    for source in product.sources:
+        sources.append({
+            'name': source.name,
+            'type': source.type,
+            'connection': source.connection
+        })
+    
+    # Format outputs
+    outputs = []
+    for output in product.outputs:
+        schema = []
+        for field in output.schema:
+            schema.append({
+                'name': field.name,
+                'type': field.type,
+                'description': field.description
+            })
+        
+        outputs.append({
+            'name': output.name,
+            'type': output.type,
+            'location': output.location,
+            'schema': schema
+        })
+    
+    # Format the response
+    formatted_product = {
+        'id': product.id,
+        'name': product.name,
+        'description': product.description,
+        'domain': product.domain,
+        'owner': product.owner,
+        'status': product.status,
+        'created': product.created.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        'updated': product.updated.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        'type': product.type,
+        'tags': product.tags,
+        'sources': sources,
+        'outputs': outputs,
+        'contracts': product.contracts
+    }
+    
+    return jsonify(formatted_product)
 
 @bp.route('/api/data-products', methods=['POST'])
-def create_data_product():
+def create_product():
     """Create a new data product"""
-    try:
-        data = request.get_json()
-        
-        # Generate ID and timestamps
-        data['id'] = str(uuid.uuid4())
-        current_time = datetime.utcnow().isoformat()
-        data['created_at'] = current_time
-        data['updated_at'] = current_time
-        
-        # Validate and create data product
-        product = DataProduct(**data)
-        
-        # Store the data product
-        data_products[product.id] = product.dict()
-        
-        return jsonify(product.dict()), 201
+    data = request.json
     
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
-@bp.route('/api/data-products/<product_id>', methods=['PUT'])
-def update_data_product(product_id):
-    """Update an existing data product"""
-    if product_id not in data_products:
-        return jsonify({"error": "Data product not found"}), 404
+    # Parse sources
+    sources = []
+    for source_data in data.get('sources', []):
+        sources.append(DataSource(
+            name=source_data.get('name', ''),
+            type=source_data.get('type', ''),
+            connection=source_data.get('connection', '')
+        ))
     
-    try:
-        data = request.get_json()
-        data['id'] = product_id
-        data['created_at'] = data_products[product_id]['created_at']
-        data['updated_at'] = datetime.utcnow().isoformat()
+    # Parse outputs
+    outputs = []
+    for output_data in data.get('outputs', []):
+        # Parse schema fields
+        schema_fields = []
+        for field_data in output_data.get('schema', []):
+            schema_fields.append(SchemaField(
+                name=field_data.get('name', ''),
+                type=field_data.get('type', ''),
+                description=field_data.get('description', '')
+            ))
         
-        # Validate and update data product
-        product = DataProduct(**data)
-        
-        # Store updated data product
-        data_products[product_id] = product.dict()
-        
-        return jsonify(product.dict())
+        outputs.append(DataOutput(
+            name=output_data.get('name', ''),
+            type=output_data.get('type', ''),
+            location=output_data.get('location', ''),
+            schema=schema_fields
+        ))
     
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
-@bp.route('/api/data-products/<product_id>', methods=['DELETE'])
-def delete_data_product(product_id):
-    """Delete a data product"""
-    if product_id not in data_products:
-        return jsonify({"error": "Data product not found"}), 404
+    # Create product
+    product = product_manager.create_product(
+        name=data.get('name', ''),
+        description=data.get('description', ''),
+        domain=data.get('domain', ''),
+        owner=data.get('owner', ''),
+        type=data.get('type', ''),
+        tags=data.get('tags', []),
+        sources=sources,
+        outputs=outputs,
+        contracts=data.get('contracts', [])
+    )
     
-    del data_products[product_id]
-    return '', 204
-
-@bp.route('/api/data-products/<product_id>/status', methods=['PUT'])
-def update_product_status(product_id):
-    """Update the status of a data product"""
-    if product_id not in data_products:
-        return jsonify({"error": "Data product not found"}), 404
-    
-    try:
-        data = request.get_json()
-        new_status = DataProductStatus(data['status'])
-        
-        product_data = data_products[product_id]
-        product_data['status'] = new_status
-        product_data['updated_at'] = datetime.utcnow().isoformat()
-        
-        return jsonify(product_data)
-    
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
-@bp.route('/api/data-products/types', methods=['GET'])
-def get_product_types():
-    """Get available data product types"""
-    return jsonify([t.value for t in DataProductType])
-
-@bp.route('/api/data-products/statuses', methods=['GET'])
-def get_product_statuses():
-    """Get available data product statuses"""
-    return jsonify([s.value for s in DataProductStatus])
+    # Format the response
+    return jsonify({
+        'id': product.id,
+        'name': product.name,
+        'description': product.description,
+        'domain': product.domain,
+        'owner': product.owner,
+        'status': product.status,
+        'created': product.created.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        'updated': product.updated.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        'type': product.type,
+        'tags': product.tags,
+        'contracts': product.contracts
+    }), 201
 
 def register_routes(app):
     """Register routes with the app"""

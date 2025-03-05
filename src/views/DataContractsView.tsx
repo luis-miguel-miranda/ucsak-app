@@ -30,26 +30,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PageHeader from '../components/PageHeader';
-
-interface DataContract {
-  id: string;
-  name: string;
-  description: string;
-  schema_version: string;
-  data_format: string;
-  schema_definition: {
-    columns: Array<{
-      name: string;
-      type: string;
-      description?: string;
-      nullable?: boolean;
-    }>;
-  };
-  validation_rules: string[];
-  status: 'draft' | 'active' | 'deprecated';
-  created_at: string;
-  updated_at: string;
-}
+import { DataContract } from '../types/DataContract';
 
 function DataContractsView() {
   const [contracts, setContracts] = useState<DataContract[]>([]);
@@ -65,7 +46,8 @@ function DataContractsView() {
 
   const fetchContracts = async () => {
     try {
-      const response = await fetch('/api/contracts');
+      setLoading(true);
+      const response = await fetch('/api/data-contracts');
       if (!response.ok) throw new Error('Failed to fetch contracts');
       const data = await response.json();
       setContracts(data);
@@ -73,6 +55,34 @@ function DataContractsView() {
       setError(err instanceof Error ? err.message : 'Failed to load contracts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchContract = async (id: string) => {
+    try {
+      const response = await fetch(`/api/data-contracts/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch contract details');
+      const data = await response.json();
+      setSelectedContract(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load contract details');
+    }
+  };
+
+  const createContract = async (formData: any) => {
+    try {
+      const response = await fetch('/api/data-contracts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) throw new Error('Failed to create contract');
+      fetchContracts();
+      // ... handle success ...
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create contract');
     }
   };
 
@@ -90,7 +100,7 @@ function DataContractsView() {
     if (!window.confirm('Are you sure you want to delete this contract?')) return;
     
     try {
-      const response = await fetch(`/api/contracts/${id}`, {
+      const response = await fetch(`/api/data-contracts/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete contract');
@@ -103,19 +113,20 @@ function DataContractsView() {
   const handleSaveContract = async (event: React.FormEvent) => {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
-    const contractData = {
-      name: formData.get('name'),
-      description: formData.get('description'),
-      schema_version: formData.get('schema_version'),
-      data_format: formData.get('data_format'),
-      schema_definition: {
-        columns: JSON.parse(formData.get('schema_definition') as string),
+    const contractData: Partial<DataContract> = {
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      version: formData.get('version') as string,
+      format: formData.get('format') as string,
+      owner: formData.get('owner') as string,
+      schema: {
+        fields: JSON.parse(formData.get('schema_definition') as string || '[]')
       },
-      validation_rules: (formData.get('validation_rules') as string).split('\n').filter(Boolean),
+      // Other fields will be set by the backend
     };
 
     try {
-      const response = await fetch('/api/contracts', {
+      const response = await fetch('/api/data-contracts', {
         method: selectedContract ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contractData),
@@ -164,6 +175,7 @@ function DataContractsView() {
                   <TableCell>Version</TableCell>
                   <TableCell>Format</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Created</TableCell>
                   <TableCell>Updated</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
@@ -172,8 +184,8 @@ function DataContractsView() {
                 {contracts.map((contract) => (
                   <TableRow key={contract.id}>
                     <TableCell>{contract.name}</TableCell>
-                    <TableCell>{contract.schema_version}</TableCell>
-                    <TableCell>{contract.data_format}</TableCell>
+                    <TableCell>{contract.version}</TableCell>
+                    <TableCell>{contract.format}</TableCell>
                     <TableCell>
                       <Chip
                         label={contract.status}
@@ -184,7 +196,8 @@ function DataContractsView() {
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>{new Date(contract.updated_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(contract.created).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(contract.updated).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleViewDetails(contract)} size="small">
                         <InfoIcon />
@@ -230,9 +243,9 @@ function DataContractsView() {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <TextField
-                    name="schema_version"
+                    name="version"
                     label="Schema Version"
-                    defaultValue={selectedContract?.schema_version}
+                    defaultValue={selectedContract?.version}
                     required
                     fullWidth
                   />
@@ -241,8 +254,8 @@ function DataContractsView() {
                   <FormControl fullWidth>
                     <InputLabel>Data Format</InputLabel>
                     <Select
-                      name="data_format"
-                      defaultValue={selectedContract?.data_format || 'delta'}
+                      name="format"
+                      defaultValue={selectedContract?.format || 'delta'}
                       label="Data Format"
                       required
                     >
@@ -256,7 +269,7 @@ function DataContractsView() {
               <TextField
                 name="schema_definition"
                 label="Schema Definition (JSON)"
-                defaultValue={JSON.stringify(selectedContract?.schema_definition || { columns: [] }, null, 2)}
+                defaultValue={JSON.stringify(selectedContract?.schema || { fields: [] }, null, 2)}
                 multiline
                 rows={6}
                 required
@@ -293,14 +306,14 @@ function DataContractsView() {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Typography variant="subtitle2">Basic Information</Typography>
-                  <Typography variant="body2">Version: {selectedContract.schema_version}</Typography>
-                  <Typography variant="body2">Format: {selectedContract.data_format}</Typography>
+                  <Typography variant="body2">Version: {selectedContract.version}</Typography>
+                  <Typography variant="body2">Format: {selectedContract.format}</Typography>
                   <Typography variant="body2">Status: {selectedContract.status}</Typography>
                   <Typography variant="body2">
-                    Created: {new Date(selectedContract.created_at).toLocaleString()}
+                    Created: {new Date(selectedContract.created).toLocaleString()}
                   </Typography>
                   <Typography variant="body2">
-                    Updated: {new Date(selectedContract.updated_at).toLocaleString()}
+                    Updated: {new Date(selectedContract.updated).toLocaleString()}
                   </Typography>
                 </Grid>
                 
@@ -316,13 +329,21 @@ function DataContractsView() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {selectedContract.schema_definition.columns.map((col, idx) => (
+                        {selectedContract.schema?.fields.map((col, idx) => (
                           <TableRow key={idx}>
                             <TableCell>{col.name}</TableCell>
                             <TableCell>{col.type}</TableCell>
-                            <TableCell>{col.nullable ? 'Yes' : 'No'}</TableCell>
+                            <TableCell>{!col.required ? 'Yes' : 'No'}</TableCell>
                           </TableRow>
-                        ))}
+                        )) || (
+                          <TableRow>
+                            <TableCell colSpan={3}>
+                              <Typography align="center" color="text.secondary">
+                                No schema fields defined
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -330,9 +351,11 @@ function DataContractsView() {
 
                 <Grid item xs={12}>
                   <Typography variant="subtitle2">Validation Rules</Typography>
-                  {selectedContract.validation_rules.map((rule, idx) => (
+                  {selectedContract.validation_rules?.map((rule, idx) => (
                     <Typography key={idx} variant="body2">• {rule}</Typography>
-                  ))}
+                  )) || (
+                    <Typography color="text.secondary">No validation rules defined</Typography>
+                  )}
                 </Grid>
               </Grid>
             </Box>

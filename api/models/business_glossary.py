@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
+from dataclasses import dataclass, field
 
 class TaggedAsset(BaseModel):
     id: str
@@ -8,17 +9,25 @@ class TaggedAsset(BaseModel):
     type: str  # 'table' | 'view' | 'column'
     path: str
 
-class GlossaryTerm(BaseModel):
+@dataclass
+class Domain:
     id: str
     name: str
-    description: str
+    description: Optional[str] = None
+
+@dataclass
+class GlossaryTerm:
+    id: str
+    name: str
+    definition: str
     domain: str
     owner: str
-    status: str  # 'active' | 'draft' | 'deprecated'
+    status: str
     created: datetime
     updated: datetime
-    tagged_assets: List[TaggedAsset] = []
-
-class Domain(BaseModel):
-    id: str
-    name: str 
+    synonyms: List[str] = field(default_factory=list)
+    related_terms: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
+    examples: List[str] = field(default_factory=list)
+    source: Optional[str] = None
+    taggedAssets: List[Dict[str, Any]] = field(default_factory=list) 
