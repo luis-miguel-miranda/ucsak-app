@@ -16,7 +16,7 @@ class WorkflowInstallation:
     status: str
     workspace_id: str
 
-class WorkflowManager:
+class SettingsManager:
     def __init__(self, workspace_client: WorkspaceClient, workflows_dir: str = "workflows"):
         self._client = workspace_client
         self._workflows_dir = workflows_dir

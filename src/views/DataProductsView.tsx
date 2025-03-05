@@ -23,13 +23,15 @@ import {
   Box,
   Chip,
   IconButton,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
 import PageHeader from '../components/PageHeader';
-import { DataProduct } from '../types/DataProduct';
+import { DataProduct, ProductStatus, ProductType } from '../types/DataProduct';
 
 function DataProductsView() {
   const [products, setProducts] = useState<DataProduct[]>([]);
@@ -37,45 +39,62 @@ function DataProductsView() {
   const [selectedProduct, setSelectedProduct] = useState<DataProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [productTypes, setProductTypes] = useState<string[]>([]);
+  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [productStatuses, setProductStatuses] = useState<string[]>([]);
   const [productCount, setProductCount] = useState<number>(0);
+  const [statuses, setStatuses] = useState<ProductStatus[]>([]);
 
   useEffect(() => {
     fetchProducts();
-    fetchMetadata();
+    fetchStatuses();
+    fetchTypes();
   }, []);
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/data-products');
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
-      setProducts(data);
-      setProductCount(data.length);
+      // Ensure each product has tags array
+      const processedData = data.map((product: DataProduct) => ({
+        ...product,
+        tags: product.tags || [],
+        input_ports: product.input_ports || [],
+        output_ports: product.output_ports || []
+      }));
+      setProducts(processedData);
+      setProductCount(processedData.length);
     } catch (err) {
+      console.error('Error fetching products:', err);
       setError(err instanceof Error ? err.message : 'Failed to load products');
+      setProducts([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMetadata = async () => {
+  const fetchStatuses = async () => {
     try {
-      const [typesRes, statusesRes] = await Promise.all([
-        fetch('/api/data-products/types'),
-        fetch('/api/data-products/statuses')
-      ]);
-      
-      if (!typesRes.ok || !statusesRes.ok) throw new Error('Failed to fetch metadata');
-      
-      const types = await typesRes.json();
-      const statuses = await statusesRes.json();
-      
-      setProductTypes(types);
-      setProductStatuses(statuses);
+      const response = await fetch('/api/data-products/statuses');
+      if (!response.ok) throw new Error('Failed to fetch product statuses');
+      const data = await response.json();
+      setStatuses(data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load metadata');
+      console.error('Error fetching product statuses:', err);
+      setStatuses([]); // Set empty array on error
+    }
+  };
+
+  const fetchTypes = async () => {
+    try {
+      const response = await fetch('/api/data-products/types');
+      if (!response.ok) throw new Error('Failed to fetch product types');
+      const data = await response.json();
+      setProductTypes(data || []);
+    } catch (err) {
+      console.error('Error fetching product types:', err);
+      setProductTypes([]); // Set empty array on error
     }
   };
 
@@ -137,6 +156,28 @@ function DataProductsView() {
     }
   };
 
+  // Helper function to get status name from ID
+  const getStatusName = (statusId: string) => {
+    const status = statuses.find(s => s.id === statusId);
+    return status ? status.name : statusId;
+  };
+
+  // Helper function to get status color
+  const getStatusColor = (statusId: string) => {
+    switch (statusId) {
+      case 'published':
+        return 'success';
+      case 'draft':
+        return 'default';
+      case 'deprecated':
+        return 'warning';
+      case 'archived':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
   if (loading) return <Typography>Loading data products...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;
 
@@ -160,62 +201,78 @@ function DataProductsView() {
         </Grid>
 
         <Grid item xs={12}>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Owner</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Tags</TableCell>
-                  <TableCell>Updated</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>{product.name}</TableCell>
-                    <TableCell>{product.owner}</TableCell>
-                    <TableCell>{product.type}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={product.status}
-                        color={
-                          product.status === 'active' ? 'success' :
-                          product.status === 'in-development' ? 'warning' :
-                          product.status === 'deprecated' ? 'error' :
-                          'default'
-                        }
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {product.tags.map(tag => (
-                        <Chip key={tag} label={tag} size="small" sx={{ mr: 0.5 }} />
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(product.updated_at!).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton onClick={() => handleEditProduct(product)} size="small">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton 
-                        onClick={() => handleDeleteProduct(product.id!)}
-                        size="small"
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+          
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : products.length === 0 ? (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary">
+                No data products found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Create your first data product to get started
+              </Typography>
+            </Paper>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Owner</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Tags</TableCell>
+                    <TableCell>Updated</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {(products || []).map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.owner}</TableCell>
+                      <TableCell>{product.type}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusName(product.status)}
+                          color={getStatusColor(product.status) as any}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {(product.tags || []).map(tag => (
+                          <Chip key={tag} label={tag} size="small" sx={{ mr: 0.5 }} />
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {product.updated_at ? new Date(product.updated_at).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton onClick={() => handleEditProduct(product)} size="small">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton 
+                          onClick={() => handleDeleteProduct(product.id!)}
+                          size="small"
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </Grid>
       </Grid>
 
@@ -252,8 +309,8 @@ function DataProductsView() {
                       required
                     >
                       {productTypes.map(type => (
-                        <MenuItem key={type} value={type}>
-                          {type}
+                        <MenuItem key={type.id} value={type.id}>
+                          {type.name}
                         </MenuItem>
                       ))}
                     </Select>

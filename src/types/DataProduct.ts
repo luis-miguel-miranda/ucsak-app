@@ -9,13 +9,25 @@ export interface Port {
 export interface DataProduct {
   id?: string;
   name: string;
-  owner: string;
-  type: "source-aligned" | "aggregate" | "consumer-aligned";
-  status: "candidate" | "in-development" | "active" | "deprecated" | "retired";
   description: string;
+  owner: string;
+  type: string;
+  status: string;
   tags: string[];
-  input_ports: Port[];
-  output_ports: Port[];
   created_at?: string;
   updated_at?: string;
+  input_ports: any[];
+  output_ports: any[];
+}
+
+export interface ProductStatus {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface ProductType {
+  id: string;
+  name: string;
+  description: string;
 } 
