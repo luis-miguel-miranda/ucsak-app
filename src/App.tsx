@@ -37,8 +37,8 @@ function App() {
             <Route path="/data-products" element={<DataProductsView />} />
             <Route path="/business-glossary" element={<BusinessGlossariesView />} />
             <Route path="/master-data" element={<MasterDataManagementView />} />
-            <Route path="/catalog-commander" element={<CatalogCommanderView />} />
             <Route path="/entitlements" element={<EntitlementsView />} />
+            <Route path="/catalog-commander" element={<CatalogCommanderView />} />
             <Route path="/settings" element={<SettingsView />} />
             <Route path="/about" element={<AboutView />} />
             <Route path="*" element={<NotFoundView />} />

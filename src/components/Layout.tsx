@@ -23,12 +23,12 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CategoryIcon from '@mui/icons-material/Category';
-import StorageIcon from '@mui/icons-material/Storage';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SecurityIcon from '@mui/icons-material/Security';
 import SettingsIcon from '@mui/icons-material/Settings';
 import InfoIcon from '@mui/icons-material/Info';
-import DataObjectIcon from '@mui/icons-material/DataObject';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
 const drawerWidth = 240;
 const collapsedDrawerWidth = 64;
@@ -57,9 +57,9 @@ function Layout({ children }: LayoutProps) {
     { text: 'Data Products', icon: <CategoryIcon />, path: '/data-products' },
     { text: 'Data Contracts', icon: <DescriptionIcon />, path: '/data-contracts' },
     { text: 'Business Glossary', icon: <MenuBookIcon />, path: '/business-glossary' },
-    { text: 'Master Data Management', icon: <DataObjectIcon />, path: '/master-data' },
+    { text: 'Master Data Management', icon: <CompareArrowsIcon />, path: '/master-data' },
     { text: 'Entitlements', icon: <SecurityIcon />, path: '/entitlements' },
-    { text: 'Catalog Commander', icon: <StorageIcon />, path: '/catalog-commander' },
+    { text: 'Catalog Commander', icon: <Inventory2OutlinedIcon />, path: '/catalog-commander' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     { text: 'About', icon: <InfoIcon />, path: '/about' },
   ];
@@ -143,7 +143,7 @@ function Layout({ children }: LayoutProps) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Data Governance Platform
+            Unity Catalog Swiss Army Knife
           </Typography>
         </Toolbar>
       </AppBar>

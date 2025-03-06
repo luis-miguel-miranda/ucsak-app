@@ -150,9 +150,9 @@ function DataContractsView() {
   return (
     <Container maxWidth="xl">
       <PageHeader
-        icon={<DescriptionIcon />}
         title="Data Contracts"
-        subtitle="Create and manage data contracts"
+        subtitle="Create and manage data contracts between producers and consumers"
+        icon={<DescriptionIcon fontSize="large" />}
       />
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

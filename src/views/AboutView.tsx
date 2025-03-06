@@ -6,11 +6,11 @@ import PageHeader from '../components/PageHeader';
 
 function AboutView() {
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl">
       <PageHeader 
-        icon={<InfoIcon />} 
-        title="About" 
-        subtitle="Information about the Unity Catalog Swiss Army Knife" 
+        title="About"
+        subtitle="Learn more about this application"
+        icon={<InfoIcon fontSize="large" />}
       />
       
       <Paper sx={{ p: 3, mb: 4 }}>

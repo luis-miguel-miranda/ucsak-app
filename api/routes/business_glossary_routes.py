@@ -272,6 +272,18 @@ def delete_term(term_id):
         logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
 
+@bp.route('/api/business-glossary/glossaries', methods=['GET'])
+def get_glossaries():
+    """Get all glossaries"""
+    try:
+        logger.info("Retrieving all glossaries")
+        glossaries = glossary_manager.list_glossaries()
+        return jsonify(glossaries)
+    except Exception as e:
+        error_msg = f"Error retrieving glossaries: {str(e)}"
+        logger.error(error_msg)
+        return jsonify({"error": error_msg}), 500
+
 def register_routes(app):
     """Register routes with the app"""
     app.register_blueprint(bp)

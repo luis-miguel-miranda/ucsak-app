@@ -30,6 +30,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
+import CategoryIcon from '@mui/icons-material/Category';
 import PageHeader from '../components/PageHeader';
 import { DataProduct, ProductStatus, ProductType } from '../types/DataProduct';
 
@@ -184,9 +185,9 @@ function DataProductsView() {
   return (
     <Container maxWidth="xl">
       <PageHeader
-        icon={<StorageIcon />}
-        title={`Data Products (${productCount})`}
-        subtitle="Manage and monitor your data products"
+        title="Data Products"
+        subtitle="Define and catalog your data products"
+        icon={<CategoryIcon fontSize="large" />}
       />
 
       <Grid container spacing={2}>

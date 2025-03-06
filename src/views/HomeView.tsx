@@ -14,12 +14,12 @@ import {
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CategoryIcon from '@mui/icons-material/Category';
-import StorageIcon from '@mui/icons-material/Storage';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SecurityIcon from '@mui/icons-material/Security';
 import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
 function HomeView() {
   const [stats, setStats] = useState({
@@ -121,7 +121,7 @@ function HomeView() {
     {
       title: 'Master Data Management',
       description: 'Manage master data and reference data',
-      icon: <AccountTreeIcon sx={{ fontSize: 40 }} />,
+      icon: <CompareArrowsIcon sx={{ fontSize: 40 }} />,
       link: '/master-data',
     },
     {
@@ -133,7 +133,7 @@ function HomeView() {
     {
       title: 'Catalog Commander',
       description: 'Explore and manage your data catalog',
-      icon: <StorageIcon sx={{ fontSize: 40 }} />,
+      icon: <Inventory2OutlinedIcon sx={{ fontSize: 40 }} />,
       link: '/catalog-commander',
     },
     {

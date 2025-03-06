@@ -29,7 +29,8 @@ import {
   TableHead,
   TableRow,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Autocomplete
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -51,6 +52,7 @@ interface Persona {
   created_at: string;
   updated_at: string;
   privileges: Privilege[];
+  groups: string[];
 }
 
 function EntitlementsView() {
@@ -66,6 +68,22 @@ function EntitlementsView() {
     securable_type: 'table',
     permission: 'READ'
   });
+  const [availableGroups] = useState<string[]>([
+    'data_science_team',
+    'ml_engineers',
+    'data_engineering',
+    'etl_team',
+    'business_analysts',
+    'reporting_team',
+    'data_governance',
+    'data_stewards',
+    'compliance_team',
+    'business_users',
+    'report_viewers',
+    'model_developers',
+    'pipeline_operators',
+    'analytics_users'
+  ]);
 
   useEffect(() => {
     fetchPersonas();
@@ -223,10 +241,34 @@ function EntitlementsView() {
     }
   };
 
+  const handleUpdateGroups = async (personaId: string, groups: string[]) => {
+    try {
+      const response = await fetch(`/api/entitlements/personas/${personaId}/groups`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ groups }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update groups');
+      
+      const updatedPersona = await response.json();
+      setSelectedPersona(updatedPersona);
+      
+      // Update the persona in the list
+      setPersonas(personas.map(p => 
+        p.id === updatedPersona.id ? updatedPersona : p
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update groups');
+    }
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl">
       <PageHeader 
-        title="Entitlements Management" 
+        title="Entitlements"
         subtitle="Manage access control personas and privileges"
         icon={<SecurityIcon fontSize="large" />}
       />
@@ -364,6 +406,40 @@ function EntitlementsView() {
                       </Table>
                     </TableContainer>
                   )}
+                </Box>
+                
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Group Assignments
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    options={availableGroups}
+                    value={selectedPersona.groups}
+                    onChange={(_, newValue) => {
+                      if (selectedPersona) {
+                        handleUpdateGroups(selectedPersona.id, newValue);
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        variant="outlined"
+                        label="Assigned Groups"
+                        placeholder="Add groups..."
+                      />
+                    )}
+                    renderTags={(value, getTagProps) =>
+                      value.map((group, index) => (
+                        <Chip
+                          label={group}
+                          {...getTagProps({ index })}
+                          color="primary"
+                          variant="outlined"
+                        />
+                      ))
+                    }
+                  />
                 </Box>
                 
                 <Box sx={{ mt: 'auto', pt: 2 }}>

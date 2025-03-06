@@ -58,6 +58,7 @@ def get_personas():
                 'id': p.id,
                 'name': p.name,
                 'description': p.description,
+                'groups': p.groups,
                 'created_at': p.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 'updated_at': p.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 'privileges': [
@@ -326,6 +327,56 @@ def remove_privilege(persona_id, securable_id):
         return jsonify(response)
     except Exception as e:
         error_msg = f"Error removing privilege from persona {persona_id}: {str(e)}"
+        logger.error(error_msg)
+        return jsonify({"error": error_msg}), 500
+
+@bp.route('/api/entitlements/personas/<persona_id>/groups', methods=['PUT'])
+def update_persona_groups(persona_id):
+    """Update groups for a persona"""
+    try:
+        persona = entitlements_manager.get_persona(persona_id)
+        if not persona:
+            logger.warning(f"Persona not found with ID: {persona_id}")
+            return jsonify({"error": "Persona not found"}), 404
+            
+        data = request.json
+        if not isinstance(data.get('groups'), list):
+            return jsonify({"error": "Invalid groups data"}), 400
+            
+        updated_persona = entitlements_manager.update_persona_groups(
+            persona_id=persona_id,
+            groups=data['groups']
+        )
+        
+        # Save changes to YAML
+        try:
+            yaml_path = Path(__file__).parent.parent / 'data' / 'entitlements.yaml'
+            entitlements_manager.save_to_yaml(str(yaml_path))
+            logger.info(f"Saved updated entitlements data to {yaml_path}")
+        except Exception as e:
+            logger.warning(f"Could not save updated data to YAML: {str(e)}")
+        
+        # Format the response
+        response = {
+            'id': updated_persona.id,
+            'name': updated_persona.name,
+            'description': updated_persona.description,
+            'groups': updated_persona.groups,
+            'created_at': updated_persona.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            'updated_at': updated_persona.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            'privileges': [
+                {
+                    'securable_id': priv.securable_id,
+                    'securable_type': priv.securable_type,
+                    'permission': priv.permission
+                } for priv in updated_persona.privileges
+            ]
+        }
+        
+        logger.info(f"Successfully updated groups for persona with ID: {persona_id}")
+        return jsonify(response)
+    except Exception as e:
+        error_msg = f"Error updating groups for persona {persona_id}: {str(e)}"
         logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
 

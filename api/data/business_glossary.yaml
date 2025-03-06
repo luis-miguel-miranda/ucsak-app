@@ -1,3 +1,14 @@
+
+glossaries:
+  - id: "default"
+    name: "Enterprise Business Glossary"
+    description: "The main business glossary for the organization"
+    owner: "Data Governance Team"
+    domain: "Enterprise"
+    status: "active"
+    created_at: "2023-01-01T00:00:00Z"
+    updated_at: "2023-01-01T00:00:00Z"
+
 domains:
   - id: "finance"
     name: "Finance"
@@ -364,4 +375,6 @@ terms:
       - id: "62"
         name: "recruitment_funnel"
         type: "view"
-        path: "hr.recruiting.candidate_pipeline" 
+        path: "hr.recruiting.candidate_pipeline"
+
+

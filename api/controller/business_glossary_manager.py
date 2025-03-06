@@ -169,4 +169,31 @@ class BusinessGlossaryManager:
             return True
         except Exception as e:
             print(f"Error loading glossary terms from YAML: {e}")
-            return False 
+            return False
+
+    def list_glossaries(self):
+        """
+        List all glossaries
+        
+        Returns:
+            list: A list of glossary objects
+        """
+        try:
+            # For now, we'll return a simple list with a default glossary
+            # This can be expanded later to support multiple glossaries
+            return [
+                {
+                    "id": "default",
+                    "name": "Enterprise Business Glossary",
+                    "description": "The main business glossary for the organization",
+                    "owner": "Data Governance Team",
+                    "domain": "Enterprise",
+                    "status": "active",
+                    "created_at": "2023-01-01T00:00:00Z",
+                    "updated_at": "2023-01-01T00:00:00Z",
+                    "term_count": len(self._terms)
+                }
+            ]
+        except Exception as e:
+            print(f"Error listing glossaries: {str(e)}")
+            raise 

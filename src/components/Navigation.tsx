@@ -11,13 +11,12 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CategoryIcon from '@mui/icons-material/Category';
-import StorageIcon from '@mui/icons-material/Storage';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SecurityIcon from '@mui/icons-material/Security';
 import SettingsIcon from '@mui/icons-material/Settings';
 import InfoIcon from '@mui/icons-material/Info';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import DataObjectIcon from '@mui/icons-material/DataObject';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
 function Navigation() {
   const location = useLocation();
@@ -27,9 +26,9 @@ function Navigation() {
     { text: 'Data Products', icon: <CategoryIcon />, path: '/data-products' },
     { text: 'Data Contracts', icon: <DescriptionIcon />, path: '/data-contracts' },
     { text: 'Business Glossary', icon: <MenuBookIcon />, path: '/business-glossary' },
-    { text: 'Master Data', icon: <DataObjectIcon />, path: '/master-data' },
-    { text: 'Catalog Commander', icon: <StorageIcon />, path: '/catalog-commander' },
+    { text: 'Master Data', icon: <CompareArrowsIcon />, path: '/master-data' },
     { text: 'Entitlements', icon: <SecurityIcon />, path: '/entitlements' },
+    { text: 'Catalog Commander', icon: <Inventory2OutlinedIcon />, path: '/catalog-commander' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     { text: 'About', icon: <InfoIcon />, path: '/about' },
   ];

@@ -234,10 +234,10 @@ function BusinessGlossariesView() {
 
   return (
     <Container maxWidth="xl">
-      <PageHeader
-        icon={<MenuBookIcon />}
-        title="Business Glossaries"
-        subtitle="Manage business terms and definitions"
+      <PageHeader 
+        title="Business Glossary"
+        subtitle="Manage business glossaries and data domains"
+        icon={<MenuBookIcon fontSize="large" />}
       />
       <Grid container spacing={2}>
         {/* Domain Selection and Actions */}

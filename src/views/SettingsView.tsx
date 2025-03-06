@@ -149,11 +149,11 @@ function SettingsView() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl">
       <PageHeader 
-        icon={<SettingsIcon />} 
-        title="Settings" 
-        subtitle="Configure application settings and background jobs" 
+        title="Settings"
+        subtitle="Configure application settings and background jobs"
+        icon={<SettingsIcon fontSize="large" />}
       />
       
       {error && (

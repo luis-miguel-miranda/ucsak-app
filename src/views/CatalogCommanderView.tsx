@@ -25,8 +25,8 @@ import CatalogIcon from '@mui/icons-material/Inventory2Outlined';
 import SchemaIcon from '@mui/icons-material/StorageOutlined';
 import TableIcon from '@mui/icons-material/TableChartOutlined';
 import ViewIcon from '@mui/icons-material/TableViewOutlined';
-import CommandIcon from '@mui/icons-material/Code';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import StorageIcon from '@mui/icons-material/Storage';
 import PageHeader from '../components/PageHeader';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
@@ -381,10 +381,10 @@ function CatalogCommanderView() {
 
   return (
     <Container maxWidth="xl">
-      <PageHeader
-        icon={<CommandIcon />}
+      <PageHeader 
         title="Catalog Commander"
-        subtitle="Advanced catalog management tools"
+        subtitle="Explore and manage your data catalog"
+        icon={<CatalogIcon fontSize="large" />}
       />
       <Grid container spacing={2}>
         {/* Command Buttons */}
