@@ -1,415 +1,229 @@
 contracts:
-  - name: "Customer Data Contract"
-    version: "1.0"
-    domain: "customer"
-    owner: "Data Governance Team"
-    description: "Contract for customer master data"
-    status: "published"
-    created: "2023-10-15T00:00:00Z"
-    updated: "2024-01-05T00:00:00Z"
-    validation_rules:
-      - "All customer IDs must be unique"
-      - "Email addresses must be valid"
-    datasets:
-      - name: "customer_data"
-        type: "table"
-        description: "Master customer data"
-        schema:
-          columns:
-            - name: "customer_id"
-              type: "STRING"
-              description: "Unique identifier for customer"
-              nullable: false
-              is_unique: true
-            - name: "full_name"
-              type: "STRING"
-              description: "Customer's full name"
-              nullable: false
-            - name: "email"
-              type: "STRING"
-              description: "Primary email address"
-              nullable: false
-          primary_key: ["customer_id"]
-          version: "1.0"
-        security:
-          classification: "CONFIDENTIAL"
-          pii_data: true
-          compliance_labels: ["GDPR", "CCPA"]
-        quality:
-          rules: ["completeness > 0.95", "accuracy > 0.9"]
-          scores:
-            completeness: 0.98
-            accuracy: 0.95
-          metrics:
-            record_count: 10000
-        lifecycle:
-          retention_period: "1 year"
-          update_frequency: "daily"
-          
-  - name: "Product Catalog Contract"
-    version: "1.0"
-    domain: "product"
-    owner: "Product Team"
-    description: "Contract for product information"
-    status: "published"
-    created: "2023-11-20T00:00:00Z"
-    updated: "2024-02-10T00:00:00Z"
-    validation_rules:
-      - "All product IDs must be unique"
-      - "Prices must be positive"
-    datasets:
-      - name: "product_catalog"
-        type: "table"
-        description: "Product catalog information"
-        schema:
-          columns:
-            - name: "product_id"
-              type: "STRING"
-              description: "Unique product identifier"
-              nullable: false
-              is_unique: true
-            - name: "name"
-              type: "STRING"
-              description: "Product name"
-              nullable: false
-            - name: "price"
-              type: "DOUBLE"
-              description: "Current price"
-              nullable: false
-          primary_key: ["product_id"]
-          version: "1.0"
-        security:
-          classification: "INTERNAL"
-          pii_data: false
-        quality:
-          rules: ["completeness > 0.95", "accuracy > 0.9"]
-          scores:
-            completeness: 0.98
-            accuracy: 0.95
-          metrics:
-            record_count: 5000
-        lifecycle:
-          retention_period: "1 year"
-          update_frequency: "daily"
-          
-  - id: "contract1"
-    name: "Customer Analytics Data Contract"
-    description: "Data contract between Customer 360 and Marketing Analytics"
-    status: "active"
-    version: "1.0"
-    created: "2024-01-20T00:00:00Z"
-    updated: "2024-02-05T00:00:00Z"
-    producer:
-      id: "product1"
-      name: "Customer 360"
-      team: "Customer Analytics Team"
-    consumer:
-      id: "team1"
-      name: "Marketing Analytics Team"
-      contact: "marketing-analytics@example.com"
-    data_sharing:
-      method: "database"
-      location: "s3://data-products/customer/profile"
-      format: "parquet"
-      frequency: "daily"
-    schema:
-      - name: "customer_id"
-        type: "string"
-        description: "Unique customer identifier"
-        required: true
-      - name: "full_name"
-        type: "string"
-        description: "Customer's full name"
-        required: true
-      - name: "email"
-        type: "string"
-        description: "Primary email address"
-        required: true
-      - name: "lifetime_value"
-        type: "decimal"
-        description: "Customer lifetime value"
-        required: false
-    sla:
-      availability: "99.9%"
-      freshness: "24 hours"
-      latency: "< 5 minutes"
-      
-  - id: "contract2"
-    name: "Product Recommendation API Contract"
-    description: "Data contract for the product recommendation service"
-    status: "deprecated"
-    version: "1.1"
-    created: "2023-08-30T00:00:00Z"
-    updated: "2024-03-15T00:00:00Z"
-    producer:
-      id: "product3"
-      name: "Product Recommendations"
-      team: "Data Science Team"
-    consumer:
-      id: "team2"
-      name: "E-commerce Team"
-      contact: "ecommerce@example.com"
-    data_sharing:
-      method: "api"
-      location: "https://api.example.com/recommendations"
-      format: "json"
-      frequency: "real-time"
-    schema:
-      - name: "customer_id"
-        type: "string"
-        description: "Customer identifier"
-        required: true
-      - name: "recommended_products"
-        type: "array"
-        description: "List of recommended product IDs"
-        required: true
-      - name: "confidence_score"
-        type: "float"
-        description: "Confidence score for recommendations"
-        required: true
-    sla:
-      availability: "99.99%"
-      freshness: "real-time"
-      latency: "< 200ms"
-      
-  - id: "contract3"
-    name: "Sales Data Integration Contract"
-    description: "Contract for sharing sales transaction data with Finance"
-    status: "draft"
-    version: "2.0"
-    created: "2024-03-01T00:00:00Z"
-    updated: "2024-03-01T00:00:00Z"
-    producer:
-      id: "product2"
-      name: "Sales Analytics"
-      team: "Sales Operations"
-    consumer:
-      id: "team3"
-      name: "Financial Planning Team"
-      contact: "finance-planning@example.com"
-    data_sharing:
-      method: "database"
-      location: "s3://data-products/sales/transactions"
-      format: "delta"
-      frequency: "hourly"
-    schema:
-      - name: "transaction_id"
-        type: "string"
-        description: "Unique transaction identifier"
-        required: true
-      - name: "customer_id"
-        type: "string"
-        description: "Customer identifier"
-        required: true
-      - name: "product_id"
-        type: "string"
-        description: "Product identifier"
-        required: true
-      - name: "amount"
-        type: "decimal"
-        description: "Transaction amount"
-        required: true
-      - name: "timestamp"
-        type: "timestamp"
-        description: "Transaction timestamp"
-        required: true
-    sla:
-      availability: "99.95%"
-      freshness: "1 hour"
-      latency: "< 10 minutes"
-      
-  - id: "contract4"
-    name: "Supply Chain Metrics Contract"
-    description: "Contract for sharing supply chain metrics with Operations"
-    status: "archived"
-    version: "1.0"
-    created: "2023-05-10T00:00:00Z"
-    updated: "2023-12-05T00:00:00Z"
-    producer:
-      id: "product4"
-      name: "Supply Chain Analytics"
-      team: "Supply Chain Team"
-    consumer:
-      id: "team4"
-      name: "Operations Management"
-      contact: "operations@example.com"
-    data_sharing:
-      method: "database"
-      location: "s3://data-products/supply-chain/metrics"
-      format: "csv"
-      frequency: "daily"
-    schema:
-      - name: "metric_id"
-        type: "string"
-        description: "Metric identifier"
-        required: true
-      - name: "metric_name"
-        type: "string"
-        description: "Name of the metric"
-        required: true
-      - name: "value"
-        type: "float"
-        description: "Metric value"
-        required: true
-      - name: "timestamp"
-        type: "timestamp"
-        description: "Measurement timestamp"
-        required: true
-      - name: "location_id"
-        type: "string"
-        description: "Facility location identifier"
-        required: true
-    sla:
-      availability: "99.5%"
-      freshness: "24 hours"
-      latency: "< 30 minutes"
-      
-  - id: "contract5"
-    name: "Customer Churn Prediction Contract"
-    description: "Contract for sharing churn prediction data with Customer Success"
-    status: "in-development"
-    version: "0.5"
-    created: "2024-02-15T00:00:00Z"
-    updated: "2024-03-10T00:00:00Z"
-    producer:
-      id: "product5"
-      name: "Customer Churn Model"
-      team: "Data Science Team"
-    consumer:
-      id: "team5"
-      name: "Customer Success Team"
-      contact: "customer-success@example.com"
-    data_sharing:
-      method: "api"
-      location: "https://api.example.com/churn-predictions"
-      format: "protobuf"
-      frequency: "daily"
-    schema:
-      - name: "customer_id"
-        type: "string"
-        description: "Customer identifier"
-        required: true
-      - name: "churn_probability"
-        type: "float"
-        description: "Probability of customer churning"
-        required: true
-      - name: "risk_factors"
-        type: "array"
-        description: "List of risk factors contributing to churn"
-        required: false
-      - name: "recommended_actions"
-        type: "array"
-        description: "Recommended retention actions"
-        required: false
-    sla:
-      availability: "99.0%"
-      freshness: "24 hours"
-      latency: "< 1 minute"
-      
-  - id: "contract6"
-    name: "Marketing Campaign Performance Contract"
-    description: "Contract for sharing marketing campaign performance data"
-    status: "published"
-    version: "1.2"
-    created: "2023-09-20T00:00:00Z"
-    updated: "2024-01-15T00:00:00Z"
-    producer:
-      id: "product6"
-      name: "Marketing Analytics"
-      team: "Marketing Team"
-    consumer:
-      id: "team6"
-      name: "Executive Leadership"
-      contact: "executives@example.com"
-    data_sharing:
-      method: "dashboard"
-      location: "https://dashboards.example.com/marketing-performance"
-      format: "tableau"
-      frequency: "daily"
-    schema:
-      - name: "campaign_id"
-        type: "string"
-        description: "Campaign identifier"
-        required: true
-      - name: "campaign_name"
-        type: "string"
-        description: "Campaign name"
-        required: true
-      - name: "channel"
-        type: "string"
-        description: "Marketing channel"
-        required: true
-      - name: "impressions"
-        type: "integer"
-        description: "Number of impressions"
-        required: true
-      - name: "clicks"
-        type: "integer"
-        description: "Number of clicks"
-        required: true
-      - name: "conversions"
-        type: "integer"
-        description: "Number of conversions"
-        required: true
-      - name: "spend"
-        type: "decimal"
-        description: "Campaign spend"
-        required: true
-      - name: "roi"
-        type: "float"
-        description: "Return on investment"
-        required: true
-    sla:
-      availability: "99.5%"
-      freshness: "24 hours"
-      latency: "< 15 minutes"
-      
-  - id: "contract7"
-    name: "IoT Sensor Data Contract"
-    description: "Contract for sharing IoT sensor data with Manufacturing"
-    status: "active"
-    version: "1.0"
-    created: "2023-11-25T00:00:00Z"
-    updated: "2024-02-20T00:00:00Z"
-    producer:
-      id: "product7"
-      name: "IoT Sensor Data"
-      team: "IoT Team"
-    consumer:
-      id: "team7"
-      name: "Manufacturing Team"
-      contact: "manufacturing@example.com"
-    data_sharing:
-      method: "streaming"
-      location: "kafka://iot-cluster:9092/sensor-data"
-      format: "avro"
-      frequency: "real-time"
-    schema:
-      - name: "device_id"
-        type: "string"
-        description: "Device identifier"
-        required: true
-      - name: "sensor_type"
-        type: "string"
-        description: "Type of sensor"
-        required: true
-      - name: "reading"
-        type: "float"
-        description: "Sensor reading value"
-        required: true
-      - name: "unit"
-        type: "string"
-        description: "Unit of measurement"
-        required: true
-      - name: "timestamp"
-        type: "timestamp"
-        description: "Reading timestamp"
-        required: true
-      - name: "location"
-        type: "object"
-        description: "Sensor location coordinates"
-        required: false
-    sla:
-      availability: "99.99%"
-      freshness: "real-time"
-      latency: "< 500ms" 
+- id: 1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p
+  name: Customer Data Contract
+  contract_text: "{\n  \"name\": \"Customer Data Contract\",\n  \"version\": \"1.0\"\
+    ,\n  \"domain\": \"customer\",\n  \"owner\": \"data.team@company.com\",\n  \"\
+    description\": \"Core customer data contract defining customer profile\",\n  \"\
+    datasets\": [\n    {\n      \"name\": \"customer_profile\",\n      \"type\": \"\
+    table\",\n      \"schema\": {\n        \"columns\": [\n          {\n         \
+    \   \"name\": \"customer_id\",\n            \"type\": \"string\",\n          \
+    \  \"description\": \"Unique customer identifier\",\n            \"nullable\"\
+    : false,\n            \"unique\": true\n          },\n          {\n          \
+    \  \"name\": \"email\",\n            \"type\": \"string\",\n            \"description\"\
+    : \"Customer email address\",\n            \"nullable\": false\n          }\n\
+    \        ],\n        \"primaryKey\": [\"customer_id\"]\n      }\n    }\n  ]\n\
+    }\n"
+  format: json
+  version: '1.0'
+  owner: data.team@company.com
+  description: Core customer data contract
+  status: active
+  created_at: '2023-06-15T10:30:00+00:00'
+  updated_at: '2024-01-01T08:15:00+00:00'
+- id: 2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q
+  name: Product Catalog Contract
+  contract_text: "name: Product Catalog Contract\nversion: 1.0\ndomain: product\n\
+    owner: product.team@company.com\ndescription: Product catalog and inventory data\n\
+    datasets:\n  - name: product_catalog\n    type: table\n    schema:\n      columns:\n\
+    \        - name: product_id\n          type: string\n          description: Unique\
+    \ product identifier\n          nullable: false\n          unique: true\n    \
+    \    - name: name\n          type: string\n          description: Product name\n\
+    \          nullable: false\n        - name: price\n          type: number\n  \
+    \        description: Current product price\n          nullable: false\n     \
+    \ primaryKey:\n        - product_id\n"
+  format: yaml
+  version: '1.0'
+  owner: product.team@company.com
+  description: Product catalog data contract
+  status: deprecated
+  created_at: '2023-03-20T14:45:00+00:00'
+  updated_at: '2024-02-28T16:20:00+00:00'
+- id: 3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r
+  name: Data Sharing Agreement
+  contract_text: 'DATA SHARING AGREEMENT
+
+
+    1. PARTIES
+
+    Data Provider: Analytics Team
+
+    Data Consumer: Marketing Team
+
+
+    2. PURPOSE
+
+    This agreement governs the sharing of customer analytics data
+
+    for marketing campaign optimization.
+
+
+    3. DATA ELEMENTS
+
+    - Customer Segment ID
+
+    - Engagement Score
+
+    - Last Purchase Date
+
+    - Product Categories
+
+
+    4. USAGE RESTRICTIONS
+
+    - Data must not be shared with external parties
+
+    - Personal identifiers must be masked
+
+    - Data must be deleted after 90 days
+
+
+    5. SECURITY REQUIREMENTS
+
+    - Data must be encrypted in transit and at rest
+
+    - Access limited to authorized marketing team members
+
+    - All access must be logged and auditable
+
+    '
+  format: text
+  version: '2.0'
+  owner: legal.team@company.com
+  description: Legal agreement for data sharing between teams
+  status: active
+  created_at: '2024-02-01T09:00:00+00:00'
+  updated_at: '2024-02-01T09:00:00+00:00'
+- id: 4d5e6f7g-8h9i-0j1k-2l3m-4n5o6p7q8r9s
+  name: IoT Device Data Contract
+  contract_text: "name: IoT Device Data Contract\nversion: 1.1\ndomain: iot\nowner:\
+    \ iot.team@company.com\ndescription: IoT device telemetry data specification\n\
+    sla:\n  freshness: 5 minutes\n  availability: 99.99%\nschema:\n  device_readings:\n\
+    \    columns:\n      - name: device_id\n        type: string\n        required:\
+    \ true\n      - name: timestamp\n        type: datetime\n        required: true\n\
+    \      - name: temperature\n        type: float\n        unit: celsius\n     \
+    \ - name: humidity\n        type: float\n        unit: percentage\n      - name:\
+    \ battery\n        type: integer\n        unit: percentage\n    partitionBy:\n\
+    \      - timestamp\n    clusterBy:\n      - device_id\n"
+  format: yaml
+  version: '1.1'
+  owner: iot.team@company.com
+  description: IoT device telemetry specification
+  status: active
+  created_at: '2023-08-15T11:30:00+00:00'
+  updated_at: '2024-03-10T15:45:00+00:00'
+- id: 5e6f7g8h-9i0j-1k2l-3m4n-5o6p7q8r9s0t
+  name: IoT Sensor Data Contract
+  contract_text: "{\n  \"name\": \"IoT Sensor Data Contract\",\n  \"version\": \"\
+    2.0\",\n  \"domain\": \"operations\",\n  \"owner\": \"iot.team@company.com\",\n\
+    \  \"description\": \"Real-time IoT sensor data from manufacturing floor\",\n\
+    \  \"datasets\": [\n    {\n      \"name\": \"sensor_readings\",\n      \"type\"\
+    : \"stream\",\n      \"description\": \"Real-time sensor measurements\",\n   \
+    \   \"schema\": {\n        \"columns\": [\n          {\n            \"name\":\
+    \ \"sensor_id\",\n            \"type\": \"string\",\n            \"description\"\
+    : \"Unique sensor identifier\",\n            \"nullable\": false\n          },\n\
+    \          {\n            \"name\": \"timestamp\",\n            \"type\": \"timestamp\"\
+    ,\n            \"description\": \"Reading timestamp\",\n            \"nullable\"\
+    : false\n          },\n          {\n            \"name\": \"temperature\",\n \
+    \           \"type\": \"number\",\n            \"description\": \"Temperature\
+    \ reading in Celsius\",\n            \"nullable\": false\n          },\n     \
+    \     {\n            \"name\": \"pressure\",\n            \"type\": \"number\"\
+    ,\n            \"description\": \"Pressure reading in kPa\",\n            \"nullable\"\
+    : false\n          }\n        ],\n        \"primaryKey\": [\"sensor_id\", \"timestamp\"\
+    ],\n        \"version\": \"2.0\"\n      },\n      \"security\": {\n        \"\
+    classification\": \"internal\",\n        \"containsPII\": false,\n        \"complianceLabels\"\
+    : [\"operational-data\"]\n      }\n    }\n  ],\n  \"sla\": {\n    \"latency\"\
+    : \"< 500ms\",\n    \"availability\": \"99.99%\"\n  }\n}\n"
+  format: json
+  version: '2.0'
+  owner: iot.team@company.com
+  description: Real-time IoT sensor data contract
+  status: archived
+  created_at: '2023-01-05T08:00:00+00:00'
+  updated_at: '2024-01-15T10:20:00+00:00'
+- id: 6f7g8h9i-0j1k-2l3m-4n5o-6p7q8r9s0t1u
+  name: Financial Transactions Contract
+  contract_text: "{\n  \"name\": \"Financial Transactions Contract\",\n  \"version\"\
+    : \"1.0\",\n  \"domain\": \"finance\",\n  \"owner\": \"finance.team@company.com\"\
+    ,\n  \"description\": \"Daily financial transaction data\",\n  \"datasets\": [\n\
+    \    {\n      \"name\": \"transactions\",\n      \"type\": \"table\",\n      \"\
+    description\": \"Financial transaction records\",\n      \"schema\": {\n     \
+    \   \"columns\": [\n          {\n            \"name\": \"transaction_id\",\n \
+    \           \"type\": \"string\",\n            \"description\": \"Unique transaction\
+    \ identifier\",\n            \"nullable\": false,\n            \"unique\": true\n\
+    \          },\n          {\n            \"name\": \"amount\",\n            \"\
+    type\": \"number\",\n            \"description\": \"Transaction amount\",\n  \
+    \          \"nullable\": false\n          },\n          {\n            \"name\"\
+    : \"currency\",\n            \"type\": \"string\",\n            \"description\"\
+    : \"Transaction currency code\",\n            \"nullable\": false\n          },\n\
+    \          {\n            \"name\": \"timestamp\",\n            \"type\": \"timestamp\"\
+    ,\n            \"description\": \"Transaction timestamp\",\n            \"nullable\"\
+    : false\n          }\n        ],\n        \"primaryKey\": [\"transaction_id\"\
+    ],\n        \"version\": \"1.0\"\n      },\n      \"security\": {\n        \"\
+    classification\": \"restricted\",\n        \"containsPII\": false,\n        \"\
+    complianceLabels\": [\"sox\", \"pci\"]\n      }\n    }\n  ]\n}\n"
+  format: json
+  version: '1.0'
+  owner: finance.team@company.com
+  description: Financial transaction data contract
+  status: draft
+  created_at: '2024-03-01T13:15:00+00:00'
+  updated_at: '2024-03-05T16:30:00+00:00'
+- id: 7g8h9i0j-1k2l-3m4n-5o6p-7q8r9s0t1u2v
+  name: Inventory Management Contract
+  contract_text: "{\n  \"name\": \"Inventory Management Contract\",\n  \"version\"\
+    : \"1.2\",\n  \"domain\": \"logistics\",\n  \"owner\": \"logistics.team@company.com\"\
+    ,\n  \"description\": \"Real-time inventory levels and movements\",\n  \"datasets\"\
+    : [\n    {\n      \"name\": \"inventory_levels\",\n      \"type\": \"table\",\n\
+    \      \"description\": \"Current inventory levels by location\",\n      \"schema\"\
+    : {\n        \"columns\": [\n          {\n            \"name\": \"product_id\"\
+    ,\n            \"type\": \"string\",\n            \"description\": \"Product identifier\"\
+    ,\n            \"nullable\": false\n          },\n          {\n            \"\
+    name\": \"location_id\",\n            \"type\": \"string\",\n            \"description\"\
+    : \"Warehouse location identifier\",\n            \"nullable\": false\n      \
+    \    },\n          {\n            \"name\": \"quantity\",\n            \"type\"\
+    : \"integer\",\n            \"description\": \"Current quantity in stock\",\n\
+    \            \"nullable\": false\n          },\n          {\n            \"name\"\
+    : \"last_updated\",\n            \"type\": \"timestamp\",\n            \"description\"\
+    : \"Last update timestamp\",\n            \"nullable\": false\n          }\n \
+    \       ],\n        \"primaryKey\": [\"product_id\", \"location_id\"],\n     \
+    \   \"version\": \"1.2\"\n      },\n      \"security\": {\n        \"classification\"\
+    : \"internal\",\n        \"containsPII\": false,\n        \"complianceLabels\"\
+    : [\"inventory-control\"]\n      }\n    }\n  ],\n  \"sla\": {\n    \"freshness\"\
+    : \"5 minutes\",\n    \"availability\": \"99.95%\"\n  }\n}\n"
+  format: json
+  version: '1.2'
+  owner: logistics.team@company.com
+  description: Inventory management data contract
+  status: deprecated
+  created_at: '2023-02-10T09:45:00+00:00'
+  updated_at: '2023-12-20T14:10:00+00:00'
+- id: 3d34ef21-626a-4ffc-80a3-ce5621d9b952
+  name: sample_odcs_v3.json
+  contract_text: "{\n  \"version\": \"1.0.0\",\n  \"kind\": \"DataContract\",\n  \"\
+    apiVersion\": \"v3.0.1\",\n  \"id\": \"sample-contract-123\",\n  \"name\": \"\
+    Sample Data Contract\",\n  \"tenant\": \"ExampleCorp\",\n  \"status\": \"active\"\
+    ,\n  \"servers\": [\n    {\n      \"server\": \"example-server\",\n      \"type\"\
+    : \"snowflake\",\n      \"account\": \"my_account\",\n      \"warehouse\": \"\
+    my_warehouse\",\n      \"database\": \"my_database\",\n      \"schema\": \"my_schema\"\
+    \n    }\n  ],\n  \"schema\": [\n    {\n      \"name\": \"user_id\",\n      \"\
+    description\": \"Unique identifier for users\",\n      \"dataType\": \"string\"\
+    ,\n      \"elementType\": \"attribute\",\n      \"required\": true\n    },\n \
+    \   {\n      \"name\": \"username\",\n      \"description\": \"User's display\
+    \ name\",\n      \"dataType\": \"string\",\n      \"elementType\": \"attribute\"\
+    ,\n      \"required\": true\n    },\n    {\n      \"name\": \"email\",\n     \
+    \ \"description\": \"User's email address\",\n      \"dataType\": \"string\",\n\
+    \      \"elementType\": \"attribute\",\n      \"format\": \"email\",\n      \"\
+    required\": true\n    }\n  ],\n  \"description\": {\n    \"usage\": \"This dataset\
+    \ contains user information for the ExampleCorp platform\",\n    \"purpose\":\
+    \ \"To provide a centralized source of user data for analytics and operations\"\
+    \n  },\n  \"team\": [\n    {\n      \"name\": \"Data Engineering Team\",\n   \
+    \   \"email\": \"data-eng@examplecorp.com\"\n    }\n  ],\n  \"support\": {\n \
+    \   \"email\": \"data-support@examplecorp.com\",\n    \"slackChannel\": \"#data-support\"\
+    \n  },\n  \"contractCreatedTs\": \"2025-03-06T15:28:00+01:00\"\n}\n"
+  format: json
+  version: '1.0'
+  owner: Unknown
+  description: Uploaded JSON contract
+  status: draft
+  created_at: '2025-03-07T15:35:47.387237'
+  updated_at: '2025-03-07T15:35:47.387243'

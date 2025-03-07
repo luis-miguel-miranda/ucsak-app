@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response
 from controller.data_contract_manager import DataContractManager, Metadata, DataType, SecurityClassification
 from datetime import datetime
 import os
@@ -24,13 +24,6 @@ if os.path.exists(yaml_path):
         logger.info(f"Successfully loaded data contracts from {yaml_path}")
     except Exception as e:
         logger.error(f"Error loading data contracts from YAML: {str(e)}")
-else:
-    try:
-        # Initialize with example data
-        contract_manager.initialize_example_data()
-        logger.info("Initialized example data contracts")
-    except Exception as e:
-        logger.error(f"Error initializing example data contracts: {str(e)}")
 
 
 @bp.route('/api/data-contracts', methods=['GET'])
@@ -42,18 +35,8 @@ def get_contracts():
         # Format the response to match what the frontend expects
         formatted_contracts = []
         for c in contracts:
-            formatted_contracts.append({
-                'id': c.id,
-                'name': c.name,
-                'description': c.metadata.business_description or f"Data contract for {c.name}",
-                'version': c.version,
-                'status': c.status.value,
-                'owner': c.metadata.owner,
-                'created': c.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                'updated': c.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                'format': 'JSON',  # Add format field
-                'dataProducts': []  # Add any related data products here
-            })
+            # Use the contract's to_dict() method which now includes all needed fields
+            formatted_contracts.append(c.to_dict())
         
         logger.info(f"Retrieved {len(formatted_contracts)} data contracts")
         return jsonify(formatted_contracts)
@@ -69,42 +52,14 @@ def get_contract(contract_id):
     try:
         contract = contract_manager.get_contract(contract_id)
         if not contract:
-            logger.warning(f"Data contract not found with ID: {contract_id}")
             return jsonify({"error": "Contract not found"}), 404
-        
-        # Format the response to match what the frontend expects
-        formatted_contract = {
-            'id': contract.id,
-            'name': contract.name,
-            'description': contract.metadata.business_description or f"Data contract for {contract.name}",
-            'version': contract.version,
-            'status': contract.status.value,
-            'owner': contract.metadata.owner,
-            'created': contract.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            'updated': contract.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            'format': 'JSON',  # Add format field
-            'schema': {
-                'fields': []
-            },
-            'dataProducts': []
-        }
-        
-        # Add fields from all datasets
-        for dataset in contract.datasets:
-            for column in dataset.schema.columns:
-                formatted_contract['schema']['fields'].append({
-                    'name': column.name,
-                    'type': column.data_type.value,
-                    'required': not column.nullable,
-                    'description': column.comment or ''
-                })
-        
-        logger.info(f"Retrieved data contract with ID: {contract_id}")
-        return jsonify(formatted_contract)
+
+        # Return full contract including contract_text
+        response = contract.to_dict()
+        response['contract_text'] = contract.contract_text
+        return jsonify(response)
     except Exception as e:
-        error_msg = f"Error retrieving data contract {contract_id}: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 @bp.route('/api/data-contracts', methods=['POST'])
@@ -112,43 +67,22 @@ def create_contract():
     """Create a new data contract"""
     try:
         data = request.json
-        logger.info(f"Creating new data contract: {data.get('name', 'New Contract')}")
-        
-        # Create metadata
-        metadata = Metadata(
-            domain=data.get('domain', 'default'),
-            owner=data.get('owner', 'Unknown'),
-            business_description=data.get('description', '')
-        )
-        
-        # Create contract (simplified)
         contract = contract_manager.create_contract(
-            name=data.get('name', 'New Contract'),
-            version=data.get('version', '1.0'),
-            metadata=metadata,
-            datasets=[],  # Would need to create datasets from schema
-            validation_rules=data.get('validationRules', [])
+            name=data['name'],
+            contract_text=data['contract_text'],
+            format=data.get('format', 'json'),  # Default to JSON if not specified
+            version=data['version'],
+            owner=data['owner'],
+            description=data.get('description')
         )
         
-        # Return formatted response
-        response = {
-            'id': contract.id,
-            'name': contract.name,
-            'description': metadata.business_description or '',
-            'version': contract.version,
-            'status': contract.status.value,
-            'owner': metadata.owner,
-            'format': 'JSON',  # Add format field
-            'created': contract.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            'updated': contract.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        }
+        # Save to YAML
+        yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
+        contract_manager.save_to_yaml(str(yaml_path))
         
-        logger.info(f"Successfully created data contract with ID: {contract.id}")
-        return jsonify(response), 201
+        return jsonify(contract.to_dict()), 201
     except Exception as e:
-        error_msg = f"Error creating data contract: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 @bp.route('/api/data-contracts/<contract_id>', methods=['PUT'])
@@ -163,37 +97,23 @@ def update_contract(contract_id):
         data = request.json
         logger.info(f"Updating data contract with ID: {contract_id}")
         
-        # Update metadata
-        metadata = Metadata(
-            domain=data.get('domain', contract.metadata.domain),
-            owner=data.get('owner', contract.metadata.owner),
-            business_description=data.get('description', contract.metadata.business_description)
-        )
-        
         # Update contract
         updated_contract = contract_manager.update_contract(
             contract_id=contract_id,
-            name=data.get('name', contract.name),
-            version=data.get('version', contract.version),
-            metadata=metadata,
-            status=data.get('status', contract.status.value)
+            name=data.get('name'),
+            contract_text=data.get('contract_text'),
+            format=data.get('format'),
+            version=data.get('version'),
+            owner=data.get('owner'),
+            description=data.get('description'),
+            status=data.get('status')
         )
         
-        # Return formatted response
-        response = {
-            'id': updated_contract.id,
-            'name': updated_contract.name,
-            'description': metadata.business_description or '',
-            'version': updated_contract.version,
-            'status': updated_contract.status.value,
-            'owner': metadata.owner,
-            'format': 'JSON',
-            'created': updated_contract.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            'updated': updated_contract.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        }
+        # Save to YAML
+        yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
+        contract_manager.save_to_yaml(str(yaml_path))
         
-        logger.info(f"Successfully updated data contract with ID: {contract_id}")
-        return jsonify(response)
+        return jsonify(updated_contract.to_dict())
     except Exception as e:
         error_msg = f"Error updating data contract {contract_id}: {str(e)}"
         logger.error(error_msg)
@@ -218,64 +138,63 @@ def delete_contract(contract_id):
         return jsonify({"error": error_msg}), 500
 
 
-@bp.route('/api/data-contracts/upload/odcs', methods=['POST'])
-def upload_odcs_contract():
-    """Upload an ODCS v3 formatted data contract"""
+@bp.route('/api/data-contracts/upload', methods=['POST'])
+def upload_contract():
+    """Upload a contract file"""
     try:
         if 'file' not in request.files:
             return jsonify({"error": "No file provided"}), 400
             
         file = request.files['file']
-        if not file.filename.endswith('.json'):
-            return jsonify({"error": "Only JSON files are supported"}), 400
+        content_type = file.content_type
+        filename = file.filename or ''
+        
+        # Determine format from content type or extension
+        format = 'json'  # default
+        if content_type == 'application/x-yaml' or filename.endswith(('.yaml', '.yml')):
+            format = 'yaml'
+        elif content_type.startswith('text/'):
+            format = 'text'
             
-        # Read and parse JSON
-        try:
-            contract_data = json.loads(file.read())
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid JSON file"}), 400
-            
-        # Validate ODCS v3 format
-        if not contract_manager.validate_odcs_format(contract_data):
-            return jsonify({"error": "Invalid ODCS v3 format"}), 400
-            
-        # Convert and create contract
-        contract = contract_manager.create_from_odcs(contract_data)
+        # Read file content
+        contract_text = file.read().decode('utf-8')
+        
+        # Create contract
+        contract = contract_manager.create_contract(
+            name=filename,
+            contract_text=contract_text,
+            format=format,
+            version='1.0',
+            owner='Unknown',
+            description=f"Uploaded {format.upper()} contract"
+        )
         
         # Save to YAML
-        try:
-            yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
-            contract_manager.save_to_yaml(str(yaml_path))
-        except Exception as e:
-            logger.warning(f"Could not save updated data to YAML: {str(e)}")
+        yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
+        contract_manager.save_to_yaml(str(yaml_path))
         
         return jsonify(contract.to_dict()), 201
-        
     except Exception as e:
-        error_msg = f"Error uploading contract: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@bp.route('/api/data-contracts/<contract_id>/export/odcs', methods=['GET'])
-def export_odcs_contract(contract_id):
-    """Export a data contract in ODCS v3 format"""
+@bp.route('/api/data-contracts/<contract_id>/export', methods=['GET'])
+def export_contract(contract_id):
+    """Export a contract as JSON"""
     try:
         contract = contract_manager.get_contract(contract_id)
         if not contract:
             return jsonify({"error": "Contract not found"}), 404
             
-        # Convert to ODCS format
-        odcs_data = contract_manager.to_odcs_format(contract)
-        
-        # Return as downloadable JSON
-        return jsonify(odcs_data), 200, {
-            'Content-Disposition': f'attachment; filename="{contract.name.lower().replace(" ", "_")}_odcs.json"'
-        }
+        return Response(
+            contract.contract_json,
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment; filename="{contract.name.lower().replace(" ", "_")}.json"'
+            }
+        )
     except Exception as e:
-        error_msg = f"Error exporting contract: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 def register_routes(app):

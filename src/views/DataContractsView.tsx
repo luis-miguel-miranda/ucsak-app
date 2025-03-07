@@ -23,6 +23,8 @@ import {
   Box,
   Chip,
   IconButton,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -33,7 +35,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';
 import PageHeader from '../components/PageHeader';
 import { DataContract } from '../types/DataContract';
-import DataContractUploadDialog from '../components/DataContractUploadDialog';
+import { useDropzone } from 'react-dropzone';
 
 function DataContractsView() {
   const [contracts, setContracts] = useState<DataContract[]>([]);
@@ -43,6 +45,22 @@ function DataContractsView() {
   const [selectedContract, setSelectedContract] = useState<DataContract | null>(null);
   const [openDetails, setOpenDetails] = useState(false);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
+
+  // New Contract Dialog State
+  const [name, setName] = useState('');
+  const [version, setVersion] = useState('1.0');
+  const [status, setStatus] = useState('draft');
+  const [owner, setOwner] = useState('');
+  const [description, setDescription] = useState('');
+  const [contractText, setContractText] = useState('');
+  const [newContractError, setNewContractError] = useState<string | null>(null);
+
+  // Upload Dialog State
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Add format to state
+  const [format, setFormat] = useState('json');
 
   useEffect(() => {
     fetchContracts();
@@ -95,9 +113,26 @@ function DataContractsView() {
     setOpenDialog(true);
   };
 
-  const handleEditContract = (contract: DataContract) => {
-    setSelectedContract(contract);
-    setOpenDialog(true);
+  const handleEditContract = async (contract: DataContract) => {
+    try {
+      // Fetch the full contract details including contract text
+      const response = await fetch(`/api/data-contracts/${contract.id}`);
+      if (!response.ok) throw new Error('Failed to fetch contract details');
+      const fullContract = await response.json();
+
+      // Set form values
+      setSelectedContract(fullContract);
+      setName(fullContract.name);
+      setVersion(fullContract.version);
+      setStatus(fullContract.status);
+      setOwner(fullContract.owner);
+      setDescription(fullContract.description || '');
+      setFormat(fullContract.format);
+      setContractText(fullContract.contract_text);
+      setOpenDialog(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load contract details');
+    }
   };
 
   const handleDeleteContract = async (id: string) => {
@@ -143,10 +178,133 @@ function DataContractsView() {
     }
   };
 
-  const handleViewDetails = (contract: DataContract) => {
-    setSelectedContract(contract);
-    setOpenDetails(true);
+  const handleViewDetails = async (contract: DataContract) => {
+    try {
+      // Fetch the full contract details including contract text
+      const response = await fetch(`/api/data-contracts/${contract.id}`);
+      if (!response.ok) throw new Error('Failed to fetch contract details');
+      const fullContract = await response.json();
+      
+      setSelectedContract(fullContract);
+      setOpenDetails(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load contract details');
+    }
   };
+
+  const handleSaveNewContract = () => {
+    try {
+      // Validate required fields
+      if (!name || !version || !owner || !contractText) {
+        setNewContractError('Please fill in all required fields');
+        return;
+      }
+
+      // Create contract object
+      const contract = {
+        name,
+        version,
+        status,
+        owner,
+        description,
+        contract_text: contractText,
+        format
+      };
+
+      if (selectedContract) {
+        // Update existing contract
+        fetch(`/api/data-contracts/${selectedContract.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(contract)
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to update contract');
+          return fetchContracts();
+        })
+        .then(() => handleCloseNewDialog())
+        .catch(err => setNewContractError(err.message));
+      } else {
+        // Create new contract
+        fetch('/api/data-contracts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(contract)
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to create contract');
+          return fetchContracts();
+        })
+        .then(() => handleCloseNewDialog())
+        .catch(err => setNewContractError(err.message));
+      }
+    } catch (err) {
+      setNewContractError(err instanceof Error ? err.message : 'Error saving contract');
+    }
+  };
+
+  const handleCloseNewDialog = () => {
+    setSelectedContract(null);
+    setName('');
+    setVersion('1.0');
+    setStatus('draft');
+    setOwner('');
+    setDescription('');
+    setFormat('json');
+    setContractText('');
+    setNewContractError(null);
+    setOpenDialog(false);
+  };
+
+  // Upload Dialog
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+
+    const file = acceptedFiles[0];
+    // Accept any text-based format
+    if (!file.type.startsWith('text/') && file.type !== 'application/json' && file.type !== 'application/x-yaml') {
+      setUploadError('Please upload a text file (JSON, YAML, etc)');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/data-contracts/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload contract');
+      }
+
+      await fetchContracts();
+      setOpenUploadDialog(false);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload contract');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'text/*': ['.json', '.yaml', '.yml', '.txt'],
+      'application/json': ['.json'],
+      'application/x-yaml': ['.yaml', '.yml']
+    },
+    multiple: false
+  });
 
   if (loading) return <Typography>Loading contracts...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;
@@ -162,7 +320,7 @@ function DataContractsView() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={handleCreateContract}
+          onClick={() => setOpenDialog(true)}
         >
           New Contract
         </Button>
@@ -171,7 +329,7 @@ function DataContractsView() {
           startIcon={<UploadIcon />}
           onClick={() => setOpenUploadDialog(true)}
         >
-          Upload ODCS Contract
+          Upload Contract
         </Button>
       </Box>
       <Grid container spacing={2}>
@@ -227,78 +385,131 @@ function DataContractsView() {
       </Grid>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-        <form onSubmit={handleSaveContract}>
-          <DialogTitle>
-            {selectedContract ? 'Edit Contract' : 'Create Contract'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Dialog open={openDialog} onClose={handleCloseNewDialog} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedContract ? 'Edit Data Contract' : 'Create New Data Contract'}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            {newContractError && (
+              <Alert severity="error" onClose={() => setNewContractError(null)}>
+                {newContractError}
+              </Alert>
+            )}
+
+            <TextField
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              fullWidth
+            />
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                name="name"
-                label="Contract Name"
-                defaultValue={selectedContract?.name}
+                label="Version"
+                value={version}
+                onChange={(e) => setVersion(e.target.value)}
                 required
-                fullWidth
+                sx={{ width: '30%' }}
               />
+
               <TextField
-                name="description"
-                label="Description"
-                defaultValue={selectedContract?.description}
-                multiline
-                rows={3}
-                fullWidth
-              />
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    name="version"
-                    label="Schema Version"
-                    defaultValue={selectedContract?.version}
-                    required
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Data Format</InputLabel>
-                    <Select
-                      name="format"
-                      defaultValue={selectedContract?.format || 'delta'}
-                      label="Data Format"
-                      required
-                    >
-                      <MenuItem value="delta">Delta</MenuItem>
-                      <MenuItem value="parquet">Parquet</MenuItem>
-                      <MenuItem value="csv">CSV</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-              <TextField
-                name="schema_definition"
-                label="Schema Definition (JSON)"
-                defaultValue={JSON.stringify(selectedContract?.schema || { fields: [] }, null, 2)}
-                multiline
-                rows={6}
+                select
+                label="Format"
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
                 required
-                fullWidth
-              />
+                sx={{ width: '30%' }}
+              >
+                <MenuItem value="json">JSON</MenuItem>
+                <MenuItem value="yaml">YAML</MenuItem>
+                <MenuItem value="text">Plain Text</MenuItem>
+              </TextField>
+
               <TextField
-                name="validation_rules"
-                label="Validation Rules (One per line)"
-                defaultValue={selectedContract?.validation_rules?.join('\n')}
-                multiline
-                rows={4}
-                fullWidth
-              />
+                select
+                label="Status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                required
+                sx={{ width: '40%' }}
+              >
+                <MenuItem value="draft">Draft</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="deprecated">Deprecated</MenuItem>
+                <MenuItem value="archived">Archived</MenuItem>
+              </TextField>
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Save</Button>
-          </DialogActions>
-        </form>
+
+            <TextField
+              label="Owner"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              required
+              fullWidth
+            />
+
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              multiline
+              rows={2}
+              fullWidth
+            />
+
+            <TextField
+              label="Contract Definition"
+              value={contractText}
+              onChange={(e) => setContractText(e.target.value)}
+              multiline
+              rows={15}
+              required
+              fullWidth
+              placeholder={format === 'yaml' ? 
+                `# Example contract in YAML format
+name: Example Contract
+version: 1.0
+domain: example
+datasets:
+  - name: example_dataset
+    type: table
+    schema:
+      columns:
+        - name: id
+          type: string
+          description: Primary identifier` :
+                format === 'json' ?
+                `{
+  "name": "Example Contract",
+  "version": "1.0",
+  "domain": "example",
+  "datasets": [
+    {
+      "name": "example_dataset",
+      "type": "table",
+      "schema": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "string",
+            "description": "Primary identifier"
+          }
+        ]
+      }
+    }
+  ]
+}` : 
+                '# Enter your contract definition here'
+              }
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewDialog}>Cancel</Button>
+          <Button onClick={handleSaveNewContract} variant="contained">
+            {selectedContract ? 'Update Contract' : 'Create Contract'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Details Dialog */}
@@ -313,11 +524,12 @@ function DataContractsView() {
               </Typography>
 
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={12} md={4}>
                   <Typography variant="subtitle2">Basic Information</Typography>
                   <Typography variant="body2">Version: {selectedContract.version}</Typography>
                   <Typography variant="body2">Format: {selectedContract.format}</Typography>
                   <Typography variant="body2">Status: {selectedContract.status}</Typography>
+                  <Typography variant="body2">Owner: {selectedContract.owner}</Typography>
                   <Typography variant="body2">
                     Created: {new Date(selectedContract.created).toLocaleString()}
                   </Typography>
@@ -326,45 +538,22 @@ function DataContractsView() {
                   </Typography>
                 </Grid>
                 
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">Schema</Typography>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Column</TableCell>
-                          <TableCell>Type</TableCell>
-                          <TableCell>Nullable</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedContract.schema?.fields.map((col, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell>{col.name}</TableCell>
-                            <TableCell>{col.type}</TableCell>
-                            <TableCell>{!col.required ? 'Yes' : 'No'}</TableCell>
-                          </TableRow>
-                        )) || (
-                          <TableRow>
-                            <TableCell colSpan={3}>
-                              <Typography align="center" color="text.secondary">
-                                No schema fields defined
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Validation Rules</Typography>
-                  {selectedContract.validation_rules?.map((rule, idx) => (
-                    <Typography key={idx} variant="body2">• {rule}</Typography>
-                  )) || (
-                    <Typography color="text.secondary">No validation rules defined</Typography>
-                  )}
+                <Grid item xs={12} md={8}>
+                  <Typography variant="subtitle2">Contract Definition</Typography>
+                  <Paper 
+                    variant="outlined" 
+                    sx={{ 
+                      p: 2, 
+                      mt: 1,
+                      maxHeight: '400px',
+                      overflow: 'auto',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {selectedContract.contract_text}
+                  </Paper>
                 </Grid>
               </Grid>
             </Box>
@@ -374,22 +563,78 @@ function DataContractsView() {
           <Button
             onClick={() => {
               if (selectedContract) {
-                window.location.href = `/api/data-contracts/${selectedContract.id}/export/odcs`;
+                const blob = new Blob([selectedContract.contract_text], { 
+                  type: selectedContract.format === 'json' 
+                    ? 'application/json' 
+                    : selectedContract.format === 'yaml'
+                    ? 'application/x-yaml'
+                    : 'text/plain' 
+                });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${selectedContract.name.toLowerCase().replace(/\s+/g, '_')}.${
+                  selectedContract.format === 'yaml' ? 'yaml' : 
+                  selectedContract.format === 'json' ? 'json' : 'txt'
+                }`;
+                a.click();
+                window.URL.revokeObjectURL(url);
               }
             }}
             startIcon={<DownloadIcon />}
           >
-            Export ODCS
+            Download Contract
           </Button>
           <Button onClick={() => setOpenDetails(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 
-      <DataContractUploadDialog
-        open={openUploadDialog}
-        onClose={() => setOpenUploadDialog(false)}
-        onUploadSuccess={fetchContracts}
-      />
+      {/* Upload Dialog */}
+      <Dialog open={openUploadDialog} onClose={() => setOpenUploadDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Upload Data Contract</DialogTitle>
+        <DialogContent>
+          {uploadError && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setUploadError(null)}>
+              {uploadError}
+            </Alert>
+          )}
+          
+          <Box
+            {...getRootProps()}
+            sx={{
+              border: '2px dashed',
+              borderColor: isDragActive ? 'primary.main' : 'grey.300',
+              borderRadius: 1,
+              p: 3,
+              textAlign: 'center',
+              cursor: 'pointer',
+              bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+              '&:hover': {
+                bgcolor: 'action.hover'
+              }
+            }}
+          >
+            <input {...getInputProps()} />
+            {uploading ? (
+              <CircularProgress size={24} />
+            ) : (
+              <>
+                <Typography variant="body1" gutterBottom>
+                  {isDragActive
+                    ? 'Drop the file here'
+                    : 'Drag and drop a contract file here, or click to select'}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Supported formats: JSON, YAML, or plain text
+                </Typography>
+              </>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenUploadDialog(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
