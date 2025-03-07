@@ -29,8 +29,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import DescriptionIcon from '@mui/icons-material/Description';
+import UploadIcon from '@mui/icons-material/Upload';
+import DownloadIcon from '@mui/icons-material/Download';
 import PageHeader from '../components/PageHeader';
 import { DataContract } from '../types/DataContract';
+import DataContractUploadDialog from '../components/DataContractUploadDialog';
 
 function DataContractsView() {
   const [contracts, setContracts] = useState<DataContract[]>([]);
@@ -39,6 +42,7 @@ function DataContractsView() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedContract, setSelectedContract] = useState<DataContract | null>(null);
   const [openDetails, setOpenDetails] = useState(false);
+  const [openUploadDialog, setOpenUploadDialog] = useState(false);
 
   useEffect(() => {
     fetchContracts();
@@ -151,21 +155,26 @@ function DataContractsView() {
     <Container maxWidth="xl">
       <PageHeader
         title="Data Contracts"
-        subtitle="Create and manage data contracts between producers and consumers"
+        subtitle="Manage data contracts and their specifications"
         icon={<DescriptionIcon fontSize="large" />}
       />
+      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleCreateContract}
+        >
+          New Contract
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<UploadIcon />}
+          onClick={() => setOpenUploadDialog(true)}
+        >
+          Upload ODCS Contract
+        </Button>
+      </Box>
       <Grid container spacing={2}>
-        <Grid item xs={12} sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4">Data Contracts</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreateContract}
-          >
-            Create Contract
-          </Button>
-        </Grid>
-
         <Grid item xs={12}>
           <TableContainer component={Paper}>
             <Table>
@@ -362,9 +371,25 @@ function DataContractsView() {
           )}
         </DialogContent>
         <DialogActions>
+          <Button
+            onClick={() => {
+              if (selectedContract) {
+                window.location.href = `/api/data-contracts/${selectedContract.id}/export/odcs`;
+              }
+            }}
+            startIcon={<DownloadIcon />}
+          >
+            Export ODCS
+          </Button>
           <Button onClick={() => setOpenDetails(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <DataContractUploadDialog
+        open={openUploadDialog}
+        onClose={() => setOpenUploadDialog(false)}
+        onUploadSuccess={fetchContracts}
+      />
     </Container>
   );
 }

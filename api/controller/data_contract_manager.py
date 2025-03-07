@@ -552,3 +552,192 @@ class DataContractManager:
         except Exception as e:
             print(f"Error loading YAML data: {e}")
             return False
+
+    def validate_odcs_format(self, data: Dict) -> bool:
+        """Validate if the data follows ODCS v3 format"""
+        required_fields = ['name', 'version', 'datasets']
+        if not all(field in data for field in required_fields):
+            return False
+        
+        # Add more validation as needed
+        return True
+
+    def create_from_odcs(self, data: Dict) -> DataContract:
+        """Create a data contract from ODCS v3 format"""
+        # Convert ODCS metadata
+        metadata = Metadata(
+            domain=data.get('domain', 'default'),
+            owner=data.get('owner', 'Unknown'),
+            tags=data.get('tags', {}),
+            business_description=data.get('description', '')
+        )
+        
+        # Convert ODCS datasets
+        datasets = []
+        for ds_data in data.get('datasets', []):
+            # Convert schema
+            columns = []
+            for col in ds_data.get('schema', {}).get('columns', []):
+                columns.append(ColumnDefinition(
+                    name=col['name'],
+                    data_type=self._map_odcs_type(col['type']),
+                    comment=col.get('description', ''),
+                    nullable=col.get('nullable', True),
+                    is_unique=col.get('unique', False)
+                ))
+            
+            schema = DatasetSchema(
+                columns=columns,
+                primary_key=ds_data.get('schema', {}).get('primaryKey', []),
+                version=ds_data.get('version', '1.0')
+            )
+            
+            # Convert quality rules
+            quality = Quality(
+                rules=ds_data.get('quality', {}).get('rules', []),
+                scores=ds_data.get('quality', {}).get('scores', {}),
+                metrics=ds_data.get('quality', {}).get('metrics', {})
+            )
+            
+            # Convert security
+            security = Security(
+                classification=self._map_odcs_classification(
+                    ds_data.get('security', {}).get('classification', 'INTERNAL')
+                ),
+                pii_data=ds_data.get('security', {}).get('containsPII', False),
+                compliance_labels=ds_data.get('security', {}).get('complianceLabels', [])
+            )
+            
+            # Create dataset
+            datasets.append(Dataset(
+                name=ds_data['name'],
+                type=ds_data.get('type', 'table'),
+                schema=schema,
+                metadata=metadata,
+                quality=quality,
+                security=security,
+                lifecycle=DatasetLifecycle(),
+                description=ds_data.get('description', '')
+            ))
+        
+        # Create and return contract
+        return self.create_contract(
+            name=data['name'],
+            version=data['version'],
+            metadata=metadata,
+            datasets=datasets,
+            validation_rules=data.get('validationRules', []),
+            effective_from=self._parse_odcs_date(data.get('effectiveFrom')),
+            effective_until=self._parse_odcs_date(data.get('effectiveUntil')),
+            terms_and_conditions=data.get('termsAndConditions', '')
+        )
+
+    def _map_odcs_type(self, odcs_type: str) -> DataType:
+        """Map ODCS data types to internal types"""
+        type_mapping = {
+            'string': DataType.STRING,
+            'integer': DataType.INTEGER,
+            'number': DataType.DOUBLE,
+            'boolean': DataType.BOOLEAN,
+            'date': DataType.DATE,
+            'timestamp': DataType.TIMESTAMP
+        }
+        return type_mapping.get(odcs_type.lower(), DataType.STRING)
+
+    def _map_odcs_classification(self, classification: str) -> SecurityClassification:
+        """Map ODCS security classifications"""
+        class_mapping = {
+            'public': SecurityClassification.PUBLIC,
+            'internal': SecurityClassification.INTERNAL,
+            'confidential': SecurityClassification.CONFIDENTIAL,
+            'restricted': SecurityClassification.RESTRICTED
+        }
+        return class_mapping.get(classification.lower(), SecurityClassification.INTERNAL)
+
+    def _parse_odcs_date(self, date_str: Optional[str]) -> Optional[datetime]:
+        """Parse ODCS date format"""
+        if not date_str:
+            return None
+        try:
+            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except ValueError:
+            return None
+
+    def to_odcs_format(self, contract: DataContract) -> Dict:
+        """Convert a data contract to ODCS v3 format"""
+        
+        def map_type_to_odcs(data_type: DataType) -> str:
+            """Reverse mapping of data types to ODCS format"""
+            mapping = {
+                DataType.STRING: 'string',
+                DataType.INTEGER: 'integer',
+                DataType.DOUBLE: 'number',
+                DataType.BOOLEAN: 'boolean',
+                DataType.DATE: 'date',
+                DataType.TIMESTAMP: 'timestamp'
+            }
+            return mapping.get(data_type, 'string')
+        
+        def map_classification_to_odcs(classification: SecurityClassification) -> str:
+            """Reverse mapping of security classifications to ODCS format"""
+            mapping = {
+                SecurityClassification.PUBLIC: 'public',
+                SecurityClassification.INTERNAL: 'internal',
+                SecurityClassification.CONFIDENTIAL: 'confidential',
+                SecurityClassification.RESTRICTED: 'restricted'
+            }
+            return mapping.get(classification, 'internal')
+        
+        # Convert datasets
+        datasets = []
+        for ds in contract.datasets:
+            # Convert columns to ODCS schema
+            columns = []
+            for col in ds.schema.columns:
+                columns.append({
+                    'name': col.name,
+                    'type': map_type_to_odcs(col.data_type),
+                    'description': col.comment,
+                    'nullable': col.nullable,
+                    'unique': col.is_unique,
+                    'tags': col.tags
+                })
+            
+            datasets.append({
+                'name': ds.name,
+                'type': ds.type,
+                'description': ds.description,
+                'schema': {
+                    'columns': columns,
+                    'primaryKey': ds.schema.primary_key,
+                    'version': ds.schema.version
+                },
+                'quality': {
+                    'rules': ds.quality.rules,
+                    'scores': ds.quality.scores,
+                    'metrics': ds.quality.metrics
+                },
+                'security': {
+                    'classification': map_classification_to_odcs(ds.security.classification),
+                    'containsPII': ds.security.pii_data,
+                    'complianceLabels': ds.security.compliance_labels
+                }
+            })
+        
+        # Build ODCS contract
+        return {
+            'name': contract.name,
+            'version': contract.version,
+            'status': contract.status.value,
+            'description': contract.metadata.business_description,
+            'owner': contract.metadata.owner,
+            'domain': contract.metadata.domain,
+            'tags': contract.metadata.tags,
+            'datasets': datasets,
+            'validationRules': contract.validation_rules,
+            'effectiveFrom': contract.effective_from.isoformat() + 'Z' if contract.effective_from else None,
+            'effectiveUntil': contract.effective_until.isoformat() + 'Z' if contract.effective_until else None,
+            'termsAndConditions': contract.terms_and_conditions,
+            'created': contract.created_at.isoformat() + 'Z',
+            'updated': contract.updated_at.isoformat() + 'Z'
+        }

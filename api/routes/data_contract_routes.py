@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import logging
 from pathlib import Path
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -213,6 +214,66 @@ def delete_contract(contract_id):
         return '', 204
     except Exception as e:
         error_msg = f"Error deleting data contract {contract_id}: {str(e)}"
+        logger.error(error_msg)
+        return jsonify({"error": error_msg}), 500
+
+
+@bp.route('/api/data-contracts/upload/odcs', methods=['POST'])
+def upload_odcs_contract():
+    """Upload an ODCS v3 formatted data contract"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+            
+        file = request.files['file']
+        if not file.filename.endswith('.json'):
+            return jsonify({"error": "Only JSON files are supported"}), 400
+            
+        # Read and parse JSON
+        try:
+            contract_data = json.loads(file.read())
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid JSON file"}), 400
+            
+        # Validate ODCS v3 format
+        if not contract_manager.validate_odcs_format(contract_data):
+            return jsonify({"error": "Invalid ODCS v3 format"}), 400
+            
+        # Convert and create contract
+        contract = contract_manager.create_from_odcs(contract_data)
+        
+        # Save to YAML
+        try:
+            yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
+            contract_manager.save_to_yaml(str(yaml_path))
+        except Exception as e:
+            logger.warning(f"Could not save updated data to YAML: {str(e)}")
+        
+        return jsonify(contract.to_dict()), 201
+        
+    except Exception as e:
+        error_msg = f"Error uploading contract: {str(e)}"
+        logger.error(error_msg)
+        return jsonify({"error": error_msg}), 500
+
+
+@bp.route('/api/data-contracts/<contract_id>/export/odcs', methods=['GET'])
+def export_odcs_contract(contract_id):
+    """Export a data contract in ODCS v3 format"""
+    try:
+        contract = contract_manager.get_contract(contract_id)
+        if not contract:
+            return jsonify({"error": "Contract not found"}), 404
+            
+        # Convert to ODCS format
+        odcs_data = contract_manager.to_odcs_format(contract)
+        
+        # Return as downloadable JSON
+        return jsonify(odcs_data), 200, {
+            'Content-Disposition': f'attachment; filename="{contract.name.lower().replace(" ", "_")}_odcs.json"'
+        }
+    except Exception as e:
+        error_msg = f"Error exporting contract: {str(e)}"
         logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
 
