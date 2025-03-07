@@ -26,7 +26,6 @@ import SchemaIcon from '@mui/icons-material/StorageOutlined';
 import TableIcon from '@mui/icons-material/TableChartOutlined';
 import ViewIcon from '@mui/icons-material/TableViewOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import StorageIcon from '@mui/icons-material/Storage';
 import PageHeader from '../components/PageHeader';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';

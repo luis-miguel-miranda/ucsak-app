@@ -29,7 +29,6 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import StorageIcon from '@mui/icons-material/Storage';
 import CategoryIcon from '@mui/icons-material/Category';
 import PageHeader from '../components/PageHeader';
 import { DataProduct, ProductStatus, ProductType } from '../types/DataProduct';
