@@ -423,4 +423,12 @@ class BusinessGlossaryManager:
             return None
         except Exception as e:
             logger.error(f"Error updating glossary {glossary_id}: {str(e)}")
-            raise 
+            raise
+
+    def get_counts(self):
+        """Get counts of glossaries and terms"""
+        total_terms = sum(len(glossary.terms) for glossary in self.glossaries.values())
+        return {
+            'glossaries': len(self.glossaries),
+            'terms': total_terms
+        } 

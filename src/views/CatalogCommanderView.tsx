@@ -4,8 +4,6 @@ import {
   Paper,
   Grid,
   Typography,
-  ButtonGroup,
-  Button,
   Divider,
   Dialog,
   DialogTitle,
@@ -30,6 +28,7 @@ import PageHeader from '../components/PageHeader';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { TreeItem2, TreeItem2Props } from '@mui/x-tree-view/TreeItem2';
+import { Button, ButtonGroup, TransferButtonGroup } from '../components/Button';
 
 type CatalogItem = {
   id: string;
@@ -299,7 +298,7 @@ function CatalogCommanderView() {
   };
 
   const renderActions = () => (
-    <>
+    <ButtonGroup>
       <Button
         startIcon={<VisibilityIcon />}
         onClick={() => handleViewDataset(getSelectedNodeDetails()?.id || '')}
@@ -332,7 +331,7 @@ function CatalogCommanderView() {
       >
         Info
       </Button>
-    </>
+    </ButtonGroup>
   );
 
   // Add the dataset viewer dialog
@@ -408,30 +407,14 @@ function CatalogCommanderView() {
 
         {/* Transfer Controls */}
         <Grid item xs="auto" sx={{ display: 'flex', alignItems: 'center' }}>
-          <ButtonGroup
+          <TransferButtonGroup
             orientation="vertical"
             variant="contained"
             sx={{ mt: -4 }}
           >
-            <Button
-              onClick={(e) => {
-                const operation = e.shiftKey ? 'move' : 'copy';
-                handleOperation(operation);
-              }}
-              title="Click to copy, Shift+Click to move"
-            >
-              →
-            </Button>
-            <Button
-              onClick={(e) => {
-                const operation = e.shiftKey ? 'move' : 'copy';
-                handleOperation(operation);
-              }}
-              title="Click to copy, Shift+Click to move"
-            >
-              ←
-            </Button>
-          </ButtonGroup>
+            <Button>→</Button>
+            <Button>←</Button>
+          </TransferButtonGroup>
         </Grid>
 
         <Grid item xs={true}>

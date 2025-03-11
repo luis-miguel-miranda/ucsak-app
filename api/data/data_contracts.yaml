@@ -227,3 +227,33 @@ contracts:
   status: draft
   created_at: '2025-03-07T15:35:47.387237'
   updated_at: '2025-03-07T15:35:47.387243'
+- id: 82eb4305-2014-4117-8c8e-164ed35dd679
+  name: sample_odcs_v3.json
+  contract_text: "{\n  \"version\": \"1.0.0\",\n  \"kind\": \"DataContract\",\n  \"\
+    apiVersion\": \"v3.0.1\",\n  \"id\": \"sample-contract-123\",\n  \"name\": \"\
+    Sample Data Contract\",\n  \"tenant\": \"ExampleCorp\",\n  \"status\": \"active\"\
+    ,\n  \"servers\": [\n    {\n      \"server\": \"example-server\",\n      \"type\"\
+    : \"snowflake\",\n      \"account\": \"my_account\",\n      \"warehouse\": \"\
+    my_warehouse\",\n      \"database\": \"my_database\",\n      \"schema\": \"my_schema\"\
+    \n    }\n  ],\n  \"schema\": [\n    {\n      \"name\": \"user_id\",\n      \"\
+    description\": \"Unique identifier for users\",\n      \"dataType\": \"string\"\
+    ,\n      \"elementType\": \"attribute\",\n      \"required\": true\n    },\n \
+    \   {\n      \"name\": \"username\",\n      \"description\": \"User's display\
+    \ name\",\n      \"dataType\": \"string\",\n      \"elementType\": \"attribute\"\
+    ,\n      \"required\": true\n    },\n    {\n      \"name\": \"email\",\n     \
+    \ \"description\": \"User's email address\",\n      \"dataType\": \"string\",\n\
+    \      \"elementType\": \"attribute\",\n      \"format\": \"email\",\n      \"\
+    required\": true\n    }\n  ],\n  \"description\": {\n    \"usage\": \"This dataset\
+    \ contains user information for the ExampleCorp platform\",\n    \"purpose\":\
+    \ \"To provide a centralized source of user data for analytics and operations\"\
+    \n  },\n  \"team\": [\n    {\n      \"name\": \"Data Engineering Team\",\n   \
+    \   \"email\": \"data-eng@examplecorp.com\"\n    }\n  ],\n  \"support\": {\n \
+    \   \"email\": \"data-support@examplecorp.com\",\n    \"slackChannel\": \"#data-support\"\
+    \n  },\n  \"contractCreatedTs\": \"2025-03-06T15:28:00+01:00\"\n}\n"
+  format: json
+  version: '1.0'
+  owner: Unknown
+  description: Uploaded JSON contract
+  status: draft
+  created_at: '2025-03-10T14:26:49.312792'
+  updated_at: '2025-03-10T14:26:49.312823'

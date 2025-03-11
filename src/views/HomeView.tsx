@@ -11,6 +11,7 @@ import {
   Box,
   Divider,
   CircularProgress,
+  Paper,
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -21,11 +22,12 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
+
 function HomeView() {
   const [stats, setStats] = useState({
     dataContracts: { count: 0, loading: true, error: null },
     dataProducts: { count: 0, loading: true, error: null },
-    glossaries: { count: 0, loading: true, error: null },
+    glossaries: { count: { glossaries: 0, terms: 0 }, loading: true, error: null },
     personas: { count: 0, loading: true, error: null },
   });
 
@@ -65,19 +67,19 @@ function HomeView() {
       });
 
     // Fetch glossaries count
-    fetch('/api/business-glossary/glossaries')
+    fetch('/api/business-glossaries/counts')
       .then(response => response.json())
       .then(data => {
         setStats(prev => ({
           ...prev,
-          glossaries: { count: data.length, loading: false, error: null }
+          glossaries: { count: { glossaries: data.glossaries, terms: data.terms }, loading: false, error: null }
         }));
       })
       .catch(error => {
         console.error('Error fetching glossaries:', error);
         setStats(prev => ({
           ...prev,
-          glossaries: { count: 0, loading: false, error: error.message }
+          glossaries: { count: { glossaries: 0, terms: 0 }, loading: false, error: error.message }
         }));
       });
 
@@ -152,29 +154,29 @@ function HomeView() {
 
   const summaryTiles = [
     {
-      title: 'Data Products',
-      value: stats.dataProducts.count,
+      title: ['Data Products'],
+      value: [stats.dataProducts.count],
       loading: stats.dataProducts.loading,
       error: stats.dataProducts.error,
       link: '/data-products',
     },
     {
-      title: 'Data Contracts',
-      value: stats.dataContracts.count,
+      title: ['Data Contracts'],
+      value: [stats.dataContracts.count],
       loading: stats.dataContracts.loading,
       error: stats.dataContracts.error,
       link: '/data-contracts',
     },
     {
-      title: 'Glossaries',
-      value: stats.glossaries.count,
+      title: ['Glossaries', 'Terms'],
+      value: [stats.glossaries.count.glossaries, stats.glossaries.count.terms],
       loading: stats.glossaries.loading,
       error: stats.glossaries.error,
       link: '/business-glossary',
     },
     {
-      title: 'Personas',
-      value: stats.personas.count,
+      title: ['Personas'],
+      value: [stats.personas.count],
       loading: stats.personas.loading,
       error: stats.personas.error,
       link: '/entitlements',
@@ -198,11 +200,11 @@ function HomeView() {
       </Typography>
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {summaryTiles.map((tile) => (
-          <Grid item xs={12} sm={6} md={3} key={tile.title}>
-            <Card 
-              sx={{ 
-                height: '100%', 
-                display: 'flex', 
+          <Grid item xs={12} sm={6} md={3} key={tile.title[0]}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: '#f5f5f5',
                 '&:hover': {
@@ -214,9 +216,6 @@ function HomeView() {
               style={{ textDecoration: 'none' }}
             >
               <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
-                <Typography variant="h6" component="div" color="text.secondary">
-                  {tile.title}
-                </Typography>
                 {tile.loading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                     <CircularProgress size={40} />
@@ -226,9 +225,23 @@ function HomeView() {
                     Error loading data
                   </Typography>
                 ) : (
-                  <Typography variant="h3" component="div" sx={{ mt: 2, fontWeight: 'bold' }}>
-                    {tile.value}
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+                    {tile.title.map((title, index) => (
+                      <React.Fragment key={title}>
+                        {index > 0 && (
+                          <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
+                        )}
+                        <Box>
+                          <Typography variant="h6" component="div" color="text.secondary">
+                            {title}
+                          </Typography>
+                          <Typography variant="h3" component="div" sx={{ mt: 2, fontWeight: 'bold' }}>
+                            {tile.value[index]}
+                          </Typography>
+                        </Box>
+                      </React.Fragment>
+                    ))}
+                  </Box>
                 )}
               </CardContent>
             </Card>
@@ -272,6 +285,33 @@ function HomeView() {
             </Card>
           </Grid>
         ))}
+      </Grid>
+
+      <Grid container spacing={3} sx={{ mt: 4 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              height: 140,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <MenuBookIcon color="primary" sx={{ mr: 1 }} />
+              <Typography variant="h6" component="div">
+                Business Glossaries
+              </Typography>
+            </Box>
+            <Typography variant="h3" component="div">
+              {stats.glossaries.count.glossaries}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 1 }}>
+              {stats.glossaries.count.terms} terms defined
+            </Typography>
+          </Paper>
+        </Grid>
       </Grid>
     </Container>
   );

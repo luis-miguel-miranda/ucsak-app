@@ -14,101 +14,25 @@ bp = Blueprint('settings', __name__)
 settings_manager = SettingsManager(workspace_client)
 
 @bp.route('/api/settings', methods=['GET'])
-def list_settings():
-    """List all available and installed settings."""
+def get_settings():
+    """Get all settings including available job clusters"""
     try:
-        logger.info("Fetching available and installed workflows")
-        available = settings_manager.list_available_workflows()
-        installed = settings_manager.list_installed_workflows()
-        
-        result = {
-            'available_workflows': available,
-            'installed_workflows': [
-                {
-                    'id': w.id,
-                    'name': w.name,
-                    'installed_at': w.installed_at.isoformat(),
-                    'updated_at': w.updated_at.isoformat(),
-                    'status': w.status,
-                    'workspace_id': w.workspace_id
-                } for w in installed
-            ]
-        }
-        
-        logger.info(f"Successfully retrieved {len(available)} available workflows and {len(installed)} installed workflows")
-        return jsonify(result)
+        settings = settings_manager.get_settings()
+        return jsonify(settings)
     except Exception as e:
-        error_msg = f"Error fetching workflows: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({'error': error_msg}), 500
+        logger.error(f"Error getting settings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/settings/<setting_name>', methods=['POST'])
-def install_setting(setting_name):
-    """Install a new setting."""
+@bp.route('/api/settings', methods=['PUT'])
+def update_settings():
+    """Update settings"""
     try:
-        logger.info(f"Installing workflow: {workflow_name}")
-        installation = settings_manager.install_workflow(workflow_name)
-        
-        result = {
-            'id': installation.id,
-            'name': installation.name,
-            'installed_at': installation.installed_at.isoformat(),
-            'status': installation.status,
-            'workspace_id': installation.workspace_id
-        }
-        
-        logger.info(f"Successfully installed workflow: {workflow_name}")
-        return jsonify(result), 201
-    except ValueError as e:
-        error_msg = f"Workflow not found: {workflow_name} - {str(e)}"
-        logger.warning(error_msg)
-        return jsonify({'error': error_msg}), 404
+        settings = request.json
+        updated = settings_manager.update_settings(settings)
+        return jsonify(updated.to_dict())
     except Exception as e:
-        error_msg = f"Error installing workflow {workflow_name}: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({'error': error_msg}), 500
-
-@bp.route('/api/settings/<setting_name>', methods=['PUT'])
-def update_setting(setting_name):
-    """Update an existing setting."""
-    try:
-        logger.info(f"Updating workflow: {setting_name}")
-        installation = settings_manager.update_workflow(setting_name)
-        
-        result = {
-            'id': installation.id,
-            'name': installation.name,
-            'updated_at': installation.updated_at.isoformat(),
-            'status': installation.status,
-            'workspace_id': installation.workspace_id
-        }
-        
-        logger.info(f"Successfully updated workflow: {setting_name}")
-        return jsonify(result)
-    except ValueError as e:
-        error_msg = f"Workflow not found: {setting_name} - {str(e)}"
-        logger.warning(error_msg)
-        return jsonify({'error': error_msg}), 404
-    except Exception as e:
-        error_msg = f"Error updating workflow {setting_name}: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({'error': error_msg}), 500
-
-@bp.route('/api/settings/<setting_name>', methods=['DELETE'])
-def remove_setting(setting_name):
-    """Remove an installed setting."""
-    try:
-        logger.info(f"Removing workflow: {setting_name}")
-        if settings_manager.remove_workflow(setting_name):
-            logger.info(f"Successfully removed workflow: {setting_name}")
-            return '', 204
-        
-        logger.warning(f"Workflow not found for removal: {setting_name}")
-        return jsonify({'error': 'Workflow not found'}), 404
-    except Exception as e:
-        error_msg = f"Error removing workflow {setting_name}: {str(e)}"
-        logger.error(error_msg)
-        return jsonify({'error': error_msg}), 500
+        logger.error(f"Error updating settings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/settings/health', methods=['GET'])
 def health_check():
@@ -122,6 +46,23 @@ def health_check():
         error_msg = f"Workflows health check failed: {str(e)}"
         logger.error(error_msg)
         return jsonify({"status": "unhealthy", "error": error_msg}), 500
+
+@bp.route('/api/settings/job-clusters', methods=['GET'])
+def list_job_clusters():
+    """List all available job clusters"""
+    try:
+        clusters = settings_manager.get_job_clusters()
+        return jsonify([{
+            'id': cluster.id,
+            'name': cluster.name,
+            'node_type_id': cluster.node_type_id,
+            'autoscale': cluster.autoscale,
+            'min_workers': cluster.min_workers,
+            'max_workers': cluster.max_workers
+        } for cluster in clusters])
+    except Exception as e:
+        logger.error(f"Error fetching job clusters: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 def register_routes(app):
     """Register routes with the app"""

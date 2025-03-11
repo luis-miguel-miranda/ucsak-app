@@ -281,14 +281,24 @@ const BusinessGlossariesView: React.FC = () => {
       if (parentGlossary) {
         nodes.push({
           id: parentGlossary.id,
-          data: { label: parentGlossary.name },
+          data: { 
+            label: (
+              <Box sx={{ fontSize: '12px' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                  glossary
+                </Typography>
+                <Typography variant="body2" sx={{ fontSize: '12px' }}>
+                  {parentGlossary.name}
+                </Typography>
+              </Box>
+            )
+          },
           position: { x: 250, y: 50 },
           type: 'default',
           style: { 
             background: '#e3f2fd',
             borderRadius: '4px',
-            padding: '8px',
-            fontSize: '12px',
+            padding: '6px',
             width: 150,
             textAlign: 'center'
           }
@@ -308,7 +318,18 @@ const BusinessGlossariesView: React.FC = () => {
         if (parent) {
           nodes.push({
             id: parent.id,
-            data: { label: parent.name },
+            data: { 
+              label: (
+                <Box sx={{ fontSize: '12px' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                    glossary
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '12px' }}>
+                    {parent.name}
+                  </Typography>
+                </Box>
+              )
+            },
             position: { x: 150 + (index * 200), y: 50 },
             type: 'default',
             style: { 
@@ -376,6 +397,9 @@ const BusinessGlossariesView: React.FC = () => {
             style: { strokeWidth: 1.5 },
             markerEnd: { type: MarkerType.ArrowClosed }
           }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
         >
           <Controls />
           <Background  />
@@ -399,16 +423,17 @@ const BusinessGlossariesView: React.FC = () => {
           onChange={handleSearch}
         />
         <ButtonGroup>
-          <Button onClick={() => handleNewClick}>New</Button>
-          <Button
+          <Button 
+            onClick={handleNewClick}
+            endIcon={<ArrowDropDownIcon />}
             aria-haspopup="menu"
-            onClick={() => handleNewClick}
           >
-            <ArrowDropDownIcon />
+            New
           </Button>
           <Button
             onClick={handleUpdate}
             disabled={!selectedId}
+            sx={{ ml: 4 }}
           >
             Update
           </Button>
@@ -416,6 +441,7 @@ const BusinessGlossariesView: React.FC = () => {
             onClick={handleDelete}
             disabled={!selectedId}
             variant="danger"
+            sx={{ ml: 4 }}
           >
             Delete
           </Button>
@@ -425,13 +451,17 @@ const BusinessGlossariesView: React.FC = () => {
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleNewClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
         >
-          <MenuItem onClick={handleCreateGlossary}>
-            New Glossary
-          </MenuItem>
-          <MenuItem onClick={handleCreateTerm}>
-            New Term
-          </MenuItem>
+          <MenuItem onClick={handleCreateGlossary}>New Glossary</MenuItem>
+          <MenuItem onClick={handleCreateTerm}>New Term</MenuItem>
         </Menu>
       </Box>
 

@@ -122,6 +122,16 @@ def delete_term(glossary_id, term_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+@bp.route('/api/business-glossaries/counts', methods=['GET'])
+def get_glossary_counts():
+    """Get counts of glossaries and terms"""
+    try:
+        counts = glossary_manager.get_counts()
+        return jsonify(counts)
+    except Exception as e:
+        logger.error(f"Error getting glossary counts: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 def register_routes(app):
     """Register routes with the app"""
     app.register_blueprint(bp)
