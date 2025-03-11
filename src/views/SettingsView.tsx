@@ -93,6 +93,13 @@ function SettingsView() {
       enabled: false,
       loading: true,
     },
+    {
+      id: 'compliance_checker',
+      name: 'Compliance Checker',
+      description: 'Run automated compliance checks against defined policies',
+      enabled: false,
+      loading: true,
+    },
   ]);
   
   const [snackbar, setSnackbar] = useState({

@@ -29,6 +29,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import InfoIcon from '@mui/icons-material/Info';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import GavelIcon from '@mui/icons-material/Gavel';
 
 const drawerWidth = 240;
 const collapsedDrawerWidth = 64;
@@ -59,6 +60,8 @@ function Layout({ children }: LayoutProps) {
     { text: 'Business Glossary', icon: <MenuBookIcon />, path: '/business-glossary' },
     { text: 'Master Data Management', icon: <CompareArrowsIcon />, path: '/master-data' },
     { text: 'Entitlements', icon: <SecurityIcon />, path: '/entitlements' },
+    { text: 'Security', icon: <SecurityIcon />, path: '/security' },
+    { text: 'Compliance', icon: <GavelIcon />, path: '/compliance' },
     { text: 'Catalog Commander', icon: <Inventory2OutlinedIcon />, path: '/catalog-commander' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     { text: 'About', icon: <InfoIcon />, path: '/about' },

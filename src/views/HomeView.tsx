@@ -21,6 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import GavelIcon from '@mui/icons-material/Gavel';
 
 
 function HomeView() {
@@ -131,6 +132,18 @@ function HomeView() {
       description: 'Manage access control personas and privileges',
       icon: <SecurityIcon sx={{ fontSize: 40 }} />,
       link: '/entitlements',
+    },
+    {
+      title: 'Security',
+      description: 'Manage advanced security features for your data',
+      icon: <SecurityIcon />,
+      link: '/security'
+    },
+    {
+      title: 'Compliance',
+      description: 'Monitor and manage compliance policies',
+      icon: <GavelIcon />,
+      link: '/compliance'
     },
     {
       title: 'Catalog Commander',

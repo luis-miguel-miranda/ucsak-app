@@ -13,6 +13,8 @@ import SettingsView from './views/SettingsView';
 import AboutView from './views/AboutView';
 import NotFoundView from './views/NotFoundView';
 import MasterDataManagementView from './views/MasterDataManagementView';
+import SecurityView from './views/SecurityView';
+import ComplianceView from './views/ComplianceView';
 
 const theme = createTheme({
   palette: {
@@ -41,6 +43,8 @@ function App() {
             <Route path="/catalog-commander" element={<CatalogCommanderView />} />
             <Route path="/settings" element={<SettingsView />} />
             <Route path="/about" element={<AboutView />} />
+            <Route path="/security" element={<SecurityView />} />
+            <Route path="/compliance" element={<ComplianceView />} />
             <Route path="*" element={<NotFoundView />} />
           </Routes>
         </Layout>
