@@ -162,22 +162,7 @@ function Layout({ children }: LayoutProps) {
           </Box>
           
           <Box sx={{ position: 'relative' }}>
-            <Badge 
-              badgeContent={unreadCount} 
-              color="error"
-              sx={{ 
-                '& .MuiBadge-badge': { 
-                  right: -3, 
-                  top: 13 
-                } 
-              }}
-            >
-              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <NotificationsIcon sx={{ 
-                  color: notifications.length > 0 ? 'white' : 'action.disabled' 
-                }} />
-              </IconButton>
-            </Badge>
+            <NotificationBell />
           </Box>
         </Toolbar>
       </AppBar>
