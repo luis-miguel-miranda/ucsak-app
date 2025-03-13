@@ -16,6 +16,7 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
+  Badge,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -30,6 +31,10 @@ import InfoIcon from '@mui/icons-material/Info';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import GavelIcon from '@mui/icons-material/Gavel';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import NotificationBell from './NotificationBell';
+import SearchBar from './SearchBar';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const drawerWidth = 240;
 const collapsedDrawerWidth = 64;
@@ -44,6 +49,9 @@ function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -59,7 +67,7 @@ function Layout({ children }: LayoutProps) {
     { text: 'Data Contracts', icon: <DescriptionIcon />, path: '/data-contracts' },
     { text: 'Business Glossary', icon: <MenuBookIcon />, path: '/business-glossary' },
     { text: 'Master Data Management', icon: <CompareArrowsIcon />, path: '/master-data' },
-    { text: 'Entitlements', icon: <SecurityIcon />, path: '/entitlements' },
+    { text: 'Entitlements', icon: <ManageAccountsIcon />, path: '/entitlements' },
     { text: 'Security', icon: <SecurityIcon />, path: '/security' },
     { text: 'Compliance', icon: <GavelIcon />, path: '/compliance' },
     { text: 'Catalog Commander', icon: <Inventory2OutlinedIcon />, path: '/catalog-commander' },
@@ -145,9 +153,32 @@ function Layout({ children }: LayoutProps) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 0, mr: 3 }}>
             Unity Catalog Swiss Army Knife
           </Typography>
+          
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+            <SearchBar width={300} placeholder="Search data products, terms, contracts..." />
+          </Box>
+          
+          <Box sx={{ position: 'relative' }}>
+            <Badge 
+              badgeContent={unreadCount} 
+              color="error"
+              sx={{ 
+                '& .MuiBadge-badge': { 
+                  right: -3, 
+                  top: 13 
+                } 
+              }}
+            >
+              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                <NotificationsIcon sx={{ 
+                  color: notifications.length > 0 ? 'white' : 'action.disabled' 
+                }} />
+              </IconButton>
+            </Badge>
+          </Box>
         </Toolbar>
       </AppBar>
       <Box

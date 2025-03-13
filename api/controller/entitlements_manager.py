@@ -1,6 +1,5 @@
 import uuid
 import yaml
-import os
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any

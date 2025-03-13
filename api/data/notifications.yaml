@@ -1,0 +1,45 @@
+notifications:
+  - id: "1"
+    type: "success"
+    title: "Data Contract Approved"
+    subtitle: "Contract: Customer360"
+    description: "The data contract for Customer360 has been approved by all stakeholders"
+    created_at: "2024-03-15T10:30:00Z"
+    read: false
+    can_delete: true
+
+  - id: "2"
+    type: "warning"
+    title: "Compliance Policy Alert"
+    subtitle: "PII Data Encryption"
+    description: "Some datasets containing PII are not properly encrypted. Check Compliance dashboard for details."
+    created_at: "2024-03-15T09:15:00Z"
+    read: false
+    can_delete: true
+
+  - id: "3"
+    type: "info"
+    title: "New Business Term Added"
+    subtitle: "Customer Lifetime Value"
+    description: "A new business term has been added to the Finance glossary"
+    created_at: "2024-03-14T16:45:00Z"
+    read: true
+    can_delete: true
+
+  - id: "4"
+    type: "error"
+    title: "Security Feature Disabled"
+    subtitle: "Column Encryption"
+    description: "Column encryption for customer_data.pii_table has been disabled unexpectedly"
+    created_at: "2024-03-14T14:20:00Z"
+    read: false
+    can_delete: false
+
+  - id: "5"
+    type: "info"
+    title: "System Maintenance"
+    subtitle: "Scheduled Downtime"
+    description: "System maintenance scheduled for Saturday 20:00 UTC"
+    created_at: "2024-03-14T12:00:00Z"
+    read: true
+    can_delete: true 

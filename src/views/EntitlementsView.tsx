@@ -35,7 +35,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonIcon from '@mui/icons-material/Person';
-import SecurityIcon from '@mui/icons-material/Security';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import PageHeader from '../components/PageHeader';
 
 interface Privilege {
@@ -269,7 +269,7 @@ function EntitlementsView() {
       <PageHeader 
         title="Entitlements"
         subtitle="Manage access control personas and privileges"
-        icon={<SecurityIcon fontSize="large" />}
+        icon={<ManageAccountsIcon fontSize="large" />}
       />
       
       {error && (
@@ -452,7 +452,7 @@ function EntitlementsView() {
               </>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                <SecurityIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                <ManageAccountsIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary">
                   Select a persona to view details
                 </Typography>

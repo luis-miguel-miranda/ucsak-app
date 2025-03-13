@@ -22,6 +22,8 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import GavelIcon from '@mui/icons-material/Gavel';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import SearchBar from '../components/SearchBar';
 
 
 function HomeView() {
@@ -130,7 +132,7 @@ function HomeView() {
     {
       title: 'Entitlements',
       description: 'Manage access control personas and privileges',
-      icon: <SecurityIcon sx={{ fontSize: 40 }} />,
+      icon: <ManageAccountsIcon sx={{ fontSize: 40 }} />,
       link: '/entitlements',
     },
     {
@@ -206,6 +208,21 @@ function HomeView() {
           Manage your data assets, contracts, and governance processes in one place.
         </Typography>
       </Box>
+
+      <Container maxWidth="md" sx={{ mt: 8, mb: 4 }}>
+        <Typography variant="h4" align="center" gutterBottom>
+          Unity Catalog Swiss Army Knife
+        </Typography>
+        <Typography variant="subtitle1" align="center" color="text.secondary" paragraph>
+          Search across data products, business terms, data contracts and more
+        </Typography>
+        <Box sx={{ mt: 4, mb: 6 }}>
+          <SearchBar 
+            variant="large" 
+            placeholder="Search for data products, business terms, contracts..." 
+          />
+        </Box>
+      </Container>
 
       {/* Summary Tiles */}
       <Typography variant="h5" sx={{ mb: 2 }}>
@@ -298,33 +315,6 @@ function HomeView() {
             </Card>
           </Grid>
         ))}
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mt: 4 }}>
-        <Grid item xs={12} sm={6} md={4}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 3,
-              display: 'flex',
-              flexDirection: 'column',
-              height: 140,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <MenuBookIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6" component="div">
-                Business Glossaries
-              </Typography>
-            </Box>
-            <Typography variant="h3" component="div">
-              {stats.glossaries.count.glossaries}
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 1 }}>
-              {stats.glossaries.count.terms} terms defined
-            </Typography>
-          </Paper>
-        </Grid>
       </Grid>
     </Container>
   );

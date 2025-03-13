@@ -1,6 +1,5 @@
 import uuid
 import yaml
-import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 class BusinessGlossaryManager:
     def __init__(self):
         self._domains: Dict[str, Domain] = {}
-        self.glossaries: Dict[str, BusinessGlossary] = {}
+        self._glossaries: Dict[str, BusinessGlossary] = {}
         
     def create_term(self, 
                    name: str,
@@ -50,7 +49,7 @@ class BusinessGlossaryManager:
     
     def get_term(self, term_id: str) -> Optional[GlossaryTerm]:
         """Get a glossary term by ID"""
-        for glossary in self.glossaries.values():
+        for glossary in self._glossaries.values():
             if term_id in glossary.terms:
                 return glossary.terms[term_id]
         return None
@@ -58,13 +57,13 @@ class BusinessGlossaryManager:
     def list_terms(self) -> List[GlossaryTerm]:
         """List all glossary terms"""
         terms = []
-        for glossary in self.glossaries.values():
+        for glossary in self._glossaries.values():
             terms.extend(list(glossary.terms.values()))
         return terms
     
     def update_term(self, term_id: str, **kwargs) -> Optional[GlossaryTerm]:
         """Update a glossary term"""
-        for glossary in self.glossaries.values():
+        for glossary in self._glossaries.values():
             if term_id in glossary.terms:
                 term = glossary.terms[term_id]
                 for key, value in kwargs.items():
@@ -76,7 +75,7 @@ class BusinessGlossaryManager:
     
     def delete_term(self, term_id: str) -> bool:
         """Delete a glossary term"""
-        for glossary in self.glossaries.values():
+        for glossary in self._glossaries.values():
             if term_id in glossary.terms:
                 del glossary.terms[term_id]
                 return True
@@ -87,7 +86,7 @@ class BusinessGlossaryManager:
         query = query.lower()
         results = []
         
-        for glossary in self.glossaries.values():
+        for glossary in self._glossaries.values():
             for term in glossary.terms.values():
                 if (query in term.name.lower() or 
                     query in term.definition.lower() or
@@ -142,7 +141,7 @@ class BusinessGlossaryManager:
                 return
 
         # Clear existing data
-        self.glossaries.clear()
+        self._glossaries.clear()
         self._domains.clear()
 
         # Load domains
@@ -215,7 +214,7 @@ class BusinessGlossaryManager:
                 terms=terms_dict
             )
             
-            self.glossaries[glossary.id] = glossary
+            self._glossaries[glossary.id] = glossary
 
         return True
 
@@ -232,16 +231,16 @@ class BusinessGlossaryManager:
             parent_glossary_ids=parent_glossary_ids or [],
             tags=tags or []
         )
-        self.glossaries[glossary.id] = glossary
+        self._glossaries[glossary.id] = glossary
         return glossary
 
     def get_glossary(self, glossary_id: str) -> Optional[BusinessGlossary]:
         """Get a glossary by ID"""
-        return self.glossaries.get(glossary_id)
+        return self._glossaries.get(glossary_id)
 
     def list_glossaries(self) -> List[BusinessGlossary]:
         """Get all glossaries"""
-        return list(self.glossaries.values())
+        return list(self._glossaries.values())
 
     def get_combined_terms(self, org_unit: str) -> List[GlossaryTerm]:
         """Get combined terms for an organizational unit"""
@@ -271,12 +270,12 @@ class BusinessGlossaryManager:
             
             # Add parent glossaries
             for parent_id in glossary.parent_glossary_ids:
-                parent = self.glossaries.get(parent_id)
+                parent = self._glossaries.get(parent_id)
                 if parent:
                     add_glossary_and_parents(parent)
 
         # Find glossaries for this org unit and add them with their parents
-        for glossary in self.glossaries.values():
+        for glossary in self._glossaries.values():
             if glossary.org_unit == org_unit:
                 add_glossary_and_parents(glossary)
 
@@ -288,7 +287,7 @@ class BusinessGlossaryManager:
 
     def update_glossary(self, glossary_id: str, updates: dict) -> Optional[BusinessGlossary]:
         """Update a glossary"""
-        glossary = self.glossaries.get(glossary_id)
+        glossary = self._glossaries.get(glossary_id)
         if not glossary:
             return None
             
@@ -300,7 +299,7 @@ class BusinessGlossaryManager:
 
     def delete_glossary(self, glossary_id: str) -> bool:
         """Delete a glossary"""
-        return bool(self.glossaries.pop(glossary_id, None))
+        return bool(self._glossaries.pop(glossary_id, None))
 
     def save_to_yaml(self, file_path: str) -> bool:
         """Save glossaries to YAML file"""
@@ -311,7 +310,7 @@ class BusinessGlossaryManager:
                         **g.to_dict(),
                         'terms': [t.to_dict() for t in g.terms.values()]
                     }
-                    for g in self.glossaries.values()
+                    for g in self._glossaries.values()
                 ]
             }
             with open(file_path, 'w') as f:
@@ -380,55 +379,10 @@ class BusinessGlossaryManager:
         """Delete a term from a glossary"""
         return bool(glossary.terms.pop(term_id, None))
 
-    def get_all_glossaries(self):
-        """Get all glossaries from the YAML file"""
-        try:
-            data = self._load_from_yaml()
-            return data.get('glossaries', [])
-        except Exception as e:
-            logger.error(f"Error getting glossaries: {str(e)}")
-            return []
-
-    def delete_glossary(self, glossary_id):
-        """Delete a glossary by ID"""
-        try:
-            data = self._load_from_yaml()
-            data['glossaries'] = [g for g in data['glossaries'] if g['id'] != glossary_id]
-            self._save_to_yaml(data)
-        except Exception as e:
-            logger.error(f"Error deleting glossary {glossary_id}: {str(e)}")
-            raise
-
-    def update_glossary(self, glossary_id, glossary_data):
-        """Update a glossary by ID"""
-        try:
-            data = self._load_from_yaml()
-            
-            for glossary in data['glossaries']:
-                if glossary['id'] == glossary_id:
-                    glossary.update({
-                        'name': glossary_data.get('name', glossary['name']),
-                        'description': glossary_data.get('description', glossary['description']),
-                        'scope': glossary_data.get('scope', glossary['scope']),
-                        'org_unit': glossary_data.get('org_unit', glossary['org_unit']),
-                        'domain': glossary_data.get('domain', glossary['domain']),
-                        'tags': glossary_data.get('tags', glossary['tags']),
-                        'owner': glossary_data.get('owner', glossary['owner']),
-                        'status': glossary_data.get('status', glossary['status']),
-                        'updated_at': datetime.utcnow().isoformat()
-                    })
-                    self._save_to_yaml(data)
-                    return glossary
-                
-            return None
-        except Exception as e:
-            logger.error(f"Error updating glossary {glossary_id}: {str(e)}")
-            raise
-
     def get_counts(self):
         """Get counts of glossaries and terms"""
-        total_terms = sum(len(glossary.terms) for glossary in self.glossaries.values())
+        total_terms = sum(len(glossary.terms) for glossary in self._glossaries.values())
         return {
-            'glossaries': len(self.glossaries),
+            'glossaries': len(self._glossaries),
             'terms': total_terms
         } 
