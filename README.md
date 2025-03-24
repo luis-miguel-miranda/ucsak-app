@@ -2,6 +2,8 @@
 
 A comprehensive tool for managing Databricks Unity Catalog resources, featuring a React frontend and Flask backend.
 
+![Home](docs/images/home.png)
+
 ## Overview
 
 The Unity Catalog Swiss Army Knife provides a unified interface for managing various aspects of Databricks Unity Catalog, including:
