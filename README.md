@@ -108,3 +108,121 @@ Example `.env` file:
 ### Backend Setup
 
 The Flask application is configured to run from the project root directory using a `.flaskenv` file. This allows you to run both the frontend and backend from the same directory.
+
+# Unified Catalog Application
+
+A modern web application for managing data catalogs, built with FastAPI and React.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- Node.js 14 or higher
+- npm 6 or higher
+- Hatch (Python build tool)
+
+## Installation
+
+1. Install Hatch:
+```bash
+pip install hatch
+```
+
+2. Install all dependencies:
+```bash
+npm run install:all
+```
+
+This will:
+- Install frontend dependencies using npm
+- Create a Python virtual environment using Hatch
+- Install backend dependencies in the virtual environment
+
+## Development
+
+To run both frontend and backend servers in development mode:
+
+```bash
+npm run dev
+```
+
+This will:
+- Start the React development server on port 3000
+- Start the FastAPI development server on port 8000
+- Enable hot reloading for both frontend and backend
+
+To run servers separately:
+
+```bash
+# Frontend only
+npm run dev:frontend
+
+# Backend only
+npm run dev:backend
+```
+
+## Building for Production
+
+To build both frontend and backend:
+
+```bash
+npm run build:all
+```
+
+This will:
+1. Build the React application
+2. Copy the built files to the FastAPI static directory
+3. Build the Python package
+
+To build separately:
+
+```bash
+# Frontend only
+npm run build:frontend
+
+# Backend only
+npm run build:backend
+```
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+DATABRICKS_WAREHOUSE_ID=your_warehouse_id
+DATABRICKS_HTTP_PATH=your_http_path
+DATABRICKS_CATALOG=your_catalog
+DATABRICKS_SCHEMA=your_schema
+```
+
+## Project Structure
+
+```
+ucapp/
+├── api/                    # Backend FastAPI application
+│   ├── routes/            # API routes
+│   ├── models/            # Data models
+│   ├── controller/        # Business logic
+│   ├── static/           # Static files (frontend build)
+│   └── app.py            # Main application file
+├── src/                   # Frontend React application
+├── public/               # Public assets
+├── build.py              # Build script
+├── pyproject.toml        # Hatch configuration
+├── package.json          # Frontend dependencies
+└── README.md            # This file
+```
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Run tests and linting:
+```bash
+hatch run test
+hatch run lint
+```
+4. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

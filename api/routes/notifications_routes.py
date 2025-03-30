@@ -1,16 +1,16 @@
 import os
 from pathlib import Path
 from typing import List
-from flask import Blueprint, Flask, jsonify
+from fastapi import APIRouter, HTTPException
 import logging
-from models.notification import Notification
-from controller.notification_manager import NotificationManager, NotificationNotFoundError
+from api.models.notification import Notification
+from api.controller.notification_manager import NotificationManager, NotificationNotFoundError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bp = Blueprint('notifications', __name__)
+router = APIRouter()
 notifications_manager = NotificationManager()
 
 # Check for YAML file in data directory
@@ -25,40 +25,46 @@ if os.path.exists(yaml_path):
 else:
     logger.warning(f"Notifications YAML file not found at {yaml_path}")
 
-@bp.route('/api/notifications', methods=['GET'])
-def get_notifications():
+@router.get('/api/notifications')
+async def get_notifications():
     """Get all notifications"""
     try:
         logger.info("Retrieving all notifications")
         notifications = notifications_manager.get_notifications()
-        return jsonify(notifications)
+        return notifications
     except Exception as e:
         logger.error(f"Error retrieving notifications: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@bp.route('/api/notifications', methods=['POST'])
-def create_notification(notification: Notification):
-    return notifications_manager.create_notification(notification)
+@router.post('/api/notifications')
+async def create_notification(notification: Notification):
+    """Create a new notification"""
+    try:
+        return notifications_manager.create_notification(notification)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@bp.route('/api/notifications/<notification_id>', methods=['DELETE'])
-def delete_notification(notification_id: str):
-    notifications_manager.delete_notification(notification_id)
-    return {"status": "success"}
+@router.delete('/api/notifications/{notification_id}')
+async def delete_notification(notification_id: str):
+    """Delete a notification"""
+    try:
+        notifications_manager.delete_notification(notification_id)
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@bp.route('/api/notifications/<notification_id>/read', methods=['PUT'])
-def mark_notification_read(notification_id: str):
+@router.put('/api/notifications/{notification_id}/read')
+async def mark_notification_read(notification_id: str):
+    """Mark a notification as read"""
     try:
         return notifications_manager.mark_notification_read(notification_id)
     except NotificationNotFoundError:
-        return jsonify({'error': 'Notification not found'}), 404
+        raise HTTPException(status_code=404, detail="Notification not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Flask routes for compatibility
-@bp.route('/api/notifications', methods=['GET'])
-def flask_get_notifications():
-    return jsonify(notifications_manager.get_notifications())
-
-def register_routes(app: Flask):
-    """Register notification routes with the Flask app."""
-    app.register_blueprint(bp)
+def register_routes(app):
+    """Register notification routes with the FastAPI app."""
+    app.include_router(router)
     logger.info("Registered notifications routes")
 

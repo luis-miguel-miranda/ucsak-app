@@ -1,5 +1,6 @@
-from flask import Blueprint, jsonify, request, Response
-from controller.data_contract_manager import DataContractManager, Metadata, DataType, SecurityClassification
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
+from api.controller.data_contract_manager import DataContractManager, Metadata, DataType, SecurityClassification
 from datetime import datetime
 import os
 import logging
@@ -10,7 +11,7 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bp = Blueprint('data_contracts', __name__)
+router = APIRouter()
 
 # Create a single instance of the manager
 contract_manager = DataContractManager()
@@ -25,9 +26,8 @@ if os.path.exists(yaml_path):
     except Exception as e:
         logger.error(f"Error loading data contracts from YAML: {str(e)}")
 
-
-@bp.route('/api/data-contracts', methods=['GET'])
-def get_contracts():
+@router.get('/api/data-contracts')
+async def get_contracts():
     """Get all data contracts"""
     try:
         contracts = contract_manager.list_contracts()
@@ -39,113 +39,102 @@ def get_contracts():
             formatted_contracts.append(c.to_dict())
         
         logger.info(f"Retrieved {len(formatted_contracts)} data contracts")
-        return jsonify(formatted_contracts)
+        return formatted_contracts
     except Exception as e:
         error_msg = f"Error retrieving data contracts: {str(e)}"
         logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        raise HTTPException(status_code=500, detail=error_msg)
 
-
-@bp.route('/api/data-contracts/<contract_id>', methods=['GET'])
-def get_contract(contract_id):
+@router.get('/api/data-contracts/{contract_id}')
+async def get_contract(contract_id: str):
     """Get a specific data contract"""
     try:
         contract = contract_manager.get_contract(contract_id)
         if not contract:
-            return jsonify({"error": "Contract not found"}), 404
+            raise HTTPException(status_code=404, detail="Contract not found")
 
         # Return full contract including contract_text
         response = contract.to_dict()
         response['contract_text'] = contract.contract_text
-        return jsonify(response)
+        return response
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@bp.route('/api/data-contracts', methods=['POST'])
-def create_contract():
+@router.post('/api/data-contracts')
+async def create_contract(contract_data: dict):
     """Create a new data contract"""
     try:
-        data = request.json
         contract = contract_manager.create_contract(
-            name=data['name'],
-            contract_text=data['contract_text'],
-            format=data.get('format', 'json'),  # Default to JSON if not specified
-            version=data['version'],
-            owner=data['owner'],
-            description=data.get('description')
+            name=contract_data['name'],
+            contract_text=contract_data['contract_text'],
+            format=contract_data.get('format', 'json'),  # Default to JSON if not specified
+            version=contract_data['version'],
+            owner=contract_data['owner'],
+            description=contract_data.get('description')
         )
         
         # Save to YAML
         yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
         contract_manager.save_to_yaml(str(yaml_path))
         
-        return jsonify(contract.to_dict()), 201
+        return contract.to_dict()
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@bp.route('/api/data-contracts/<contract_id>', methods=['PUT'])
-def update_contract(contract_id):
+@router.put('/api/data-contracts/{contract_id}')
+async def update_contract(contract_id: str, contract_data: dict):
     """Update a data contract"""
     try:
         contract = contract_manager.get_contract(contract_id)
         if not contract:
             logger.warning(f"Data contract not found for update with ID: {contract_id}")
-            return jsonify({"error": "Contract not found"}), 404
+            raise HTTPException(status_code=404, detail="Contract not found")
             
-        data = request.json
         logger.info(f"Updating data contract with ID: {contract_id}")
         
         # Update contract
         updated_contract = contract_manager.update_contract(
             contract_id=contract_id,
-            name=data.get('name'),
-            contract_text=data.get('contract_text'),
-            format=data.get('format'),
-            version=data.get('version'),
-            owner=data.get('owner'),
-            description=data.get('description'),
-            status=data.get('status')
+            name=contract_data.get('name'),
+            contract_text=contract_data.get('contract_text'),
+            format=contract_data.get('format'),
+            version=contract_data.get('version'),
+            owner=contract_data.get('owner'),
+            description=contract_data.get('description'),
+            status=contract_data.get('status')
         )
         
         # Save to YAML
         yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
         contract_manager.save_to_yaml(str(yaml_path))
         
-        return jsonify(updated_contract.to_dict())
+        return updated_contract.to_dict()
     except Exception as e:
         error_msg = f"Error updating data contract {contract_id}: {str(e)}"
         logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        raise HTTPException(status_code=500, detail=error_msg)
 
-
-@bp.route('/api/data-contracts/<contract_id>', methods=['DELETE'])
-def delete_contract(contract_id):
+@router.delete('/api/data-contracts/{contract_id}')
+async def delete_contract(contract_id: str):
     """Delete a data contract"""
     try:
         if not contract_manager.get_contract(contract_id):
             logger.warning(f"Data contract not found for deletion with ID: {contract_id}")
-            return jsonify({"error": "Contract not found"}), 404
+            raise HTTPException(status_code=404, detail="Contract not found")
             
         logger.info(f"Deleting data contract with ID: {contract_id}")
         contract_manager.delete_contract(contract_id)
         logger.info(f"Successfully deleted data contract with ID: {contract_id}")
-        return '', 204
+        return None
     except Exception as e:
         error_msg = f"Error deleting data contract {contract_id}: {str(e)}"
         logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
+        raise HTTPException(status_code=500, detail=error_msg)
 
-
-@bp.route('/api/data-contracts/upload', methods=['POST'])
-def upload_contract():
+@router.post('/api/data-contracts/upload')
+async def upload_contract(file: UploadFile = File(...)):
     """Upload a contract file"""
     try:
-        if 'file' not in request.files:
-            return jsonify({"error": "No file provided"}), 400
-            
-        file = request.files['file']
         content_type = file.content_type
         filename = file.filename or ''
         
@@ -157,7 +146,7 @@ def upload_contract():
             format = 'text'
             
         # Read file content
-        contract_text = file.read().decode('utf-8')
+        contract_text = (await file.read()).decode('utf-8')
         
         # Create contract
         contract = contract_manager.create_contract(
@@ -173,31 +162,29 @@ def upload_contract():
         yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'
         contract_manager.save_to_yaml(str(yaml_path))
         
-        return jsonify(contract.to_dict()), 201
+        return contract.to_dict()
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@bp.route('/api/data-contracts/<contract_id>/export', methods=['GET'])
-def export_contract(contract_id):
+@router.get('/api/data-contracts/{contract_id}/export')
+async def export_contract(contract_id: str):
     """Export a contract as JSON"""
     try:
         contract = contract_manager.get_contract(contract_id)
         if not contract:
-            return jsonify({"error": "Contract not found"}), 404
+            raise HTTPException(status_code=404, detail="Contract not found")
             
-        return Response(
-            contract.contract_json,
-            mimetype='application/json',
+        return JSONResponse(
+            content=json.loads(contract.contract_json),
+            media_type='application/json',
             headers={
                 'Content-Disposition': f'attachment; filename="{contract.name.lower().replace(" ", "_")}.json"'
             }
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+        raise HTTPException(status_code=500, detail=str(e))
 
 def register_routes(app):
     """Register routes with the app"""
-    app.register_blueprint(bp)
+    app.include_router(router)
     logger.info("Data contract routes registered")

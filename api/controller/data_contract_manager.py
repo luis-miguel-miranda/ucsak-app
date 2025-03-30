@@ -7,7 +7,7 @@ import yaml
 import json
 from pathlib import Path
 import logging
-from models.data_contract import DataContract
+from api.models.data_contract import DataContract
 
 logger = logging.getLogger(__name__)
 

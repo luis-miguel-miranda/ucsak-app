@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rucsak"
+version = "0.1.0"
+description = "Unified Catalog Application"
+authors = [
+    { name="larsgeorge", email="lars.george@gmail.com" }
+]
+requires-python = ">=3.8,<3.13"
+dependencies = [
+    "fastapi>=0.109.2",
+    "uvicorn>=0.27.1",
+    "python-multipart>=0.0.9",
+    "flask-cors>=4.0.0",
+    "python-dotenv>=1.0.1",
+    "databricks-sdk>=0.20.0",
+    "databricks-sql-connector>=3.4.0",
+    "pandas>=2.1.0",
+    "numpy>=1.24.3",
+    "python-dateutil>=2.8.2",
+    "pytz>=2023.3",
+    "six>=1.16.0",
+    "typing-extensions>=4.9.0",
+    "werkzeug>=3.0.1",
+    "pyyaml>=6.0.1",
+    "requests>=2.31.0"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["api"]
+
+[tool.hatch.envs.default]
+python = "3.10"
+dependencies = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[tool.hatch.envs.dev]
+dependencies = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=22.0",
+    "isort>=5.0",
+    "flake8>=4.0",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.hooks.custom]
+path = "build.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/api",
+    "/build.py",
+    "/pyproject.toml",
+    "/README.md",
+]
+
+[tool.hatch.envs.dev.scripts]
+dev-frontend = "yarn dev:frontend"
+build-frontend = "yarn build:frontend"
+dev-backend = "uvicorn api.app:app --reload --host=0.0.0.0 --port=8000"
+deploy-and-run = [
+  'databricks bundle deploy --var="catalog=app_data" --var="schema=app_ucsak"',
+  "databricks bundle run app_ucsak",
+]

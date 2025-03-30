@@ -34,10 +34,16 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "start-api": "cd api && venv/bin/flask run --no-debugger",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dev": "concurrently \"yarn start\" \"hatch run dev\"",
+    "dev:frontend": "yarn start",
+    "dev:backend": "hatch run dev",
+    "build:frontend": "yarn build",
+    "build:backend": "hatch build",
+    "build:all": "yarn build:frontend && hatch build",
+    "install:all": "yarn install && hatch env create"
   },
   "eslintConfig": {
     "extends": [
@@ -57,9 +63,10 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:5000",
+  "proxy": "http://localhost:8000",
   "devDependencies": {
     "@types/react-sparklines": "^1.7.5",
-    "@types/styled-components": "^5.1.34"
+    "@types/styled-components": "^5.1.34",
+    "concurrently": "^8.2.2"
   }
 }

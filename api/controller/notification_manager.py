@@ -4,7 +4,8 @@ from typing import List
 from datetime import datetime
 import uuid
 import logging
-from models.notification import Notification, NotificationType
+import json
+from api.models.notification import Notification, NotificationType
 from flask import abort
 
 # Set up logging

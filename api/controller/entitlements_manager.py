@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from pathlib import Path
-from models.entitlements import Persona, AccessPrivilege
+from api.models.entitlements import Persona, AccessPrivilege
 
 logger = logging.getLogger(__name__)
 

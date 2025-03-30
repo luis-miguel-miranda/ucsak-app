@@ -34,6 +34,7 @@ import GavelIcon from '@mui/icons-material/Gavel';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import NotificationBell from './NotificationBell';
 import SearchBar from './SearchBar';
+import UserInfo from './UserInfo';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const drawerWidth = 240;
@@ -161,8 +162,9 @@ function Layout({ children }: LayoutProps) {
             <SearchBar width={300} placeholder="Search data products, terms, contracts..." />
           </Box>
           
-          <Box sx={{ position: 'relative' }}>
+          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2 }}>
             <NotificationBell />
+            <UserInfo />
           </Box>
         </Toolbar>
       </AppBar>

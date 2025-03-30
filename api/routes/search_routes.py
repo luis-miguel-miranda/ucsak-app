@@ -1,35 +1,35 @@
-from flask import Blueprint, Flask, jsonify, request
+from fastapi import APIRouter, Query
+from typing import List, Dict, Any
 import logging
-from controller.search_manager import SearchManager
+from api.controller.search_manager import SearchManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bp = Blueprint('search', __name__)
+router = APIRouter()
 search_manager = SearchManager()
 
-@bp.route('/api/search', methods=['GET'])
-def search():
+@router.get('/api/search')
+async def search(q: str = Query('')):
     """Search across all data types."""
-    query = request.args.get('q', '')
-    if not query:
-        return jsonify({
+    if not q:
+        return {
             "notifications": [],
             "terms": [],
             "contracts": [],
             "products": []
-        })
+        }
 
     try:
-        logger.info(f"Searching for: {query}")
-        results = search_manager.search(query)
-        return jsonify(results)
+        logger.info(f"Searching for: {q}")
+        results = search_manager.search(q)
+        return results
     except Exception as e:
         logger.error(f"Error during search: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return {'error': str(e)}
 
-def register_routes(app: Flask):
-    """Register search routes with the Flask app."""
-    app.register_blueprint(bp)
+def register_routes(app):
+    """Register search routes with the FastAPI app."""
+    app.include_router(router)
     logger.info("Registered search routes") 

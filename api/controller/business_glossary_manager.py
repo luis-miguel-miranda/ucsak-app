@@ -3,7 +3,7 @@ import yaml
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
-from models.business_glossary import Domain, GlossaryTerm, BusinessGlossary
+from api.models.business_glossary import Domain, GlossaryTerm, BusinessGlossary
 import logging
 
 logger = logging.getLogger(__name__)

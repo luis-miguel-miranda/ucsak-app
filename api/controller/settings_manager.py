@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from pathlib import Path
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service import jobs
-from models.settings import Settings, JobCluster
+from api.models.settings import Settings, JobCluster
 
 @dataclass
 class WorkflowInstallation:

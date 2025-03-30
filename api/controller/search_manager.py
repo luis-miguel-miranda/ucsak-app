@@ -1,12 +1,12 @@
 from typing import List, Dict, Any
-from models.notification import Notification
-from models.business_glossary import GlossaryTerm
-from models.data_contract import DataContract
-from models.data_product import DataProduct
-from controller.notification_manager import NotificationManager
-from controller.business_glossary_manager import BusinessGlossaryManager
-from controller.data_contract_manager import DataContractManager
-from controller.data_product_manager import DataProductManager
+from api.models.notification import Notification
+from api.models.business_glossary import GlossaryTerm
+from api.models.data_contract import DataContract
+from api.models.data_product import DataProduct
+from api.controller.notification_manager import NotificationManager
+from api.controller.business_glossary_manager import BusinessGlossaryManager
+from api.controller.data_contract_manager import DataContractManager
+from api.controller.data_product_manager import DataProductManager
 import logging
 
 logger = logging.getLogger(__name__)
