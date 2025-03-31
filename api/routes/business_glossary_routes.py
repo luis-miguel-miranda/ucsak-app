@@ -12,7 +12,7 @@ from typing import List, Optional
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 # Create a single instance of the manager
 glossary_manager = BusinessGlossaryManager()
@@ -29,7 +29,7 @@ if os.path.exists(yaml_path):
 else:
     logger.warning(f"Business glossary YAML file not found at {yaml_path}")
 
-@router.get('/api/business-glossaries')
+@router.get('/business-glossaries')
 async def get_glossaries():
     """Get all glossaries"""
     try:
@@ -40,7 +40,7 @@ async def get_glossaries():
         logger.error(f"Error retrieving glossaries: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post('/api/business-glossaries')
+@router.post('/business-glossaries')
 async def create_glossary(glossary_data: dict):
     """Create a new business glossary"""
     try:
@@ -58,7 +58,7 @@ async def create_glossary(glossary_data: dict):
         logger.error(f"Error creating glossary: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put('/api/business-glossaries/{glossary_id}')
+@router.put('/business-glossaries/{glossary_id}')
 async def update_glossary(glossary_id: str, glossary_data: dict):
     """Update a glossary"""
     try:
@@ -70,7 +70,7 @@ async def update_glossary(glossary_id: str, glossary_data: dict):
         logger.error(f"Error updating glossary {glossary_id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete('/api/business-glossaries/{glossary_id}')
+@router.delete('/business-glossaries/{glossary_id}')
 async def delete_glossary(glossary_id: str):
     """Delete a glossary"""
     try:
@@ -80,7 +80,7 @@ async def delete_glossary(glossary_id: str):
         logger.error(f"Error deleting glossary {glossary_id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get('/api/business-glossaries/{glossary_id}/terms')
+@router.get('/business-glossaries/{glossary_id}/terms')
 async def get_terms(glossary_id: str):
     """Get terms for a glossary"""
     try:
@@ -92,7 +92,7 @@ async def get_terms(glossary_id: str):
         logger.error(f"Error getting terms for glossary {glossary_id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post('/api/business-glossaries/{glossary_id}/terms')
+@router.post('/business-glossaries/{glossary_id}/terms')
 async def create_term(glossary_id: str, term_data: dict):
     """Create a new term in a glossary"""
     try:
@@ -106,7 +106,7 @@ async def create_term(glossary_id: str, term_data: dict):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete('/api/business-glossaries/{glossary_id}/terms/{term_id}')
+@router.delete('/business-glossaries/{glossary_id}/terms/{term_id}')
 async def delete_term(glossary_id: str, term_id: str):
     """Delete a term from a glossary"""
     try:
@@ -120,7 +120,7 @@ async def delete_term(glossary_id: str, term_id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get('/api/business-glossaries/counts')
+@router.get('/business-glossaries/counts')
 async def get_glossary_counts():
     """Get counts of glossaries and terms"""
     try:

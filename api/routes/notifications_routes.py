@@ -1,16 +1,18 @@
 import os
 from pathlib import Path
-from typing import List
-from fastapi import APIRouter, HTTPException
+from typing import List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException
 import logging
 from api.models.notification import Notification
 from api.controller.notification_manager import NotificationManager, NotificationNotFoundError
+from api.common.deps import get_notification_service_dep, get_user_id
+from api.common.notifications import NotificationService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 notifications_manager = NotificationManager()
 
 # Check for YAML file in data directory
@@ -25,7 +27,7 @@ if os.path.exists(yaml_path):
 else:
     logger.warning(f"Notifications YAML file not found at {yaml_path}")
 
-@router.get('/api/notifications')
+@router.get('/notifications')
 async def get_notifications():
     """Get all notifications"""
     try:
@@ -36,7 +38,7 @@ async def get_notifications():
         logger.error(f"Error retrieving notifications: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post('/api/notifications')
+@router.post('/notifications')
 async def create_notification(notification: Notification):
     """Create a new notification"""
     try:
@@ -44,7 +46,7 @@ async def create_notification(notification: Notification):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete('/api/notifications/{notification_id}')
+@router.delete('/notifications/{notification_id}')
 async def delete_notification(notification_id: str):
     """Delete a notification"""
     try:
@@ -53,7 +55,7 @@ async def delete_notification(notification_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put('/api/notifications/{notification_id}/read')
+@router.put('/notifications/{notification_id}/read')
 async def mark_notification_read(notification_id: str):
     """Mark a notification as read"""
     try:
@@ -66,5 +68,5 @@ async def mark_notification_read(notification_id: str):
 def register_routes(app):
     """Register notification routes with the FastAPI app."""
     app.include_router(router)
-    logger.info("Registered notifications routes")
+    logger.info("Notifications routes registered")
 

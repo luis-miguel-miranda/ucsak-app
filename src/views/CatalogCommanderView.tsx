@@ -122,13 +122,36 @@ function CatalogCommanderView() {
     page: 0
   });
 
+  // Helper function to create a fetch with timeout
+  const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds timeout
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Request timed out after 120 seconds');
+        }
+      }
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const fetchCatalogs = async () => {
       try {
-        const response = await fetch('/api/catalogs');
-        if (!response.ok) {
-          throw new Error('Failed to fetch catalogs');
-        }
+        const response = await fetchWithTimeout('/api/catalogs');
         const data = await response.json();
         // Add a fake child node to each catalog to show expand icon
         const catalogsWithChildren = data.map((catalog: CatalogItem) => ({
@@ -153,8 +176,7 @@ function CatalogCommanderView() {
 
   const fetchChildren = async (nodeId: string, nodeType: string): Promise<CatalogItem[]> => {
     if (nodeType === 'catalog') {
-      const response = await fetch(`/api/catalogs/${nodeId}/schemas`);
-      if (!response.ok) throw new Error('Failed to fetch schemas');
+      const response = await fetchWithTimeout(`/api/catalogs/${nodeId}/schemas`);
       const schemas = await response.json();
       // Add fake nodes to schemas
       return schemas.map((schema: CatalogItem) => ({
@@ -168,8 +190,7 @@ function CatalogCommanderView() {
       }));
     } else if (nodeType === 'schema') {
       const [catalogName, schemaName] = nodeId.split('.');
-      const response = await fetch(`/api/catalogs/${catalogName}/schemas/${schemaName}/tables`);
-      if (!response.ok) throw new Error('Failed to fetch tables');
+      const response = await fetchWithTimeout(`/api/catalogs/${catalogName}/schemas/${schemaName}/tables`);
       const tables = await response.json();
       // Tables are leaf nodes, no need for fake children
       return tables;
@@ -243,8 +264,7 @@ function CatalogCommanderView() {
     setViewDialogOpen(true);
 
     try {
-      const response = await fetch(`/api/catalogs/dataset/${encodeURIComponent(path)}`);
-      if (!response.ok) throw new Error('Failed to fetch dataset');
+      const response = await fetchWithTimeout(`/api/catalogs/dataset/${encodeURIComponent(path)}`);
       const data = await response.json();
       setDatasetContent(data);
     } catch (err) {
@@ -255,7 +275,7 @@ function CatalogCommanderView() {
     }
   };
 
-  const renderTreeContent = () => {
+  const renderTreeContent = (side: 'left' | 'right') => {
     if (loading) {
       return <Typography>Loading catalogs...</Typography>;
     }
@@ -275,17 +295,30 @@ function CatalogCommanderView() {
           collapseIcon: ExpandMoreIcon,
           expandIcon: ChevronRightIcon,
         }}
-        selectedItems={selectedLeft}
+        selectedItems={side === 'left' ? selectedLeft : selectedRight}
         onSelectedItemsChange={(event, items) => {
-          setSelectedLeft(items);
-          if (items.length > 0) {
-            setSelectedObjectInfo({ id: items[0], side: 'left' });
+          if (side === 'left') {
+            setSelectedLeft(items);
+            if (items.length > 0) {
+              setSelectedObjectInfo({ id: items[0], side: 'left' });
+            }
+          } else {
+            setSelectedRight(items);
+            if (items.length > 0) {
+              setSelectedObjectInfo({ id: items[0], side: 'right' });
+            }
           }
         }}
-        expandedItems={expandedLeft}
-        onExpandedItemsChange={(event, items) => handleNodeExpand(items)}
+        expandedItems={side === 'left' ? expandedLeft : expandedRight}
+        onExpandedItemsChange={(event, items) => {
+          if (side === 'left') {
+            handleNodeExpand(items);
+          } else {
+            setExpandedRight(items);
+          }
+        }}
         multiSelect
-        aria-label="Source catalog browser"
+        aria-label={`${side === 'left' ? 'Source' : 'Target'} catalog browser`}
       />
     );
   };
@@ -395,58 +428,46 @@ function CatalogCommanderView() {
           </ButtonGroup>
         </Grid>
 
-        {/* Browser Panes */}
-        <Grid item xs={true}>
-          <Paper sx={{ p: 2, height: '60vh', overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>
-              Source
-            </Typography>
-            {renderTreeContent()}
-          </Paper>
-        </Grid>
+        {/* Browser Panes Container */}
+        <Grid item xs={12}>
+          <Grid container spacing={0} sx={{ height: '60vh' }}>
+            {/* Left Tree */}
+            <Grid item xs={5.5}>
+              <Paper sx={{ height: '100%', p: 2, overflow: 'auto', mr: -2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Left
+                </Typography>
+                {renderTreeContent('left')}
+              </Paper>
+            </Grid>
 
-        {/* Transfer Controls */}
-        <Grid item xs="auto" sx={{ display: 'flex', alignItems: 'center' }}>
-          <TransferButtonGroup
-            orientation="vertical"
-            variant="contained"
-            sx={{ mt: -4 }}
-          >
-            <Button>→</Button>
-            <Button>←</Button>
-          </TransferButtonGroup>
-        </Grid>
+            {/* Transfer Controls */}
+            <Grid item xs={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+              <TransferButtonGroup
+                orientation="vertical"
+                variant="contained"
+                sx={{ 
+                  '& .MuiButton-root': {
+                    minWidth: '32px',
+                    px: 0.5
+                  }
+                }}
+              >
+                <Button>→</Button>
+                <Button>←</Button>
+              </TransferButtonGroup>
+            </Grid>
 
-        <Grid item xs={true}>
-          <Paper sx={{ p: 2, height: '60vh', overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>
-              Target
-            </Typography>
-            <RichTreeView
-              items={catalogData}
-              getItemLabel={(item) => (
-                loadingNodes.has(item.id)
-                  ? `${item.name} (loading...)`
-                  : item.name
-              )}
-              slots={{
-                item: CustomTreeItem,
-                collapseIcon: ExpandMoreIcon,
-                expandIcon: ChevronRightIcon,
-              }}
-              selectedItems={selectedRight}
-              onSelectedItemsChange={(event, items) => {
-                setSelectedRight(items);
-                if (items.length > 0) {
-                  setSelectedObjectInfo({ id: items[0], side: 'right' });
-                }
-              }}
-              expandedItems={expandedRight}
-              onExpandedItemsChange={(event, items) => setExpandedRight(items)}
-              multiSelect
-              aria-label="Target catalog browser"
-            />
-          </Paper>
+            {/* Right Tree */}
+            <Grid item xs={5.5}>
+              <Paper sx={{ height: '100%', p: 2, overflow: 'auto', ml: -2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Right
+                </Typography>
+                {renderTreeContent('right')}
+              </Paper>
+            </Grid>
+          </Grid>
         </Grid>
 
         {/* Info Panel */}

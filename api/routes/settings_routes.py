@@ -1,20 +1,20 @@
 import os
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
-from api.utils.helper import workspace_client
 from api.controller.settings_manager import SettingsManager
+from api.common.workspace_client import workspace_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 # Create a single instance of the manager
 settings_manager = SettingsManager(workspace_client)
 
-@router.get('/api/settings')
+@router.get('/settings')
 async def get_settings():
     """Get all settings including available job clusters"""
     try:
@@ -24,7 +24,7 @@ async def get_settings():
         logger.error(f"Error getting settings: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put('/api/settings')
+@router.put('/settings')
 async def update_settings(settings: dict):
     """Update settings"""
     try:
@@ -34,7 +34,7 @@ async def update_settings(settings: dict):
         logger.error(f"Error updating settings: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get('/api/settings/health')
+@router.get('/settings/health')
 async def health_check():
     """Check if the settings API is healthy"""
     try:
@@ -47,7 +47,7 @@ async def health_check():
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/settings/job-clusters')
+@router.get('/settings/job-clusters')
 async def list_job_clusters():
     """List all available job clusters"""
     try:

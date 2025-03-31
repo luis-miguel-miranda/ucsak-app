@@ -7,7 +7,7 @@ products:
     status: "active"
     created: "2024-01-15T00:00:00Z"
     updated: "2024-02-01T00:00:00Z"
-    type: "analytics"
+    type: "consumer-aligned"
     tags: ["customer", "analytics", "master data"]
     sources:
       - name: "CRM System"
@@ -43,7 +43,7 @@ products:
     status: "active"
     created: "2024-01-20T00:00:00Z"
     updated: "2024-02-05T00:00:00Z"
-    type: "analytics"
+    type: "aggregate"
     tags: ["sales", "analytics", "forecasting"]
     sources:
       - name: "Order Management System"
@@ -79,7 +79,7 @@ products:
     status: "active"
     created: "2024-01-25T00:00:00Z"
     updated: "2024-02-10T00:00:00Z"
-    type: "ml"
+    type: "model"
     tags: ["recommendations", "machine learning", "product"]
     sources:
       - name: "Customer 360"

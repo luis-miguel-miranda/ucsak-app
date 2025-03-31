@@ -7,10 +7,10 @@ from api.controller.search_manager import SearchManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 search_manager = SearchManager()
 
-@router.get('/api/search')
+@router.get('/search')
 async def search(q: str = Query('')):
     """Search across all data types."""
     if not q:

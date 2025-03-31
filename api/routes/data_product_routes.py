@@ -10,8 +10,7 @@ from typing import List, Dict, Any
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create router without prefix
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 # Create a single instance of the manager
 product_manager = DataProductManager()
@@ -33,7 +32,45 @@ else:
     except Exception as e:
         logger.error(f"Error initializing example data products: {str(e)}")
 
-@router.get('/api/data-products')
+# Special endpoints first
+@router.get('/data-products/statuses')
+async def get_data_product_statuses():
+    """Get all available data product statuses"""
+    try:
+        statuses = product_manager.get_statuses()
+        logger.info(f"Retrieved {len(statuses)} data product statuses")
+        return statuses
+    except Exception as e:
+        error_msg = f"Error retrieving data product statuses: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@router.get('/data-products/types')
+async def get_data_product_types():
+    """Get all available data product types"""
+    try:
+        types = product_manager.get_types()
+        logger.info(f"Retrieved {len(types)} data product types")
+        return types
+    except Exception as e:
+        error_msg = f"Error retrieving data product types: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@router.get('/data-products/metadata')
+async def get_data_product_metadata():
+    """Get metadata about data products"""
+    try:
+        metadata = product_manager.get_metadata()
+        logger.info("Retrieved data product metadata")
+        return metadata
+    except Exception as e:
+        error_msg = f"Error retrieving data product metadata: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+# Generic CRUD endpoints
+@router.get('/data-products')
 async def get_data_products():
     """Get all data products"""
     try:
@@ -48,7 +85,8 @@ async def get_data_products():
                 'name': p.name,
                 'description': p.description,
                 'owner': p.owner,
-                'status': p.status
+                'type': p.type.value if hasattr(p.type, 'value') else p.type,
+                'status': p.status.value if hasattr(p.status, 'value') else p.status
             }
             
             # Add optional fields if they exist
@@ -122,7 +160,7 @@ async def get_data_products():
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/data-products/{product_id}')
+@router.get('/data-products/{product_id}')
 async def get_data_product(product_id: str):
     """Get a specific data product"""
     try:
@@ -137,7 +175,8 @@ async def get_data_product(product_id: str):
             'name': product.name,
             'description': product.description,
             'owner': product.owner,
-            'status': product.status
+            'type': product.type.value if hasattr(product.type, 'value') else product.type,
+            'status': product.status.value if hasattr(product.status, 'value') else product.status
         }
         
         # Add optional fields if they exist
@@ -209,7 +248,7 @@ async def get_data_product(product_id: str):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.post('/api/data-products')
+@router.post('/data-products')
 async def create_data_product(product_data: dict):
     """Create a new data product"""
     try:
@@ -219,10 +258,13 @@ async def create_data_product(product_data: dict):
         product = product_manager.create_product(
             name=product_data.get('name', ''),
             description=product_data.get('description', ''),
+            domain=product_data.get('domain', ''),
             owner=product_data.get('owner', ''),
-            status=product_data.get('status', 'DRAFT'),
+            type=product_data.get('type', ''),
+            tags=product_data.get('tags', []),
             sources=product_data.get('sources', []),
-            outputs=product_data.get('outputs', [])
+            outputs=product_data.get('outputs', []),
+            contracts=product_data.get('contracts', [])
         )
         
         # Save changes to YAML
@@ -239,7 +281,8 @@ async def create_data_product(product_data: dict):
             'name': product.name,
             'description': product.description,
             'owner': product.owner,
-            'status': product.status,
+            'type': product.type.value if hasattr(product.type, 'value') else product.type,
+            'status': product.status.value if hasattr(product.status, 'value') else product.status,
             'created_at': product.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'updated_at': product.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         }
@@ -251,7 +294,7 @@ async def create_data_product(product_data: dict):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.put('/api/data-products/{product_id}')
+@router.put('/data-products/{product_id}')
 async def update_data_product(product_id: str, product_data: dict):
     """Update a data product"""
     try:
@@ -268,6 +311,7 @@ async def update_data_product(product_id: str, product_data: dict):
             name=product_data.get('name', None),
             description=product_data.get('description', None),
             owner=product_data.get('owner', None),
+            type=product_data.get('type', None),
             status=product_data.get('status', None),
             sources=product_data.get('sources', None),
             outputs=product_data.get('outputs', None)
@@ -287,7 +331,8 @@ async def update_data_product(product_id: str, product_data: dict):
             'name': updated_product.name,
             'description': updated_product.description,
             'owner': updated_product.owner,
-            'status': updated_product.status,
+            'type': updated_product.type.value if hasattr(updated_product.type, 'value') else updated_product.type,
+            'status': updated_product.status.value if hasattr(updated_product.status, 'value') else updated_product.status,
             'created_at': updated_product.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'updated_at': updated_product.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         }
@@ -299,7 +344,7 @@ async def update_data_product(product_id: str, product_data: dict):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.delete('/api/data-products/{product_id}')
+@router.delete('/data-products/{product_id}')
 async def delete_data_product(product_id: str):
     """Delete a data product"""
     try:
@@ -322,42 +367,6 @@ async def delete_data_product(product_id: str):
         return None
     except Exception as e:
         error_msg = f"Error deleting data product {product_id}: {str(e)}"
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
-
-@router.get('/api/data-products/statuses')
-async def get_data_product_statuses():
-    """Get all available data product statuses"""
-    try:
-        statuses = product_manager.get_statuses()
-        logger.info(f"Retrieved {len(statuses)} data product statuses")
-        return statuses
-    except Exception as e:
-        error_msg = f"Error retrieving data product statuses: {str(e)}"
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
-
-@router.get('/api/data-products/metadata')
-async def get_data_product_metadata():
-    """Get metadata about data products"""
-    try:
-        metadata = product_manager.get_metadata()
-        logger.info("Retrieved data product metadata")
-        return metadata
-    except Exception as e:
-        error_msg = f"Error retrieving data product metadata: {str(e)}"
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
-
-@router.get('/api/data-products/types')
-async def get_data_product_types():
-    """Get all available data product types"""
-    try:
-        types = product_manager.get_types()
-        logger.info(f"Retrieved {len(types)} data product types")
-        return types
-    except Exception as e:
-        error_msg = f"Error retrieving data product types: {str(e)}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 

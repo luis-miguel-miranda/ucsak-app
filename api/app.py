@@ -2,7 +2,7 @@ import os
 import time
 from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from dotenv import load_dotenv
 from api.routes import (
     data_product_routes,
@@ -18,11 +18,13 @@ from api.routes import (
 from fastapi.middleware.cors import CORSMiddleware
 from importlib.resources import files
 from pathlib import Path
-from api.utils.config import Config
+from api.common.config import Config, init_config, get_settings, EndpointConfig
+from api.common.middleware import LoggingMiddleware, ErrorHandlingMiddleware
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Define paths
 STATIC_ASSETS_PATH = Path("api/static")
 DOTENV_FILE = Path(__file__).parent.parent / Path(".env")
 
@@ -39,10 +41,23 @@ def get_config() -> Config:
             load_dotenv(DOTENV_FILE)
         else:
             logger.info(f"Loading configuration from environment variables")
-        # Ensure environment variable is set correctly
-        assert os.getenv(
-            'DATABRICKS_WAREHOUSE_ID'), "DATABRICKS_WAREHOUSE_ID must be set in app.yaml."
-        _config = Config.from_env()
+        
+        # Initialize settings using Pydantic
+        init_config()
+        settings = get_settings()
+        
+        # Create Config from settings
+        _config = Config(
+            catalog=settings.DATABRICKS_CATALOG,
+            schema=settings.DATABRICKS_SCHEMA,
+            volume=settings.DATABRICKS_VOLUME,
+            endpoint=EndpointConfig(
+                host=settings.DATABRICKS_HOST,
+                http_path=settings.DATABRICKS_HTTP_PATH,
+                client_id=None,  # These are optional
+                client_secret=None
+            )
+        )
     return _config
 
 # Create single FastAPI app with config dependency
@@ -67,8 +82,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files first
-app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH), name="static")
+# Add custom middleware
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(ErrorHandlingMiddleware)
+
+# Mount static files for the React application
+app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH / "static"), name="static")
+app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_PATH), name="assets")
 
 # Register routes from each module
 data_product_routes.register_routes(app)
@@ -81,11 +101,19 @@ user_routes.register_routes(app)
 search_routes.register_routes(app)
 notifications_routes.register_routes(app)
 
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    """Serve the React application's index.html"""
+    with open(STATIC_ASSETS_PATH / "index.html", "r") as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
 
 @app.exception_handler(404)
 async def client_side_routing(_, __):
-    return FileResponse(STATIC_ASSETS_PATH / "index.html")
-
+    """Handle 404 errors by serving the React application's index.html"""
+    with open(STATIC_ASSETS_PATH / "index.html", "r") as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
 
 @app.get("/api/time")
 async def get_current_time():

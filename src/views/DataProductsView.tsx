@@ -91,6 +91,7 @@ function DataProductsView() {
       const response = await fetch('/api/data-products/types');
       if (!response.ok) throw new Error('Failed to fetch product types');
       const data = await response.json();
+      console.log('Fetched product types:', data); // Debug log
       setProductTypes(data || []);
     } catch (err) {
       console.error('Error fetching product types:', err);
@@ -178,6 +179,10 @@ function DataProductsView() {
     }
   };
 
+  // Add debug logging before render
+  console.log('Current product types:', productTypes);
+  console.log('Current products:', products);
+
   if (loading) return <Typography>Loading data products...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;
 
@@ -239,7 +244,14 @@ function DataProductsView() {
                     <TableRow key={product.id}>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.owner}</TableCell>
-                      <TableCell>{product.type}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={product.type || 'No type'} 
+                          size="small" 
+                          color="primary" 
+                          variant="outlined"
+                        />
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={getStatusName(product.status)}
@@ -309,8 +321,8 @@ function DataProductsView() {
                       required
                     >
                       {productTypes.map(type => (
-                        <MenuItem key={type.id} value={type.id}>
-                          {type.name}
+                        <MenuItem key={type} value={type}>
+                          {type}
                         </MenuItem>
                       ))}
                     </Select>

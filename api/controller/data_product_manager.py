@@ -1,49 +1,24 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 import uuid
 import yaml
 from pathlib import Path
 import logging
+from api.models.data_product import DataProduct, DataSource, DataOutput, SchemaField, DataProductType, DataProductStatus
 
-@dataclass
-class DataSource:
-    name: str
-    type: str
-    connection: str
-    
-@dataclass
-class SchemaField:
-    name: str
-    type: str
-    description: Optional[str] = None
-    
-@dataclass
-class DataOutput:
-    name: str
-    type: str
-    location: str
-    schema: List[SchemaField]
-    
-@dataclass
-class DataProduct:
-    id: str
-    name: str
-    description: str
-    domain: str
-    owner: str
-    status: str
-    created: datetime
-    updated: datetime
-    type: str
-    tags: List[str]
-    sources: List[DataSource]
-    outputs: List[DataOutput]
-    contracts: List[str]
+logger = logging.getLogger(__name__)
 
 class DataProductManager:
     def __init__(self):
         self._products: Dict[str, DataProduct] = {}
+        
+    def get_types(self) -> List[str]:
+        """Get all available data product types"""
+        return [t.value for t in DataProductType]
+        
+    def get_statuses(self) -> List[str]:
+        """Get all available data product statuses"""
+        return [s.value for s in DataProductStatus]
         
     def create_product(self, 
                       name: str,
@@ -57,7 +32,12 @@ class DataProductManager:
                       contracts: List[str]) -> DataProduct:
         """Create a new data product"""
         product_id = str(uuid.uuid4())
-        now = datetime.utcnow()
+        
+        # Convert string type to enum
+        try:
+            product_type = DataProductType(type)
+        except ValueError:
+            raise ValueError(f"Invalid product type: {type}")
         
         product = DataProduct(
             id=product_id,
@@ -65,10 +45,8 @@ class DataProductManager:
             description=description,
             domain=domain,
             owner=owner,
-            status="active",
-            created=now,
-            updated=now,
-            type=type,
+            status=DataProductStatus.DRAFT,
+            type=product_type,
             tags=tags,
             sources=sources,
             outputs=outputs,
@@ -92,6 +70,21 @@ class DataProductManager:
         if not product:
             return None
             
+        # Convert string type to enum if present
+        if 'type' in kwargs:
+            try:
+                kwargs['type'] = DataProductType(kwargs['type'])
+            except ValueError:
+                raise ValueError(f"Invalid product type: {kwargs['type']}")
+                
+        # Convert string status to enum if present
+        if 'status' in kwargs:
+            try:
+                kwargs['status'] = DataProductStatus(kwargs['status'])
+            except ValueError:
+                raise ValueError(f"Invalid product status: {kwargs['status']}")
+            
+        # Update fields
         for key, value in kwargs.items():
             if hasattr(product, key):
                 setattr(product, key, value)
@@ -145,26 +138,33 @@ class DataProductManager:
                 created = datetime.fromisoformat(product_data.get('created', '').replace('Z', '+00:00'))
                 updated = datetime.fromisoformat(product_data.get('updated', '').replace('Z', '+00:00'))
                 
-                # Create product
+                # Create product with proper type and status enums
+                try:
+                    product_type = DataProductType(product_data.get('type', ''))
+                    product_status = DataProductStatus(product_data.get('status', 'draft'))
+                except ValueError as e:
+                    logger.error(f"Invalid enum value in YAML: {e}")
+                    continue
+                
                 product = DataProduct(
                     id=product_data.get('id', str(uuid.uuid4())),
                     name=product_data.get('name', ''),
                     description=product_data.get('description', ''),
                     domain=product_data.get('domain', ''),
                     owner=product_data.get('owner', ''),
-                    status=product_data.get('status', 'active'),
-                    created=created,
-                    updated=updated,
-                    type=product_data.get('type', ''),
+                    status=product_status,
+                    type=product_type,
                     tags=product_data.get('tags', []),
                     sources=sources,
                     outputs=outputs,
-                    contracts=product_data.get('contracts', [])
+                    contracts=product_data.get('contracts', []),
+                    created=created,
+                    updated=updated
                 )
                 
                 self._products[product.id] = product
                 
             return True
         except Exception as e:
-            print(f"Error loading data products from YAML: {e}")
+            logger.error(f"Error loading data products from YAML: {e}")
             return False 

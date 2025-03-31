@@ -3,8 +3,9 @@ import logging
 from fastapi import APIRouter, HTTPException
 import pandas as pd
 from databricks import sql
-from api.utils.helper import workspace_client, get_sql_connection
+from api.common.workspace_client import workspace_client, get_sql_connection
 from typing import List, Dict, Any
+from api.models.catalog_commander import CatalogItem, CatalogOperation
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

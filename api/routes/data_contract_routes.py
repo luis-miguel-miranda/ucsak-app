@@ -11,7 +11,7 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 # Create a single instance of the manager
 contract_manager = DataContractManager()
@@ -26,7 +26,7 @@ if os.path.exists(yaml_path):
     except Exception as e:
         logger.error(f"Error loading data contracts from YAML: {str(e)}")
 
-@router.get('/api/data-contracts')
+@router.get('/data-contracts')
 async def get_contracts():
     """Get all data contracts"""
     try:
@@ -45,7 +45,7 @@ async def get_contracts():
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/data-contracts/{contract_id}')
+@router.get('/data-contracts/{contract_id}')
 async def get_contract(contract_id: str):
     """Get a specific data contract"""
     try:
@@ -60,7 +60,7 @@ async def get_contract(contract_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post('/api/data-contracts')
+@router.post('/data-contracts')
 async def create_contract(contract_data: dict):
     """Create a new data contract"""
     try:
@@ -81,7 +81,7 @@ async def create_contract(contract_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put('/api/data-contracts/{contract_id}')
+@router.put('/data-contracts/{contract_id}')
 async def update_contract(contract_id: str, contract_data: dict):
     """Update a data contract"""
     try:
@@ -114,7 +114,7 @@ async def update_contract(contract_id: str, contract_data: dict):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.delete('/api/data-contracts/{contract_id}')
+@router.delete('/data-contracts/{contract_id}')
 async def delete_contract(contract_id: str):
     """Delete a data contract"""
     try:
@@ -131,7 +131,7 @@ async def delete_contract(contract_id: str):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.post('/api/data-contracts/upload')
+@router.post('/data-contracts/upload')
 async def upload_contract(file: UploadFile = File(...)):
     """Upload a contract file"""
     try:
@@ -166,7 +166,7 @@ async def upload_contract(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get('/api/data-contracts/{contract_id}/export')
+@router.get('/data-contracts/{contract_id}/export')
 async def export_contract(contract_id: str):
     """Export a contract as JSON"""
     try:

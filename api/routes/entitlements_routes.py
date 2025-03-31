@@ -10,7 +10,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 # Create a single instance of the manager
 entitlements_manager = EntitlementsManager()
@@ -45,7 +45,7 @@ else:
     except Exception as e:
         logger.error(f"Error initializing example entitlements data: {str(e)}")
 
-@router.get('/api/entitlements/personas')
+@router.get('/entitlements/personas')
 async def get_personas():
     """Get all personas"""
     try:
@@ -77,7 +77,7 @@ async def get_personas():
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/entitlements/personas/{persona_id}')
+@router.get('/entitlements/personas/{persona_id}')
 async def get_persona(persona_id: str):
     """Get a specific persona"""
     try:
@@ -109,7 +109,7 @@ async def get_persona(persona_id: str):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.post('/api/entitlements/personas')
+@router.post('/entitlements/personas')
 async def create_persona(persona_data: dict):
     """Create a new persona"""
     try:
@@ -153,7 +153,7 @@ async def create_persona(persona_data: dict):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.put('/api/entitlements/personas/{persona_id}')
+@router.put('/entitlements/personas/{persona_id}')
 async def update_persona(persona_id: str, persona_data: dict):
     """Update a persona"""
     try:
@@ -203,7 +203,7 @@ async def update_persona(persona_id: str, persona_data: dict):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.delete('/api/entitlements/personas/{persona_id}')
+@router.delete('/entitlements/personas/{persona_id}')
 async def delete_persona(persona_id: str):
     """Delete a persona"""
     try:
@@ -229,7 +229,7 @@ async def delete_persona(persona_id: str):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.post('/api/entitlements/personas/{persona_id}/privileges')
+@router.post('/entitlements/personas/{persona_id}/privileges')
 async def add_privilege(persona_id: str, privilege_data: dict):
     """Add a privilege to a persona"""
     try:
@@ -279,7 +279,7 @@ async def add_privilege(persona_id: str, privilege_data: dict):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.delete('/api/entitlements/personas/{persona_id}/privileges/{securable_id:path}')
+@router.delete('/entitlements/personas/{persona_id}/privileges/{securable_id:path}')
 async def remove_privilege(persona_id: str, securable_id: str):
     """Remove a privilege from a persona"""
     try:
@@ -327,7 +327,7 @@ async def remove_privilege(persona_id: str, securable_id: str):
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.put('/api/entitlements/personas/{persona_id}/groups')
+@router.put('/entitlements/personas/{persona_id}/groups')
 async def update_persona_groups(persona_id: str, groups_data: dict):
     """Update groups for a persona"""
     try:

@@ -26,8 +26,4 @@ export interface ProductStatus {
   description: string;
 }
 
-export interface ProductType {
-  id: string;
-  name: string;
-  description: string;
-} 
+export type ProductType = string; 
