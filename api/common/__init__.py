@@ -13,23 +13,23 @@ This package provides common utilities for:
 """
 
 from .config import ConfigManager, get_config, get_settings, init_config
-from .logging import get_logger
-from .workspace_client import get_workspace_client, get_sql_connection, CachedWorkspaceClient
-from .database import get_db, InMemorySession
-from .notifications import get_notification_service, NotificationService
-from .search import get_search_service, SearchService
-from .job_runner import get_job_runner, JobRunner
-from .git import get_git_service, GitService
+from .database import InMemorySession, get_db
 from .deps import (
     get_db_dep,
+    get_git_service_dep,
+    get_job_runner_dep,
     get_notification_service_dep,
     get_search_service_dep,
-    get_job_runner_dep,
-    get_git_service_dep,
     get_user_id,
-    require_user_id
+    require_user_id,
 )
-from .middleware import LoggingMiddleware, ErrorHandlingMiddleware
+from .git import GitService, get_git_service
+from .job_runner import JobRunner, get_job_runner
+from .logging import get_logger
+from .middleware import ErrorHandlingMiddleware, LoggingMiddleware
+from .notifications import NotificationService, get_notification_service
+from .search import SearchService, get_search_service
+from .workspace_client import CachedWorkspaceClient, get_sql_connection, get_workspace_client
 
 __all__ = [
     "ConfigManager",

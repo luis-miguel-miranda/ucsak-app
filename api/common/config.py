@@ -1,14 +1,12 @@
 from __future__ import annotations
-import sys
-import os
+
+from datetime import datetime
 from pathlib import Path
-import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
+
 import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings
-from dotenv import load_dotenv
-from datetime import datetime
 
 from .logging import get_logger
 
@@ -19,10 +17,10 @@ DOTENV_FILE = Path(__file__).parent.parent.parent / Path(".env")
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     # Database settings
     DATABASE_URL: Optional[str] = Field(None, env='DATABASE_URL')
-    
+
     # Databricks connection settings
     DATABRICKS_HOST: str
     DATABRICKS_WAREHOUSE_ID: str
@@ -31,32 +29,32 @@ class Settings(BaseSettings):
     DATABRICKS_VOLUME: str
     DATABRICKS_TOKEN: Optional[str] = None  # Optional since handled by SDK
     DATABRICKS_HTTP_PATH: Optional[str] = None  # Optional since handled by SDK
-    
+
     # Environment
     ENV: str = "LOCAL"  # LOCAL, DEV, PROD
-    
+
     # Application settings
     DEBUG: bool = Field(False, env='DEBUG')
     LOG_LEVEL: str = Field('INFO', env='LOG_LEVEL')
     LOG_FILE: Optional[str] = Field(None, env='LOG_FILE')
-    
+
     # Git settings for YAML storage
     GIT_REPO_URL: Optional[str] = Field(None, env='GIT_REPO_URL')
     GIT_BRANCH: str = Field('main', env='GIT_BRANCH')
     GIT_USERNAME: Optional[str] = Field(None, env='GIT_USERNAME')
     GIT_PASSWORD: Optional[str] = Field(None, env='GIT_PASSWORD')
-    
+
     # Job settings
     job_cluster_id: Optional[str] = None
     sync_enabled: bool = False
     sync_repository: Optional[str] = None
     enabled_jobs: List[str] = Field(default_factory=list)
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         env_file = DOTENV_FILE
         case_sensitive = True
-    
+
     def to_dict(self):
         return {
             'job_cluster_id': self.job_cluster_id,
@@ -68,7 +66,7 @@ class Settings(BaseSettings):
 
 class ConfigManager:
     """Manages application configuration and YAML files."""
-    
+
     def __init__(self, settings: Settings) -> None:
         """Initialize the configuration manager.
         
@@ -78,7 +76,7 @@ class ConfigManager:
         self.settings = settings
         self.data_dir = Path('api/data')
         self.data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def load_yaml(self, filename: str) -> Dict[str, Any]:
         """Load a YAML file from the data directory.
         
@@ -95,14 +93,14 @@ class ConfigManager:
         file_path = self.data_dir / filename
         if not file_path.exists():
             raise FileNotFoundError(f"YAML file not found: {filename}")
-            
+
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 return yaml.safe_load(f)
         except yaml.YAMLError as e:
-            logger.error(f"Error loading YAML file {filename}: {str(e)}")
+            logger.error(f"Error loading YAML file {filename}: {e!s}")
             raise
-    
+
     def save_yaml(self, filename: str, data: Dict[str, Any]) -> None:
         """Save data to a YAML file in the data directory.
         
@@ -118,7 +116,7 @@ class ConfigManager:
             with open(file_path, 'w') as f:
                 yaml.dump(data, f, default_flow_style=False)
         except yaml.YAMLError as e:
-            logger.error(f"Error saving YAML file {filename}: {str(e)}")
+            logger.error(f"Error saving YAML file {filename}: {e!s}")
             raise
 
 # Global configuration instances
@@ -128,7 +126,7 @@ config_manager: Optional[ConfigManager] = None
 def init_config() -> None:
     """Initialize the global configuration instances."""
     global _settings, config_manager
-    
+
     # Load environment variables from .env file if it exists
     if DOTENV_FILE.exists():
         logger.info(f"Loading environment from {DOTENV_FILE}")
@@ -136,7 +134,7 @@ def init_config() -> None:
     else:
         logger.info("No .env file found, using existing environment variables")
         _settings = Settings()
-    
+
     config_manager = ConfigManager(_settings)
 
 def get_settings() -> Settings:

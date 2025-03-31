@@ -1,7 +1,9 @@
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
-from datetime import datetime
+
 
 class DataProductType(str, Enum):
     SOURCE_ALIGNED = "source-aligned"
@@ -67,4 +69,4 @@ class DataProduct(BaseModel):
     updated: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        use_enum_values = True 
+        use_enum_values = True

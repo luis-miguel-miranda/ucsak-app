@@ -1,15 +1,15 @@
+import logging
+import time
+from typing import Awaitable, Callable
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
-import time
-import logging
-from typing import Callable, Awaitable
 
 logger = logging.getLogger(__name__)
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Middleware for logging requests and responses."""
-    
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -21,16 +21,16 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     """Middleware for handling errors."""
-    
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         try:
             return await call_next(request)
         except Exception as e:
-            logger.error(f"Error processing request: {str(e)}")
+            logger.error(f"Error processing request: {e!s}")
             return Response(
                 content=str(e),
                 status_code=500,
                 media_type="text/plain"
-            ) 
+            )

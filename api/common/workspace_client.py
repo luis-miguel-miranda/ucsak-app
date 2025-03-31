@@ -1,14 +1,13 @@
-import os
-import time
 import logging
+import time
 from functools import wraps
-from typing import Dict, Any, Callable
-from fastapi import Depends
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.core import Config
-from databricks import sql
+from typing import Any, Callable, Dict
 
-from .config import get_settings, Settings
+from databricks import sql
+from databricks.sdk import WorkspaceClient
+from fastapi import Depends
+
+from .config import Settings, get_settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,8 +26,8 @@ class CachedWorkspaceClient(WorkspaceClient):
                 current_time = time.time()
                 # Check if we have a cached result that's still valid
                 if (
-                    key in self._cache 
-                    and key in self._cache_times 
+                    key in self._cache
+                    and key in self._cache_times
                     and current_time - self._cache_times[key] < self._cache_duration
                 ):
                     logger.info(f"Cache hit for {key} (age: {current_time - self._cache_times[key]:.1f}s)")
@@ -73,7 +72,7 @@ def get_workspace_client(settings: Settings = Depends(get_settings)) -> Workspac
     # Log environment values with obfuscated token
     masked_token = f"{settings.DATABRICKS_TOKEN[:4]}...{settings.DATABRICKS_TOKEN[-4:]}" if settings.DATABRICKS_TOKEN else None
     logger.info(f"Initializing workspace client with host: {settings.DATABRICKS_HOST}, token: {masked_token}")
-    
+
     client = WorkspaceClient(
         host=settings.DATABRICKS_HOST,
         token=settings.DATABRICKS_TOKEN
@@ -100,4 +99,4 @@ def get_sql_connection(settings: Settings = Depends(get_settings)):
             server_hostname=settings.DATABRICKS_HOST,
             http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",
             credentials_provider=lambda: settings.authenticate
-        ) 
+        )

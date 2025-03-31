@@ -1,10 +1,11 @@
-import uuid
-import yaml
-from datetime import datetime
-from typing import Dict, List, Optional, Any, Set
-from pathlib import Path
-from api.models.business_glossary import Domain, GlossaryTerm, BusinessGlossary
 import logging
+import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Set
+
+import yaml
+
+from api.models.business_glossary import BusinessGlossary, Domain, GlossaryTerm
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +13,8 @@ class BusinessGlossaryManager:
     def __init__(self):
         self._domains: Dict[str, Domain] = {}
         self._glossaries: Dict[str, BusinessGlossary] = {}
-        
-    def create_term(self, 
+
+    def create_term(self,
                    name: str,
                    definition: str,
                    domain: str,
@@ -27,7 +28,7 @@ class BusinessGlossaryManager:
         """Create a new glossary term"""
         term_id = str(uuid.uuid4())
         now = datetime.utcnow()
-        
+
         term = GlossaryTerm(
             id=term_id,
             name=name,
@@ -44,23 +45,23 @@ class BusinessGlossaryManager:
             source=source,
             taggedAssets=taggedAssets or []
         )
-        
+
         return term
-    
+
     def get_term(self, term_id: str) -> Optional[GlossaryTerm]:
         """Get a glossary term by ID"""
         for glossary in self._glossaries.values():
             if term_id in glossary.terms:
                 return glossary.terms[term_id]
         return None
-    
+
     def list_terms(self) -> List[GlossaryTerm]:
         """List all glossary terms"""
         terms = []
         for glossary in self._glossaries.values():
             terms.extend(list(glossary.terms.values()))
         return terms
-    
+
     def update_term(self, term_id: str, **kwargs) -> Optional[GlossaryTerm]:
         """Update a glossary term"""
         for glossary in self._glossaries.values():
@@ -72,7 +73,7 @@ class BusinessGlossaryManager:
                 term.updated = datetime.utcnow()
                 return term
         return None
-    
+
     def delete_term(self, term_id: str) -> bool:
         """Delete a glossary term"""
         for glossary in self._glossaries.values():
@@ -80,21 +81,21 @@ class BusinessGlossaryManager:
                 del glossary.terms[term_id]
                 return True
         return False
-    
+
     def search_terms(self, query: str) -> List[GlossaryTerm]:
         """Search for glossary terms"""
         query = query.lower()
         results = []
-        
+
         for glossary in self._glossaries.values():
             for term in glossary.terms.values():
-                if (query in term.name.lower() or 
+                if (query in term.name.lower() or
                     query in term.definition.lower() or
                     any(query in syn.lower() for syn in term.synonyms)):
                     results.append(term)
-                
+
         return results
-    
+
     # Domain methods
     def create_domain(self, id: str, name: str, description: str = None) -> Domain:
         """Create a new domain"""
@@ -105,37 +106,37 @@ class BusinessGlossaryManager:
         )
         self._domains[id] = domain
         return domain
-    
+
     def get_domain(self, domain_id: str) -> Optional[Domain]:
         """Get a domain by ID"""
         return self._domains.get(domain_id)
-    
+
     def list_domains(self) -> List[Domain]:
         """List all domains"""
         return list(self._domains.values())
-    
+
     def update_domain(self, domain_id: str, **kwargs) -> Optional[Domain]:
         """Update a domain"""
         domain = self._domains.get(domain_id)
         if not domain:
             return None
-            
+
         for key, value in kwargs.items():
             if hasattr(domain, key):
                 setattr(domain, key, value)
-                
+
         return domain
-    
+
     def delete_domain(self, domain_id: str) -> bool:
         """Delete a domain"""
         if domain_id in self._domains:
             del self._domains[domain_id]
             return True
         return False
-    
+
     def load_from_yaml(self, file_path: str):
         """Load glossaries from YAML file"""
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f)
             if not data:
                 return
@@ -158,7 +159,7 @@ class BusinessGlossaryManager:
             # Convert terms list to dictionary if needed
             terms_data = glossary_data.get('terms', [])
             terms_dict = {}
-            
+
             # Handle both list and dict formats
             if isinstance(terms_data, list):
                 for term in terms_data:
@@ -213,12 +214,12 @@ class BusinessGlossaryManager:
                 updated_at=datetime.fromisoformat(glossary_data['updated_at'].replace('Z', '+00:00')),
                 terms=terms_dict
             )
-            
+
             self._glossaries[glossary.id] = glossary
 
         return True
 
-    def create_glossary(self, name: str, description: str, scope: str, org_unit: str, 
+    def create_glossary(self, name: str, description: str, scope: str, org_unit: str,
                        domain: str, parent_glossary_ids: List[str] = None, tags: List[str] = None) -> BusinessGlossary:
         """Create a new business glossary"""
         glossary = BusinessGlossary(
@@ -246,7 +247,7 @@ class BusinessGlossaryManager:
         """Get combined terms for an organizational unit"""
         # Find all relevant glossaries
         relevant_glossaries = self._get_relevant_glossaries(org_unit)
-        
+
         # Combine terms, with more specific terms overriding general ones
         combined_terms: Dict[str, GlossaryTerm] = {}
         for glossary in relevant_glossaries:
@@ -254,7 +255,7 @@ class BusinessGlossaryManager:
                 # Terms from more specific glossaries override general ones
                 if term.name not in combined_terms:
                     combined_terms[term.name] = term
-        
+
         return list(combined_terms.values())
 
     def _get_relevant_glossaries(self, org_unit: str) -> List[BusinessGlossary]:
@@ -267,7 +268,7 @@ class BusinessGlossaryManager:
                 return
             visited.add(glossary.id)
             relevant_glossaries.append(glossary)
-            
+
             # Add parent glossaries
             for parent_id in glossary.parent_glossary_ids:
                 parent = self._glossaries.get(parent_id)
@@ -282,7 +283,7 @@ class BusinessGlossaryManager:
         # Sort by scope specificity (company -> division -> department -> team)
         scope_order = {"company": 0, "division": 1, "department": 2, "team": 3}
         relevant_glossaries.sort(key=lambda g: scope_order.get(g.scope, 99))
-        
+
         return relevant_glossaries
 
     def update_glossary(self, glossary_id: str, updates: dict) -> Optional[BusinessGlossary]:
@@ -290,7 +291,7 @@ class BusinessGlossaryManager:
         glossary = self._glossaries.get(glossary_id)
         if not glossary:
             return None
-            
+
         for key, value in updates.items():
             if hasattr(glossary, key):
                 setattr(glossary, key, value)
@@ -385,4 +386,4 @@ class BusinessGlossaryManager:
         return {
             'glossaries': len(self._glossaries),
             'terms': total_terms
-        } 
+        }

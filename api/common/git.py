@@ -1,19 +1,18 @@
-from typing import Dict, Any, List, Optional
-from pathlib import Path
-import git
-from git.exc import GitCommandError
-import yaml
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .logging import get_logger
+import git
+import yaml
+
 from .config import get_settings
-from .notifications import NotificationService, NotificationType
+from .logging import get_logger
 
 logger = get_logger(__name__)
 
 class GitService:
     """Service for managing YAML files in a Git repository."""
-    
+
     def __init__(self) -> None:
         """Initialize the Git service."""
         settings = get_settings()
@@ -21,19 +20,19 @@ class GitService:
         self.branch = settings.GIT_BRANCH
         self.username = settings.GIT_USERNAME
         self.password = settings.GIT_PASSWORD
-        
+
         if not all([self.repo_url, self.username, self.password]):
             logger.warning("Git repository not configured")
             return
-        
+
         self.repo_dir = Path('api/data/git')
         self.repo_dir.mkdir(parents=True, exist_ok=True)
-        
+
         try:
             self._init_repo()
         except Exception as e:
-            logger.error(f"Error initializing Git repository: {str(e)}")
-    
+            logger.error(f"Error initializing Git repository: {e!s}")
+
     def _init_repo(self) -> None:
         """Initialize or update the Git repository."""
         if not (self.repo_dir / '.git').exists():
@@ -58,7 +57,7 @@ class GitService:
                     'GIT_PASSWORD': self.password
                 }
             )
-    
+
     def save_yaml(
         self,
         filename: str,
@@ -78,21 +77,21 @@ class GitService:
         if not self.repo_url:
             logger.warning("Git repository not configured")
             return False
-        
+
         try:
             # Save YAML file
             file_path = self.repo_dir / filename
             with open(file_path, 'w') as f:
                 yaml.dump(data, f, default_flow_style=False)
-            
+
             # Stage and commit changes
             self.repo.index.add([str(file_path)])
-            
+
             if not commit_message:
                 commit_message = f"Update {filename} at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
-            
+
             self.repo.index.commit(commit_message)
-            
+
             # Push changes
             self.repo.git.push(
                 'origin',
@@ -102,14 +101,14 @@ class GitService:
                     'GIT_PASSWORD': self.password
                 }
             )
-            
+
             logger.info(f"Successfully saved and committed {filename}")
             return True
-            
+
         except Exception as e:
-            logger.error(f"Error saving YAML file to Git: {str(e)}")
+            logger.error(f"Error saving YAML file to Git: {e!s}")
             return False
-    
+
     def load_yaml(self, filename: str) -> Optional[Dict[str, Any]]:
         """Load a YAML file from the Git repository.
         
@@ -122,19 +121,19 @@ class GitService:
         if not self.repo_url:
             logger.warning("Git repository not configured")
             return None
-        
+
         try:
             file_path = self.repo_dir / filename
             if not file_path.exists():
                 return None
-            
-            with open(file_path, 'r') as f:
+
+            with open(file_path) as f:
                 return yaml.safe_load(f)
-                
+
         except Exception as e:
-            logger.error(f"Error loading YAML file from Git: {str(e)}")
+            logger.error(f"Error loading YAML file from Git: {e!s}")
             return None
-    
+
     def list_files(self, pattern: str = "*.yaml") -> List[str]:
         """List YAML files in the repository.
         
@@ -147,15 +146,15 @@ class GitService:
         if not self.repo_url:
             logger.warning("Git repository not configured")
             return []
-        
+
         try:
             return [
                 str(f.relative_to(self.repo_dir))
                 for f in self.repo_dir.glob(pattern)
             ]
-            
+
         except Exception as e:
-            logger.error(f"Error listing files in Git repository: {str(e)}")
+            logger.error(f"Error listing files in Git repository: {e!s}")
             return []
 
 # Global Git service instance
@@ -177,4 +176,4 @@ def get_git_service() -> GitService:
     """
     if not git_service:
         raise RuntimeError("Git service not initialized")
-    return git_service 
+    return git_service

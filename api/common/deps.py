@@ -1,12 +1,14 @@
 from typing import Generator, Optional
-from fastapi import Depends, HTTPException, status
 
-from .database import get_db, InMemorySession
-from .config import get_settings, Settings
-from .notifications import get_notification_service, NotificationService
-from .search import get_search_service, SearchService
-from .job_runner import get_job_runner, JobRunner
-from .git import get_git_service, GitService
+from fastapi import HTTPException, status
+
+from .config import Settings, get_settings
+from .database import InMemorySession, get_db
+from .git import GitService, get_git_service
+from .job_runner import JobRunner, get_job_runner
+from .notifications import NotificationService, get_notification_service
+from .search import SearchService, get_search_service
+
 
 def get_settings_dep() -> Settings:
     """Get application settings."""
@@ -61,4 +63,4 @@ def require_user_id(user_id: Optional[str] = None) -> str:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User ID required"
         )
-    return user_id 
+    return user_id

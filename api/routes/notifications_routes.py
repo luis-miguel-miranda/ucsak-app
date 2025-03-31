@@ -1,12 +1,11 @@
+import logging
 import os
 from pathlib import Path
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException
-import logging
-from api.models.notification import Notification
+
+from fastapi import APIRouter, HTTPException
+
 from api.controller.notification_manager import NotificationManager, NotificationNotFoundError
-from api.common.deps import get_notification_service_dep, get_user_id
-from api.common.notifications import NotificationService
+from api.models.notification import Notification
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +22,7 @@ if os.path.exists(yaml_path):
         notifications_manager.load_from_yaml()
         logger.info(f"Successfully loaded notifications data from {yaml_path}")
     except Exception as e:
-        logger.error(f"Error loading notifications data: {str(e)}")
+        logger.error(f"Error loading notifications data: {e!s}")
 else:
     logger.warning(f"Notifications YAML file not found at {yaml_path}")
 
@@ -35,7 +34,7 @@ async def get_notifications():
         notifications = notifications_manager.get_notifications()
         return notifications
     except Exception as e:
-        logger.error(f"Error retrieving notifications: {str(e)}")
+        logger.error(f"Error retrieving notifications: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post('/notifications')

@@ -1,11 +1,11 @@
-from typing import Dict, Any, List, Optional, Type, TypeVar
+import json
 from dataclasses import dataclass
 from datetime import datetime
-import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
-from .logging import get_logger
 from .config import get_config
+from .logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -21,14 +21,14 @@ class SearchIndex:
 
 class SearchService:
     """Service for indexing and searching dataclasses."""
-    
+
     def __init__(self) -> None:
         """Initialize the search service."""
         config = get_config()
         self.index_dir = config.data_dir / 'search'
         self.index_dir.mkdir(parents=True, exist_ok=True)
         self.indices: Dict[str, SearchIndex] = {}
-    
+
     def register_index(
         self,
         name: str,
@@ -50,7 +50,7 @@ class SearchService:
             index_file=index_file
         )
         logger.info(f"Registered search index {name}")
-    
+
     def index_item(self, name: str, item: Any) -> None:
         """Index a single item.
         
@@ -63,10 +63,10 @@ class SearchService:
         """
         if name not in self.indices:
             raise KeyError(f"Index {name} not found")
-            
+
         index = self.indices[name]
         items = self._load_index(index)
-        
+
         # Convert item to dict and extract search fields
         item_dict = {
             k: v for k, v in item.__dict__.items()
@@ -74,7 +74,7 @@ class SearchService:
         }
         item_dict['id'] = getattr(item, 'id', None)
         item_dict['_indexed_at'] = datetime.utcnow().isoformat()
-        
+
         # Update or append item
         for i, existing in enumerate(items):
             if existing['id'] == item_dict['id']:
@@ -82,10 +82,10 @@ class SearchService:
                 break
         else:
             items.append(item_dict)
-        
+
         self._save_index(index, items)
         logger.debug(f"Indexed item {item_dict['id']} in {name}")
-    
+
     def search(
         self,
         name: str,
@@ -109,26 +109,26 @@ class SearchService:
         """
         if name not in self.indices:
             raise KeyError(f"Index {name} not found")
-            
+
         index = self.indices[name]
         items = self._load_index(index)
-        
+
         # Simple prefix search on all search fields
         query = query.lower()
         matches = []
-        
+
         for item in items:
             for field in index.search_fields:
                 if field in item and isinstance(item[field], str):
                     if item[field].lower().startswith(query):
                         matches.append(item)
                         break
-        
+
         # Sort by most recently indexed
         matches.sort(key=lambda x: x['_indexed_at'], reverse=True)
-        
+
         return matches[offset:offset + limit]
-    
+
     def _load_index(self, index: SearchIndex) -> List[Dict[str, Any]]:
         """Load items from an index file.
         
@@ -140,14 +140,14 @@ class SearchService:
         """
         if not index.index_file.exists():
             return []
-            
+
         try:
-            with open(index.index_file, 'r') as f:
+            with open(index.index_file) as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            logger.error(f"Error loading index {index.name}: {str(e)}")
+            logger.error(f"Error loading index {index.name}: {e!s}")
             return []
-    
+
     def _save_index(self, index: SearchIndex, items: List[Dict[str, Any]]) -> None:
         """Save items to an index file.
         
@@ -159,7 +159,7 @@ class SearchService:
             with open(index.index_file, 'w') as f:
                 json.dump(items, f, indent=2)
         except Exception as e:
-            logger.error(f"Error saving index {index.name}: {str(e)}")
+            logger.error(f"Error saving index {index.name}: {e!s}")
             raise
 
 # Global search service instance
@@ -181,4 +181,4 @@ def get_search_service() -> SearchService:
     """
     if not search_service:
         raise RuntimeError("Search service not initialized")
-    return search_service 
+    return search_service

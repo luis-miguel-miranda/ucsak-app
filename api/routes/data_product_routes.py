@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException
-from api.controller.data_product_manager import DataProductManager, DataSource, DataOutput, SchemaField
-from datetime import datetime
-import os
 import logging
+import os
 from pathlib import Path
-from typing import List, Dict, Any
+
+from fastapi import APIRouter, HTTPException
+
+from api.controller.data_product_manager import DataProductManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,14 +23,14 @@ if os.path.exists(yaml_path):
         product_manager.load_from_yaml(str(yaml_path))
         logger.info(f"Successfully loaded data products from {yaml_path}")
     except Exception as e:
-        logger.error(f"Error loading data products from YAML: {str(e)}")
+        logger.error(f"Error loading data products from YAML: {e!s}")
 else:
     try:
         # Initialize with example data
         product_manager.initialize_example_data()
         logger.info("Initialized example data products")
     except Exception as e:
-        logger.error(f"Error initializing example data products: {str(e)}")
+        logger.error(f"Error initializing example data products: {e!s}")
 
 # Special endpoints first
 @router.get('/data-products/statuses')
@@ -41,7 +41,7 @@ async def get_data_product_statuses():
         logger.info(f"Retrieved {len(statuses)} data product statuses")
         return statuses
     except Exception as e:
-        error_msg = f"Error retrieving data product statuses: {str(e)}"
+        error_msg = f"Error retrieving data product statuses: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -53,7 +53,7 @@ async def get_data_product_types():
         logger.info(f"Retrieved {len(types)} data product types")
         return types
     except Exception as e:
-        error_msg = f"Error retrieving data product types: {str(e)}"
+        error_msg = f"Error retrieving data product types: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -65,7 +65,7 @@ async def get_data_product_metadata():
         logger.info("Retrieved data product metadata")
         return metadata
     except Exception as e:
-        error_msg = f"Error retrieving data product metadata: {str(e)}"
+        error_msg = f"Error retrieving data product metadata: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -76,7 +76,7 @@ async def get_data_products():
     try:
         logger.info("Retrieving all data products")
         products = product_manager.list_products()
-        
+
         # Format the response
         formatted_products = []
         for p in products:
@@ -88,21 +88,21 @@ async def get_data_products():
                 'type': p.type.value if hasattr(p.type, 'value') else p.type,
                 'status': p.status.value if hasattr(p.status, 'value') else p.status
             }
-            
+
             # Add optional fields if they exist
             if hasattr(p, 'created_at'):
                 product_dict['created_at'] = p.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             else:
                 product_dict['created_at'] = p.created.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if hasattr(p, 'created') else None
-                
+
             if hasattr(p, 'updated_at'):
                 product_dict['updated_at'] = p.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             else:
                 product_dict['updated_at'] = p.updated.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if hasattr(p, 'updated') else None
-                
+
             if hasattr(p, 'version'):
                 product_dict['version'] = p.version
-                
+
             # Handle sources with proper error checking
             if hasattr(p, 'sources'):
                 try:
@@ -120,13 +120,13 @@ async def get_data_products():
                             } for s in p.sources
                         ]
                 except Exception as e:
-                    logger.warning(f"Error processing sources for product {p.id}: {str(e)}")
+                    logger.warning(f"Error processing sources for product {p.id}: {e!s}")
                     product_dict['sources'] = []
             elif hasattr(p, 'data_sources'):
                 product_dict['sources'] = p.data_sources
             else:
                 product_dict['sources'] = []
-                
+
             # Handle outputs with proper error checking
             if hasattr(p, 'outputs'):
                 try:
@@ -144,19 +144,19 @@ async def get_data_products():
                             } for o in p.outputs
                         ]
                 except Exception as e:
-                    logger.warning(f"Error processing outputs for product {p.id}: {str(e)}")
+                    logger.warning(f"Error processing outputs for product {p.id}: {e!s}")
                     product_dict['outputs'] = []
             elif hasattr(p, 'data_outputs'):
                 product_dict['outputs'] = p.data_outputs
             else:
                 product_dict['outputs'] = []
-                
+
             formatted_products.append(product_dict)
-        
+
         logger.info(f"Retrieved {len(formatted_products)} data products")
         return formatted_products
     except Exception as e:
-        error_msg = f"Error retrieving data products: {str(e)}"
+        error_msg = f"Error retrieving data products: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -168,7 +168,7 @@ async def get_data_product(product_id: str):
         if not product:
             logger.warning(f"Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
-        
+
         # Format the response
         product_dict = {
             'id': product.id,
@@ -178,21 +178,21 @@ async def get_data_product(product_id: str):
             'type': product.type.value if hasattr(product.type, 'value') else product.type,
             'status': product.status.value if hasattr(product.status, 'value') else product.status
         }
-        
+
         # Add optional fields if they exist
         if hasattr(product, 'created_at'):
             product_dict['created_at'] = product.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             product_dict['created_at'] = product.created.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if hasattr(product, 'created') else None
-            
+
         if hasattr(product, 'updated_at'):
             product_dict['updated_at'] = product.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             product_dict['updated_at'] = product.updated.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if hasattr(product, 'updated') else None
-            
+
         if hasattr(product, 'version'):
             product_dict['version'] = product.version
-            
+
         # Handle sources with proper error checking
         if hasattr(product, 'sources'):
             try:
@@ -210,13 +210,13 @@ async def get_data_product(product_id: str):
                         } for s in product.sources
                     ]
             except Exception as e:
-                logger.warning(f"Error processing sources for product {product.id}: {str(e)}")
+                logger.warning(f"Error processing sources for product {product.id}: {e!s}")
                 product_dict['sources'] = []
         elif hasattr(product, 'data_sources'):
             product_dict['sources'] = product.data_sources
         else:
             product_dict['sources'] = []
-            
+
         # Handle outputs with proper error checking
         if hasattr(product, 'outputs'):
             try:
@@ -234,17 +234,17 @@ async def get_data_product(product_id: str):
                         } for o in product.outputs
                     ]
             except Exception as e:
-                logger.warning(f"Error processing outputs for product {product.id}: {str(e)}")
+                logger.warning(f"Error processing outputs for product {product.id}: {e!s}")
                 product_dict['outputs'] = []
         elif hasattr(product, 'data_outputs'):
             product_dict['outputs'] = product.data_outputs
         else:
             product_dict['outputs'] = []
-            
+
         logger.info(f"Retrieved data product with ID: {product_id}")
         return product_dict
     except Exception as e:
-        error_msg = f"Error retrieving data product {product_id}: {str(e)}"
+        error_msg = f"Error retrieving data product {product_id}: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -253,7 +253,7 @@ async def create_data_product(product_data: dict):
     """Create a new data product"""
     try:
         logger.info(f"Creating new data product: {product_data.get('name', '')}")
-        
+
         # Create data product
         product = product_manager.create_product(
             name=product_data.get('name', ''),
@@ -266,15 +266,15 @@ async def create_data_product(product_data: dict):
             outputs=product_data.get('outputs', []),
             contracts=product_data.get('contracts', [])
         )
-        
+
         # Save changes to YAML
         try:
             yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
             product_manager.save_to_yaml(str(yaml_path))
             logger.info(f"Saved updated data products to {yaml_path}")
         except Exception as e:
-            logger.warning(f"Could not save updated data to YAML: {str(e)}")
-        
+            logger.warning(f"Could not save updated data to YAML: {e!s}")
+
         # Format the response
         response = {
             'id': product.id,
@@ -286,11 +286,11 @@ async def create_data_product(product_data: dict):
             'created_at': product.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'updated_at': product.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         }
-        
+
         logger.info(f"Successfully created data product with ID: {product.id}")
         return response
     except Exception as e:
-        error_msg = f"Error creating data product: {str(e)}"
+        error_msg = f"Error creating data product: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -302,29 +302,29 @@ async def update_data_product(product_id: str, product_data: dict):
         if not product:
             logger.warning(f"Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
-        
+
         logger.info(f"Updating data product with ID: {product_id}")
-        
+
         # Update data product
         updated_product = product_manager.update_product(
             product_id=product_id,
-            name=product_data.get('name', None),
-            description=product_data.get('description', None),
-            owner=product_data.get('owner', None),
-            type=product_data.get('type', None),
-            status=product_data.get('status', None),
-            sources=product_data.get('sources', None),
-            outputs=product_data.get('outputs', None)
+            name=product_data.get('name'),
+            description=product_data.get('description'),
+            owner=product_data.get('owner'),
+            type=product_data.get('type'),
+            status=product_data.get('status'),
+            sources=product_data.get('sources'),
+            outputs=product_data.get('outputs')
         )
-        
+
         # Save changes to YAML
         try:
             yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
             product_manager.save_to_yaml(str(yaml_path))
             logger.info(f"Saved updated data products to {yaml_path}")
         except Exception as e:
-            logger.warning(f"Could not save updated data to YAML: {str(e)}")
-        
+            logger.warning(f"Could not save updated data to YAML: {e!s}")
+
         # Format the response
         response = {
             'id': updated_product.id,
@@ -336,11 +336,11 @@ async def update_data_product(product_id: str, product_data: dict):
             'created_at': updated_product.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'updated_at': updated_product.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         }
-        
+
         logger.info(f"Successfully updated data product with ID: {product_id}")
         return response
     except Exception as e:
-        error_msg = f"Error updating data product {product_id}: {str(e)}"
+        error_msg = f"Error updating data product {product_id}: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -351,26 +351,26 @@ async def delete_data_product(product_id: str):
         if not product_manager.get_product(product_id):
             logger.warning(f"Data product not found for deletion with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
-        
+
         logger.info(f"Deleting data product with ID: {product_id}")
         product_manager.delete_product(product_id)
-        
+
         # Save changes to YAML
         try:
             yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
             product_manager.save_to_yaml(str(yaml_path))
             logger.info(f"Saved updated data products to {yaml_path}")
         except Exception as e:
-            logger.warning(f"Could not save updated data to YAML: {str(e)}")
-        
+            logger.warning(f"Could not save updated data to YAML: {e!s}")
+
         logger.info(f"Successfully deleted data product with ID: {product_id}")
         return None
     except Exception as e:
-        error_msg = f"Error deleting data product {product_id}: {str(e)}"
+        error_msg = f"Error deleting data product {product_id}: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
 def register_routes(app):
     """Register routes with the app"""
     app.include_router(router)
-    logger.info("Data product routes registered") 
+    logger.info("Data product routes registered")

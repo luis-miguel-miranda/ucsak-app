@@ -1,11 +1,10 @@
-import os
 import logging
-from fastapi import APIRouter, Depends, HTTPException
-from typing import List, Dict, Any
-from databricks.sdk import WorkspaceClient
 
-from ..controller.settings_manager import SettingsManager
+from databricks.sdk import WorkspaceClient
+from fastapi import APIRouter, Depends, HTTPException
+
 from ..common.workspace_client import get_workspace_client
+from ..controller.settings_manager import SettingsManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +30,7 @@ async def get_settings(manager: SettingsManager = Depends(get_settings_manager))
         settings = manager.get_settings()
         return settings
     except Exception as e:
-        logger.error(f"Error getting settings: {str(e)}")
+        logger.error(f"Error getting settings: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put('/settings')
@@ -44,7 +43,7 @@ async def update_settings(
         updated = manager.update_settings(settings)
         return updated.to_dict()
     except Exception as e:
-        logger.error(f"Error updating settings: {str(e)}")
+        logger.error(f"Error updating settings: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/settings/health')
@@ -56,7 +55,7 @@ async def health_check(manager: SettingsManager = Depends(get_settings_manager))
         logger.info("Workflows health check successful")
         return {"status": "healthy"}
     except Exception as e:
-        error_msg = f"Workflows health check failed: {str(e)}"
+        error_msg = f"Workflows health check failed: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -74,7 +73,7 @@ async def list_job_clusters(manager: SettingsManager = Depends(get_settings_mana
             'max_workers': cluster.max_workers
         } for cluster in clusters]
     except Exception as e:
-        logger.error(f"Error fetching job clusters: {str(e)}")
+        logger.error(f"Error fetching job clusters: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 def register_routes(app):

@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-import uuid
+from typing import Any, Dict, List
+
 
 @dataclass
 class AccessPrivilege:
@@ -25,10 +25,10 @@ class AccessPrivilege:
         )
 
 class Persona:
-    def __init__(self, 
-                 id: str, 
-                 name: str, 
-                 description: str, 
+    def __init__(self,
+                 id: str,
+                 name: str,
+                 description: str,
                  privileges: List[AccessPrivilege] = None,
                  groups: List[str] = None,
                  created_at: datetime = None,
@@ -55,14 +55,14 @@ class Persona:
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'Persona':
         privileges = [AccessPrivilege.from_dict(p) for p in data.get('privileges', [])]
-        
+
         def parse_datetime(dt_str: str) -> datetime:
             formats = [
                 "%Y-%m-%dT%H:%M:%S.%fZ",
                 "%Y-%m-%dT%H:%M:%SZ",
                 "%Y-%m-%dT%H:%M:%S"
             ]
-            
+
             for fmt in formats:
                 try:
                     return datetime.strptime(dt_str, fmt)
@@ -72,7 +72,7 @@ class Persona:
 
         created_at = parse_datetime(data['created_at']) if 'created_at' in data else None
         updated_at = parse_datetime(data['updated_at']) if 'updated_at' in data else None
-        
+
         return Persona(
             id=data['id'],
             name=data['name'],
@@ -81,4 +81,4 @@ class Persona:
             groups=data.get('groups', []),
             created_at=created_at,
             updated_at=updated_at
-        ) 
+        )

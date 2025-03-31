@@ -1,13 +1,10 @@
-from typing import List, Dict, Any
-from api.models.notification import Notification
-from api.models.business_glossary import GlossaryTerm
-from api.models.data_contract import DataContract
-from api.models.data_product import DataProduct
-from api.controller.notification_manager import NotificationManager
+import logging
+from typing import Any, Dict, List
+
 from api.controller.business_glossary_manager import BusinessGlossaryManager
 from api.controller.data_contract_manager import DataContractManager
 from api.controller.data_product_manager import DataProductManager
-import logging
+from api.controller.notification_manager import NotificationManager
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +35,7 @@ class SearchManager:
 
         # Search notifications
         for notification in self.notification_manager.get_notifications():
-            if (query in notification.title.lower() or 
+            if (query in notification.title.lower() or
                 (notification.description and query in notification.description.lower())):
                 results["notifications"].append({
                     "id": notification.id,
@@ -81,4 +78,4 @@ class SearchManager:
                 })
 
         logger.info(f"Search results: {results}")
-        return results 
+        return results

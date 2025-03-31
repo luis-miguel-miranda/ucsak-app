@@ -1,11 +1,10 @@
-from typing import Dict, Any, List, Optional
-from datetime import datetime
 import json
-from pathlib import Path
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
-from .logging import get_logger
 from .config import get_config
+from .logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -41,7 +40,7 @@ class Notification:
         self.message = message
         self.details = details or {}
         self.created_at = created_at or datetime.utcnow()
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert notification to dictionary.
         
@@ -55,7 +54,7 @@ class Notification:
             "details": self.details,
             "created_at": self.created_at.isoformat()
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Notification':
         """Create notification from dictionary.
@@ -76,14 +75,14 @@ class Notification:
 
 class NotificationService:
     """Service for managing user notifications."""
-    
+
     def __init__(self) -> None:
         """Initialize the notification service."""
         config = get_config()
         self.notifications_dir = config.data_dir / 'notifications'
         self.notifications_dir.mkdir(parents=True, exist_ok=True)
         self.notifications: Dict[str, List[Notification]] = {}
-    
+
     def create_notification(
         self,
         user_id: str,
@@ -108,16 +107,16 @@ class NotificationService:
             message=message,
             details=details
         )
-        
+
         if user_id not in self.notifications:
             self.notifications[user_id] = []
-        
+
         self.notifications[user_id].append(notification)
         self._save_notifications(user_id)
-        
+
         logger.info(f"Created notification {notification.id} for user {user_id}")
         return notification
-    
+
     def get_notifications(
         self,
         user_id: str,
@@ -136,11 +135,11 @@ class NotificationService:
         """
         if user_id not in self.notifications:
             self._load_notifications(user_id)
-        
+
         notifications = self.notifications.get(user_id, [])
         notifications.sort(key=lambda x: x.created_at, reverse=True)
         return notifications[offset:offset + limit]
-    
+
     def update_progress(
         self,
         user_id: str,
@@ -161,7 +160,7 @@ class NotificationService:
         """
         if user_id not in self.notifications:
             return None
-        
+
         for notification in self.notifications[user_id]:
             if notification.id == notification_id and notification.type == NotificationType.PROGRESS:
                 notification.details["progress"] = progress
@@ -169,9 +168,9 @@ class NotificationService:
                     notification.message = message
                 self._save_notifications(user_id)
                 return notification
-        
+
         return None
-    
+
     def delete_notification(self, user_id: str, notification_id: str) -> bool:
         """Delete a notification.
         
@@ -184,15 +183,15 @@ class NotificationService:
         """
         if user_id not in self.notifications:
             return False
-        
+
         for i, notification in enumerate(self.notifications[user_id]):
             if notification.id == notification_id:
                 del self.notifications[user_id][i]
                 self._save_notifications(user_id)
                 return True
-        
+
         return False
-    
+
     def _load_notifications(self, user_id: str) -> None:
         """Load notifications for a user.
         
@@ -203,18 +202,18 @@ class NotificationService:
         if not file_path.exists():
             self.notifications[user_id] = []
             return
-        
+
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 data = json.load(f)
                 self.notifications[user_id] = [
                     Notification.from_dict(item)
                     for item in data
                 ]
         except Exception as e:
-            logger.error(f"Error loading notifications for user {user_id}: {str(e)}")
+            logger.error(f"Error loading notifications for user {user_id}: {e!s}")
             self.notifications[user_id] = []
-    
+
     def _save_notifications(self, user_id: str) -> None:
         """Save notifications for a user.
         
@@ -230,7 +229,7 @@ class NotificationService:
                     indent=2
                 )
         except Exception as e:
-            logger.error(f"Error saving notifications for user {user_id}: {str(e)}")
+            logger.error(f"Error saving notifications for user {user_id}: {e!s}")
             raise
 
 # Global notification service instance
@@ -252,4 +251,4 @@ def get_notification_service() -> NotificationService:
     """
     if not notification_service:
         raise RuntimeError("Notification service not initialized")
-    return notification_service 
+    return notification_service

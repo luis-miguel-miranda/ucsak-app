@@ -2,6 +2,7 @@ import logging
 import sys
 from typing import Optional
 
+
 def setup_logging(
     level: int = logging.INFO,
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -15,10 +16,10 @@ def setup_logging(
         log_file: Optional file path to write logs to
     """
     handlers = [logging.StreamHandler(sys.stdout)]
-    
+
     if log_file:
         handlers.append(logging.FileHandler(log_file))
-    
+
     logging.basicConfig(
         level=level,
         format=format,
@@ -34,4 +35,4 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Configured logger instance
     """
-    return logging.getLogger(name) 
+    return logging.getLogger(name)

@@ -1,6 +1,8 @@
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Optional
+
+from pydantic import BaseModel
+
 
 class CatalogItem(BaseModel):
     """Represents a catalog item (table, view, etc.)"""
@@ -24,4 +26,4 @@ class CatalogOperation(BaseModel):
     error: Optional[str] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = {} 
+    metadata: Dict[str, Any] = {}

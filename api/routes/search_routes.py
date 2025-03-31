@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Query
-from typing import List, Dict, Any
 import logging
+
+from fastapi import APIRouter, Query
+
 from api.controller.search_manager import SearchManager
 
 # Configure logging
@@ -26,10 +27,10 @@ async def search(q: str = Query('')):
         results = search_manager.search(q)
         return results
     except Exception as e:
-        logger.error(f"Error during search: {str(e)}")
+        logger.error(f"Error during search: {e!s}")
         return {'error': str(e)}
 
 def register_routes(app):
     """Register search routes with the FastAPI app."""
     app.include_router(router)
-    logger.info("Registered search routes") 
+    logger.info("Registered search routes")

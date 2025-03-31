@@ -43,7 +43,9 @@
     "build:frontend": "yarn build",
     "build:backend": "hatch build",
     "build:all": "yarn build:frontend && hatch build",
-    "install:all": "yarn install && hatch env create"
+    "install:all": "yarn install && hatch env create",
+    "clean": "yarn cache clean",
+    "clean:all": "yarn clean && rm -rf node_modules"
   },
   "eslintConfig": {
     "extends": [
@@ -68,5 +70,8 @@
     "@types/react-sparklines": "^1.7.5",
     "@types/styled-components": "^5.1.34",
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

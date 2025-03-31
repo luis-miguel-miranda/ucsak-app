@@ -1,10 +1,10 @@
 import logging
-from fastapi import APIRouter, HTTPException, Depends
+
 from databricks.sdk import WorkspaceClient
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..common.workspace_client import get_workspace_client
 from ..controller.catalog_commander_manager import CatalogCommanderManager
-from ..models.catalog_commander import CatalogItem, CatalogOperation
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +29,7 @@ async def list_catalogs(manager: CatalogCommanderManager = Depends(get_catalog_m
     try:
         return manager.list_catalogs()
     except Exception as e:
-        error_msg = f"Error fetching catalogs: {str(e)}"
+        error_msg = f"Error fetching catalogs: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -42,7 +42,7 @@ async def list_schemas(
     try:
         return manager.list_schemas(catalog_name)
     except Exception as e:
-        error_msg = f"Error fetching schemas for catalog {catalog_name}: {str(e)}"
+        error_msg = f"Error fetching schemas for catalog {catalog_name}: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -56,7 +56,7 @@ async def list_tables(
     try:
         return manager.list_tables(catalog_name, schema_name)
     except Exception as e:
-        error_msg = f"Error fetching tables for schema {catalog_name}.{schema_name}: {str(e)}"
+        error_msg = f"Error fetching tables for schema {catalog_name}.{schema_name}: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -69,7 +69,7 @@ async def get_dataset(
     try:
         return manager.get_dataset(dataset_path)
     except Exception as e:
-        error_msg = f"Error fetching dataset {dataset_path}: {str(e)}"
+        error_msg = f"Error fetching dataset {dataset_path}: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -79,11 +79,11 @@ async def health_check(manager: CatalogCommanderManager = Depends(get_catalog_ma
     try:
         return manager.health_check()
     except Exception as e:
-        error_msg = f"Health check failed: {str(e)}"
+        error_msg = f"Health check failed: {e!s}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
 def register_routes(app):
     """Register routes with the app"""
     app.include_router(router)
-    logger.info("Catalog commander routes registered") 
+    logger.info("Catalog commander routes registered")

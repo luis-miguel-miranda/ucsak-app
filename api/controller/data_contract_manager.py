@@ -1,12 +1,13 @@
+import json
+import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Union, Any
 from enum import Enum
-import uuid
+from typing import Any, Dict, List, Optional
+
 import yaml
-import json
-from pathlib import Path
-import logging
+
 from api.models.data_contract import DataContract
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ class DataContractManager:
     def __init__(self):
         self._contracts: Dict[str, DataContract] = {}
 
-    def create_contract(self, name: str, contract_text: str, format: str, version: str, 
+    def create_contract(self, name: str, contract_text: str, format: str, version: str,
                        owner: str, description: Optional[str] = None) -> DataContract:
         """Create a new contract"""
         # Validate format
@@ -141,7 +142,7 @@ class DataContractManager:
             owner=owner,
             description=description
         )
-        
+
         self._contracts[contract.id] = contract
         return contract
 
@@ -153,7 +154,7 @@ class DataContractManager:
         """List all contracts"""
         return list(self._contracts.values())
 
-    def update_contract(self, contract_id: str, name: Optional[str] = None, 
+    def update_contract(self, contract_id: str, name: Optional[str] = None,
                        contract_text: Optional[str] = None, format: Optional[str] = None,
                        version: Optional[str] = None, owner: Optional[str] = None,
                        description: Optional[str] = None, status: Optional[str] = None) -> Optional[DataContract]:
@@ -208,13 +209,13 @@ class DataContractManager:
                 for c in self._contracts.values()
             ]
         }
-        
+
         with open(file_path, 'w') as f:
             yaml.dump(data, f, sort_keys=False)
 
     def load_from_yaml(self, file_path: str):
         """Load contracts from YAML file"""
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f)
 
         if not data or 'contracts' not in data:
@@ -303,7 +304,7 @@ class DataContractManager:
         required_fields = ['name', 'version', 'datasets']
         if not all(field in data for field in required_fields):
             return False
-        
+
         # Add more validation as needed
         return True
 
@@ -316,7 +317,7 @@ class DataContractManager:
             tags=data.get('tags', {}),
             business_description=data.get('description', '')
         )
-        
+
         # Convert ODCS datasets
         datasets = []
         for ds_data in data.get('datasets', []):
@@ -330,20 +331,20 @@ class DataContractManager:
                     nullable=col.get('nullable', True),
                     is_unique=col.get('unique', False)
                 ))
-            
+
             schema = DatasetSchema(
                 columns=columns,
                 primary_key=ds_data.get('schema', {}).get('primaryKey', []),
                 version=ds_data.get('version', '1.0')
             )
-            
+
             # Convert quality rules
             quality = Quality(
                 rules=ds_data.get('quality', {}).get('rules', []),
                 scores=ds_data.get('quality', {}).get('scores', {}),
                 metrics=ds_data.get('quality', {}).get('metrics', {})
             )
-            
+
             # Convert security
             security = Security(
                 classification=self._map_odcs_classification(
@@ -352,7 +353,7 @@ class DataContractManager:
                 pii_data=ds_data.get('security', {}).get('containsPII', False),
                 compliance_labels=ds_data.get('security', {}).get('complianceLabels', [])
             )
-            
+
             # Create dataset
             datasets.append(Dataset(
                 name=ds_data['name'],
@@ -364,7 +365,7 @@ class DataContractManager:
                 lifecycle=DatasetLifecycle(),
                 description=ds_data.get('description', '')
             ))
-        
+
         # Create and return contract
         return self.create_contract(
             name=data['name'],
@@ -412,7 +413,7 @@ class DataContractManager:
 
     def to_odcs_format(self, contract: DataContract) -> Dict:
         """Convert a data contract to ODCS v3 format"""
-        
+
         def map_type_to_odcs(data_type: DataType) -> str:
             """Reverse mapping of data types to ODCS format"""
             mapping = {
@@ -424,7 +425,7 @@ class DataContractManager:
                 DataType.TIMESTAMP: 'timestamp'
             }
             return mapping.get(data_type, 'string')
-        
+
         def map_classification_to_odcs(classification: SecurityClassification) -> str:
             """Reverse mapping of security classifications to ODCS format"""
             mapping = {
@@ -434,7 +435,7 @@ class DataContractManager:
                 SecurityClassification.RESTRICTED: 'restricted'
             }
             return mapping.get(classification, 'internal')
-        
+
         # Convert datasets
         datasets = []
         for ds in contract.datasets:
@@ -449,7 +450,7 @@ class DataContractManager:
                     'unique': col.is_unique,
                     'tags': col.tags
                 })
-            
+
             datasets.append({
                 'name': ds.name,
                 'type': ds.type,
@@ -470,7 +471,7 @@ class DataContractManager:
                     'complianceLabels': ds.security.compliance_labels
                 }
             })
-        
+
         # Build ODCS contract
         return {
             'name': contract.name,

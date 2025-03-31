@@ -1,12 +1,10 @@
-from fastapi import APIRouter, HTTPException
-from api.controller.business_glossary_manager import BusinessGlossaryManager
-from api.models.business_glossary import Domain, GlossaryTerm
-from datetime import datetime
-import os
 import logging
+import os
 from pathlib import Path
-import uuid
-from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException
+
+from api.controller.business_glossary_manager import BusinessGlossaryManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +23,7 @@ if os.path.exists(yaml_path):
         success = glossary_manager.load_from_yaml(str(yaml_path))
         logger.info(f"Successfully loaded business glossary data from {yaml_path}")
     except Exception as e:
-        logger.error(f"Error loading business glossary data: {str(e)}")
+        logger.error(f"Error loading business glossary data: {e!s}")
 else:
     logger.warning(f"Business glossary YAML file not found at {yaml_path}")
 
@@ -37,7 +35,7 @@ async def get_glossaries():
         glossaries = glossary_manager.list_glossaries()
         return {'glossaries': glossaries}
     except Exception as e:
-        logger.error(f"Error retrieving glossaries: {str(e)}")
+        logger.error(f"Error retrieving glossaries: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post('/business-glossaries')
@@ -55,7 +53,7 @@ async def create_glossary(glossary_data: dict):
         )
         return glossary.to_dict()
     except Exception as e:
-        logger.error(f"Error creating glossary: {str(e)}")
+        logger.error(f"Error creating glossary: {e!s}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.put('/business-glossaries/{glossary_id}')
@@ -67,7 +65,7 @@ async def update_glossary(glossary_id: str, glossary_data: dict):
             raise HTTPException(status_code=404, detail="Glossary not found")
         return updated_glossary
     except Exception as e:
-        logger.error(f"Error updating glossary {glossary_id}: {str(e)}")
+        logger.error(f"Error updating glossary {glossary_id}: {e!s}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete('/business-glossaries/{glossary_id}')
@@ -77,7 +75,7 @@ async def delete_glossary(glossary_id: str):
         glossary_manager.delete_glossary(glossary_id)
         return None
     except Exception as e:
-        logger.error(f"Error deleting glossary {glossary_id}: {str(e)}")
+        logger.error(f"Error deleting glossary {glossary_id}: {e!s}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get('/business-glossaries/{glossary_id}/terms')
@@ -89,7 +87,7 @@ async def get_terms(glossary_id: str):
             raise HTTPException(status_code=404, detail="Glossary not found")
         return [term.to_dict() for term in glossary.terms.values()]
     except Exception as e:
-        logger.error(f"Error getting terms for glossary {glossary_id}: {str(e)}")
+        logger.error(f"Error getting terms for glossary {glossary_id}: {e!s}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post('/business-glossaries/{glossary_id}/terms')
@@ -99,7 +97,7 @@ async def create_term(glossary_id: str, term_data: dict):
         glossary = glossary_manager.get_glossary(glossary_id)
         if not glossary:
             raise HTTPException(status_code=404, detail="Glossary not found")
-            
+
         term = glossary_manager.create_term(**term_data)
         glossary_manager.add_term_to_glossary(glossary, term)
         return term.to_dict()
@@ -113,7 +111,7 @@ async def delete_term(glossary_id: str, term_id: str):
         glossary = glossary_manager.get_glossary(glossary_id)
         if not glossary:
             raise HTTPException(status_code=404, detail="Glossary not found")
-            
+
         if glossary_manager.delete_term_from_glossary(glossary, term_id):
             return None
         raise HTTPException(status_code=404, detail="Term not found")
@@ -127,10 +125,10 @@ async def get_glossary_counts():
         counts = glossary_manager.get_counts()
         return counts
     except Exception as e:
-        logger.error(f"Error getting glossary counts: {str(e)}")
+        logger.error(f"Error getting glossary counts: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 def register_routes(app):
     """Register routes with the app"""
     app.include_router(router)
-    logger.info("Business glossary routes registered")  
+    logger.info("Business glossary routes registered")

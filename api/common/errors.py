@@ -1,5 +1,7 @@
-from fastapi import HTTPException, status
 from typing import Any, Dict, Optional
+
+from fastapi import HTTPException, status
+
 
 class AppError(HTTPException):
     """Base exception for all application errors"""
@@ -39,4 +41,4 @@ class ForbiddenError(AppError):
 class InternalServerError(AppError):
     """Raised when an unexpected error occurs"""
     def __init__(self, detail: str = "Internal server error") -> None:
-        super().__init__(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail) 
+        super().__init__(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail)

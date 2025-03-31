@@ -1,8 +1,10 @@
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
-import json
+
 import yaml
+
 
 @dataclass
 class DataContract:
@@ -50,4 +52,4 @@ class DataContract:
                 yaml.safe_load(text)
             return True
         except (json.JSONDecodeError, yaml.YAMLError):
-            return False 
+            return False

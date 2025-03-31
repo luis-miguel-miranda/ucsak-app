@@ -1,11 +1,14 @@
-import yaml
 from datetime import datetime
-from typing import Dict, List, Optional
 from pathlib import Path
+from typing import Dict, List, Optional
+
+import yaml
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service import jobs
+
 from api.common.config import Settings
 from api.models.settings import JobCluster, WorkflowInstallation
+
 
 class SettingsManager:
     def __init__(self, workspace_client: WorkspaceClient):
@@ -57,7 +60,7 @@ class SettingsManager:
         workflow_path = Path("workflows")
         if not workflow_path.exists():
             return []
-        
+
         return [f.stem for f in workflow_path.glob("*.yaml")]
 
     def list_installed_workflows(self) -> List[WorkflowInstallation]:
@@ -71,7 +74,7 @@ class SettingsManager:
         if not yaml_path.exists():
             raise ValueError(f"Workflow definition not found: {workflow_name}")
 
-        with open(yaml_path, 'r') as f:
+        with open(yaml_path) as f:
             workflow_def = yaml.safe_load(f)
 
         # Create job in Databricks
@@ -95,7 +98,7 @@ class SettingsManager:
             return installation
 
         except Exception as e:
-            raise RuntimeError(f"Failed to install workflow: {str(e)}")
+            raise RuntimeError(f"Failed to install workflow: {e!s}")
 
     def update_workflow(self, workflow_name: str) -> WorkflowInstallation:
         """Update an existing workflow in the Databricks workspace."""
@@ -107,7 +110,7 @@ class SettingsManager:
         if not yaml_path.exists():
             raise ValueError(f"Workflow definition not found: {workflow_name}")
 
-        with open(yaml_path, 'r') as f:
+        with open(yaml_path) as f:
             workflow_def = yaml.safe_load(f)
 
         # Update job in Databricks
@@ -124,7 +127,7 @@ class SettingsManager:
             return self._installations[workflow_name]
 
         except Exception as e:
-            raise RuntimeError(f"Failed to update workflow: {str(e)}")
+            raise RuntimeError(f"Failed to update workflow: {e!s}")
 
     def remove_workflow(self, workflow_name: str) -> bool:
         """Remove a workflow from the Databricks workspace."""
@@ -138,7 +141,7 @@ class SettingsManager:
             return True
 
         except Exception as e:
-            raise RuntimeError(f"Failed to remove workflow: {str(e)}")
+            raise RuntimeError(f"Failed to remove workflow: {e!s}")
 
     def install_job(self, job_id: str) -> dict:
         """Install and enable a background job"""
@@ -171,7 +174,7 @@ class SettingsManager:
             # Remove from enabled jobs if installation fails
             if job_id in self._settings.enabled_jobs:
                 self._settings.enabled_jobs.remove(job_id)
-            raise RuntimeError(f"Failed to install job: {str(e)}")
+            raise RuntimeError(f"Failed to install job: {e!s}")
 
     def update_job(self, job_id: str, enabled: bool) -> dict:
         """Enable or disable a background job"""
@@ -183,14 +186,14 @@ class SettingsManager:
                 return self.install_job(job_id)
             elif not enabled and job_id in (self._settings.enabled_jobs or []):
                 return self.remove_job(job_id)
-            
+
             return {
                 'name': job_id,
                 'status': 'active' if enabled else 'disabled',
                 'updated_at': datetime.utcnow().isoformat()
             }
         except Exception as e:
-            raise RuntimeError(f"Failed to update job: {str(e)}")
+            raise RuntimeError(f"Failed to update job: {e!s}")
 
     def remove_job(self, job_id: str) -> bool:
         """Remove and disable a background job"""
@@ -209,15 +212,14 @@ class SettingsManager:
                 self._client.jobs.delete(job_id=job.job_id)
             return True
         except Exception as e:
-            raise RuntimeError(f"Failed to remove job: {str(e)}")
+            raise RuntimeError(f"Failed to remove job: {e!s}")
 
     def _get_workflow_definition(self, job_id: str) -> dict:
         """Get the workflow definition for a job"""
         # Implementation depends on how you store job definitions
         # Could be from YAML files, database, etc.
-        pass
 
     def _find_job_by_name(self, job_name: str) -> Optional[jobs.Job]:
         """Find a job in Databricks by name"""
         all_jobs = self._client.jobs.list()
-        return next((job for job in all_jobs if job.settings.name == job_name), None) 
+        return next((job for job in all_jobs if job.settings.name == job_name), None)

@@ -1,19 +1,18 @@
-import yaml
+import logging
+import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import List
-from datetime import datetime
-import uuid
-import logging
-import json
-from api.models.notification import Notification, NotificationType
-from flask import abort
+
+import yaml
+
+from api.models.notification import Notification
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 class NotificationNotFoundError(Exception):
     """Raised when a notification is not found."""
-    pass
 
 class NotificationManager:
     def __init__(self):
@@ -23,7 +22,7 @@ class NotificationManager:
     def load_from_yaml(self) -> None:
         """Load example notifications from YAML file."""
         yaml_path = Path(__file__).parent.parent / "data" / "notifications.yaml"
-        with open(yaml_path, 'r') as file:
+        with open(yaml_path) as file:
             data = yaml.safe_load(file)
             self.notifications = [Notification(**notification) for notification in data['notifications']]
         logger.info(f"Loaded {len(self.notifications)} notifications from {yaml_path}")
@@ -67,4 +66,4 @@ class NotificationManager:
                     'read': notification.read,
                     'can_delete': notification.can_delete
                 }
-        raise NotificationNotFoundError(f"Notification not found: {notification_id}") 
+        raise NotificationNotFoundError(f"Notification not found: {notification_id}")

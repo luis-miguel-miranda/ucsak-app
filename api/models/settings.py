@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class JobCluster(BaseModel):
     id: str
@@ -16,4 +17,4 @@ class WorkflowInstallation(BaseModel):
     installed_at: datetime
     updated_at: datetime
     status: str
-    workspace_id: str 
+    workspace_id: str

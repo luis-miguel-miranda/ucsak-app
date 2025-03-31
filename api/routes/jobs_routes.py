@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from api.common.deps import get_job_runner_dep
 from api.common.job_runner import JobRunner
 
@@ -18,7 +20,7 @@ async def get_job_status(
     """Get status of a job run."""
     try:
         return job_runner.get_run_status(run_id=run_id)
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=404,
             detail=f"Job run {run_id} not found"
@@ -33,7 +35,7 @@ async def cancel_job(
     try:
         job_runner.cancel_run(run_id=run_id)
         return {"success": True}
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=404,
             detail=f"Job run {run_id} not found"
@@ -42,4 +44,4 @@ async def cancel_job(
 def register_routes(app):
     """Register job routes with the FastAPI app."""
     app.include_router(router)
-    logger.info("Job routes registered") 
+    logger.info("Job routes registered")

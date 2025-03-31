@@ -1,31 +1,31 @@
-import os
+import logging
 import time
-from fastapi import FastAPI, Depends
+from pathlib import Path
+
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
-from dotenv import load_dotenv
+
+from api.common.config import get_settings, init_config
+from api.common.middleware import ErrorHandlingMiddleware, LoggingMiddleware
 from api.routes import (
-    data_product_routes,
-    data_contract_routes,
     business_glossary_routes,
-    entitlements_routes,
     catalog_commander_routes,
+    data_contract_routes,
+    data_product_routes,
+    entitlements_routes,
+    notifications_routes,
+    search_routes,
     settings_routes,
     user_routes,
-    search_routes,
-    notifications_routes,
 )
-from fastapi.middleware.cors import CORSMiddleware
-from importlib.resources import files
-from pathlib import Path
-from api.common.config import init_config, get_settings
-from api.common.middleware import LoggingMiddleware, ErrorHandlingMiddleware
-import logging
 
 logger = logging.getLogger(__name__)
 
 # Define paths
-STATIC_ASSETS_PATH = Path("api/static")
+STATIC_ASSETS_PATH = Path(__file__).parent.parent / "build"
+logger.info(f"STATIC_ASSETS_PATH: {STATIC_ASSETS_PATH}")
 
 # Initialize settings before creating the app
 init_config()
@@ -74,14 +74,14 @@ notifications_routes.register_routes(app)
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     """Serve the React application's index.html"""
-    with open(STATIC_ASSETS_PATH / "index.html", "r") as f:
+    with open(STATIC_ASSETS_PATH / "index.html") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
 
 @app.exception_handler(404)
 async def client_side_routing(_, __):
     """Handle 404 errors by serving the React application's index.html"""
-    with open(STATIC_ASSETS_PATH / "index.html", "r") as f:
+    with open(STATIC_ASSETS_PATH / "index.html") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
 

@@ -1,7 +1,9 @@
-from typing import List, Optional, Dict
-from pydantic import BaseModel
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel
+
 
 class TaggedAsset(BaseModel):
     id: str
@@ -64,4 +66,4 @@ class BusinessGlossary:
     owner: str = ""
     status: str = "active"
     created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow) 
+    updated_at: datetime = field(default_factory=datetime.utcnow)
