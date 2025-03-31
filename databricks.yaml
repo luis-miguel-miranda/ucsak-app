@@ -1,24 +1,31 @@
 bundle:
-  name: ucapp
+  name: rucsak
 
 variables:
   sql_warehouse_id:
     description: "ID of the SQL warehouse to use"
     lookup:
-      sql_warehouse: "default"
+      warehouse: "default"
   catalog_name:
     description: "Name of the catalog to use"
     default: "app_data"
   schema_name:
     description: "Name of the schema to use"
     default: "app_ucsak"
+  volume_name:
+    description: "Name of the volume to use"
+    default: "app_files"
   app_config:
     type: complex
-    description: "Configuration for the Unity Catalog App"
+    description: "Configuration for the Unity Catalog Swiss Army Knife App"
     default:
       command:
-        - "flask"
-        - "run"
+        - "uvicorn"
+        - "api.app:app"
+        - "--host"
+        - "0.0.0.0"
+        - "--port"
+        - "8000"
       env:
         - name: "DATABRICKS_WAREHOUSE_ID"
           value: ${var.sql_warehouse_id}
@@ -26,12 +33,14 @@ variables:
           value: ${var.catalog_name}
         - name: "DATABRICKS_SCHEMA"
           value: ${var.schema_name}
+        - name: "DATABRICKS_VOLUME"
+          value: ${var.volume_name}
 
 resources:
   apps:
-    ucapp:
-      name: "ucapp"
-      description: "Unity Catalog App"
+    rucsak:
+      name: "rucsak"
+      description: "Unity Catalog Swiss Army Knife App"
       source_code_path: "."
       config: ${var.app_config}
       resources:
@@ -49,8 +58,9 @@ targets:
     variables:
       catalog_name: "app_data_dev"
       schema_name: "app_ucsak_dev"
-  
+      volume_name: "app_files_dev"
   prod:
     variables:
       catalog_name: "app_data_prod"
-      schema_name: "app_ucsak_prod" 
+      schema_name: "app_ucsak_prod"
+      volume_name: "app_files_prod"
