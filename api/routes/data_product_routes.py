@@ -13,31 +13,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 # Create a single instance of the manager
-product_manager = DataProductManager()
+data_product_manager = DataProductManager()
 
 # Check for YAML file in data directory
 yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
 if os.path.exists(yaml_path):
     try:
         # Load data from YAML file
-        product_manager.load_from_yaml(str(yaml_path))
+        data_product_manager.load_from_yaml(str(yaml_path))
         logger.info(f"Successfully loaded data products from {yaml_path}")
     except Exception as e:
         logger.error(f"Error loading data products from YAML: {e!s}")
-else:
-    try:
-        # Initialize with example data
-        product_manager.initialize_example_data()
-        logger.info("Initialized example data products")
-    except Exception as e:
-        logger.error(f"Error initializing example data products: {e!s}")
 
 # Special endpoints first
 @router.get('/data-products/statuses')
 async def get_data_product_statuses():
     """Get all available data product statuses"""
     try:
-        statuses = product_manager.get_statuses()
+        statuses = data_product_manager.get_statuses()
         logger.info(f"Retrieved {len(statuses)} data product statuses")
         return statuses
     except Exception as e:
@@ -49,7 +42,7 @@ async def get_data_product_statuses():
 async def get_data_product_types():
     """Get all available data product types"""
     try:
-        types = product_manager.get_types()
+        types = data_product_manager.get_types()
         logger.info(f"Retrieved {len(types)} data product types")
         return types
     except Exception as e:
@@ -61,7 +54,7 @@ async def get_data_product_types():
 async def get_data_product_metadata():
     """Get metadata about data products"""
     try:
-        metadata = product_manager.get_metadata()
+        metadata = data_product_manager.get_metadata()
         logger.info("Retrieved data product metadata")
         return metadata
     except Exception as e:
@@ -75,7 +68,7 @@ async def get_data_products():
     """Get all data products"""
     try:
         logger.info("Retrieving all data products")
-        products = product_manager.list_products()
+        products = data_product_manager.list_products()
 
         # Format the response
         formatted_products = []
@@ -164,7 +157,7 @@ async def get_data_products():
 async def get_data_product(product_id: str):
     """Get a specific data product"""
     try:
-        product = product_manager.get_product(product_id)
+        product = data_product_manager.get_product(product_id)
         if not product:
             logger.warning(f"Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
@@ -255,7 +248,7 @@ async def create_data_product(product_data: dict):
         logger.info(f"Creating new data product: {product_data.get('name', '')}")
 
         # Create data product
-        product = product_manager.create_product(
+        product = data_product_manager.create_product(
             name=product_data.get('name', ''),
             description=product_data.get('description', ''),
             domain=product_data.get('domain', ''),
@@ -270,7 +263,7 @@ async def create_data_product(product_data: dict):
         # Save changes to YAML
         try:
             yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-            product_manager.save_to_yaml(str(yaml_path))
+            data_product_manager.save_to_yaml(str(yaml_path))
             logger.info(f"Saved updated data products to {yaml_path}")
         except Exception as e:
             logger.warning(f"Could not save updated data to YAML: {e!s}")
@@ -298,7 +291,7 @@ async def create_data_product(product_data: dict):
 async def update_data_product(product_id: str, product_data: dict):
     """Update a data product"""
     try:
-        product = product_manager.get_product(product_id)
+        product = data_product_manager.get_product(product_id)
         if not product:
             logger.warning(f"Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
@@ -306,7 +299,7 @@ async def update_data_product(product_id: str, product_data: dict):
         logger.info(f"Updating data product with ID: {product_id}")
 
         # Update data product
-        updated_product = product_manager.update_product(
+        updated_product = data_product_manager.update_product(
             product_id=product_id,
             name=product_data.get('name'),
             description=product_data.get('description'),
@@ -320,7 +313,7 @@ async def update_data_product(product_id: str, product_data: dict):
         # Save changes to YAML
         try:
             yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-            product_manager.save_to_yaml(str(yaml_path))
+            data_product_manager.save_to_yaml(str(yaml_path))
             logger.info(f"Saved updated data products to {yaml_path}")
         except Exception as e:
             logger.warning(f"Could not save updated data to YAML: {e!s}")
@@ -348,17 +341,17 @@ async def update_data_product(product_id: str, product_data: dict):
 async def delete_data_product(product_id: str):
     """Delete a data product"""
     try:
-        if not product_manager.get_product(product_id):
+        if not data_product_manager.get_product(product_id):
             logger.warning(f"Data product not found for deletion with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
 
         logger.info(f"Deleting data product with ID: {product_id}")
-        product_manager.delete_product(product_id)
+        data_product_manager.delete_product(product_id)
 
         # Save changes to YAML
         try:
             yaml_path = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-            product_manager.save_to_yaml(str(yaml_path))
+            data_product_manager.save_to_yaml(str(yaml_path))
             logger.info(f"Saved updated data products to {yaml_path}")
         except Exception as e:
             logger.warning(f"Could not save updated data to YAML: {e!s}")

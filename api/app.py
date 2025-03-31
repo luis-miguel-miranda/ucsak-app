@@ -12,6 +12,7 @@ from api.common.middleware import ErrorHandlingMiddleware, LoggingMiddleware
 from api.routes import (
     business_glossary_routes,
     catalog_commander_routes,
+    compliance_routes,
     data_contract_routes,
     data_product_routes,
     entitlements_routes,
@@ -70,6 +71,7 @@ settings_routes.register_routes(app)
 user_routes.register_routes(app)
 search_routes.register_routes(app)
 notifications_routes.register_routes(app)
+compliance_routes.register_routes(app)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

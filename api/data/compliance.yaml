@@ -1,0 +1,68 @@
+- id: "naming-conventions"
+  name: "Naming Conventions"
+  description: "Verify that all objects follow corporate naming conventions"
+  rule: |
+    MATCH (obj:Object)
+    WHERE obj.type IN ['catalog', 'schema', 'table', 'view']
+    ASSERT 
+      CASE obj.type
+        WHEN 'catalog' THEN obj.name MATCHES '^[a-z][a-z0-9_]*$'
+        WHEN 'schema' THEN obj.name MATCHES '^[a-z][a-z0-9_]*$'
+        WHEN 'table' THEN obj.name MATCHES '^[a-z][a-z0-9_]*$'
+        WHEN 'view' THEN obj.name MATCHES '^v_[a-z][a-z0-9_]*$'
+      END
+  compliance: 88
+  history: [82, 84, 86, 87, 88]
+  is_active: true
+  severity: "high"
+  category: "governance"
+  created_at: "2024-03-20T10:00:00Z"
+  updated_at: "2024-03-20T10:00:00Z" 
+  
+- id: "pii-encryption"
+  name: "PII Data Encryption"
+  description: "Ensure all PII data is encrypted at rest"
+  rule: "MATCH (d:Dataset) WHERE d.contains_pii = true ASSERT d.encryption = 'AES256'"
+  compliance: 85
+  history: [70, 75, 80, 82, 85]
+  is_active: true
+  severity: "critical"
+  category: "security"
+  created_at: "2024-03-20T10:00:00Z"
+  updated_at: "2024-03-20T10:00:00Z"
+
+- id: "data-quality"
+  name: "Data Quality Thresholds"
+  description: "Maintain data quality metrics above defined thresholds"
+  rule: "MATCH (d:Dataset) ASSERT d.completeness > 0.95 AND d.accuracy > 0.98"
+  compliance: 92
+  history: [85, 88, 90, 91, 92]
+  is_active: true
+  severity: "high"
+  category: "quality"
+  created_at: "2024-03-20T10:00:00Z"
+  updated_at: "2024-03-20T10:00:00Z"
+
+- id: "access-control"
+  name: "Access Control"
+  description: "Verify proper access controls on sensitive data"
+  rule: "MATCH (d:Dataset) WHERE d.sensitivity = 'high' ASSERT d.access_level = 'restricted'"
+  compliance: 65
+  history: [60, 62, 63, 64, 65]
+  is_active: true
+  severity: "critical"
+  category: "security"
+  created_at: "2024-03-20T10:00:00Z"
+  updated_at: "2024-03-20T10:00:00Z"
+
+- id: "data-freshness"
+  name: "Data Freshness"
+  description: "Ensure data is updated within defined timeframes"
+  rule: "MATCH (d:Dataset) ASSERT d.last_updated > datetime() - duration('P1D')"
+  compliance: 78
+  history: [70, 72, 75, 76, 78]
+  is_active: true
+  severity: "medium"
+  category: "freshness"
+  created_at: "2024-03-20T10:00:00Z"
+  updated_at: "2024-03-20T10:00:00Z"

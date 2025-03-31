@@ -24,26 +24,9 @@ if os.path.exists(yaml_path):
         if success:
             logger.info(f"Successfully loaded entitlements data from {yaml_path}")
         else:
-            logger.warning(f"Failed to load entitlements data from {yaml_path}, initializing with example data")
-            entitlements_manager.initialize_example_data()
+            logger.warning(f"Failed to load entitlements data from {yaml_path}")
     except Exception as e:
         logger.error(f"Error loading entitlements data: {e!s}")
-        logger.info("Initializing with example data instead")
-        entitlements_manager.initialize_example_data()
-else:
-    try:
-        # Initialize with example data
-        entitlements_manager.initialize_example_data()
-        logger.info("Initialized example entitlements data")
-
-        # Save example data to YAML for future use
-        try:
-            entitlements_manager.save_to_yaml(str(yaml_path))
-            logger.info(f"Saved example entitlements data to {yaml_path}")
-        except Exception as e:
-            logger.warning(f"Could not save example data to YAML: {e!s}")
-    except Exception as e:
-        logger.error(f"Error initializing example entitlements data: {e!s}")
 
 @router.get('/entitlements/personas')
 async def get_personas():

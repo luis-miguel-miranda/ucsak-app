@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
@@ -18,6 +18,8 @@ import {
   DialogActions,
   TextField,
   Box,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -35,22 +37,91 @@ interface CompliancePolicy {
   rule: string;
   compliance: number;
   history: number[];
+  is_active: boolean;
+  severity: string;
+  category: string;
+}
+
+interface ComplianceStats {
+  overall_compliance: number;
+  active_policies: number;
+  critical_issues: number;
 }
 
 export default function ComplianceView() {
-  const [policies, setPolicies] = useState<CompliancePolicy[]>([
-    {
-      id: '1',
-      name: 'PII Data Encryption',
-      description: 'Ensure all PII data is encrypted at rest',
-      rule: 'MATCH (d:Dataset) WHERE d.contains_pii = true ASSERT d.encryption = "AES256"',
-      compliance: 85,
-      history: [70, 75, 80, 82, 85]
-    }
-  ]);
-  
+  const [policies, setPolicies] = useState<CompliancePolicy[]>([]);
+  const [stats, setStats] = useState<ComplianceStats>({
+    overall_compliance: 0,
+    active_policies: 0,
+    critical_issues: 0
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<CompliancePolicy | null>(null);
+  const [formData, setFormData] = useState<Partial<CompliancePolicy>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [policiesRes, statsRes] = await Promise.all([
+        fetch('/api/compliance/policies'),
+        fetch('/api/compliance/stats')
+      ]);
+      
+      if (!policiesRes.ok || !statsRes.ok) throw new Error('Failed to fetch data');
+      
+      const policiesData = await policiesRes.json();
+      const statsData = await statsRes.json();
+      
+      setPolicies(policiesData);
+      setStats(statsData);
+    } catch (err) {
+      setError('Failed to load compliance data');
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const url = editingPolicy 
+        ? `/api/compliance/policies/${editingPolicy.id}`
+        : '/api/compliance/policies';
+      
+      const method = editingPolicy ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) throw new Error('Failed to save policy');
+      
+      setSuccess('Policy saved successfully');
+      setDialogOpen(false);
+      fetchData();
+    } catch (err) {
+      setError('Failed to save policy');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/compliance/policies/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete policy');
+      
+      setSuccess('Policy deleted successfully');
+      fetchData();
+    } catch (err) {
+      setError('Failed to delete policy');
+    }
+  };
 
   const getComplianceColor = (score: number) => {
     if (score >= 90) return 'success.main';
@@ -79,7 +150,7 @@ export default function ComplianceView() {
             <CardContent>
               <Typography variant="h6">Overall Compliance</Typography>
               <Typography variant="h3" color="primary">
-                85%
+                {stats.overall_compliance}%
               </Typography>
             </CardContent>
           </Card>
@@ -89,7 +160,7 @@ export default function ComplianceView() {
             <CardContent>
               <Typography variant="h6">Active Policies</Typography>
               <Typography variant="h3" color="primary">
-                {policies.length}
+                {stats.active_policies}
               </Typography>
             </CardContent>
           </Card>
@@ -99,7 +170,7 @@ export default function ComplianceView() {
             <CardContent>
               <Typography variant="h6">Critical Issues</Typography>
               <Typography variant="h3" color="error">
-                2
+                {stats.critical_issues}
               </Typography>
             </CardContent>
           </Card>
@@ -113,6 +184,7 @@ export default function ComplianceView() {
             variant="contained"
             onClick={() => {
               setEditingPolicy(null);
+              setFormData({});
               setDialogOpen(true);
             }}
           >
@@ -146,11 +218,12 @@ export default function ComplianceView() {
               <ListItemSecondaryAction>
                 <IconButton onClick={() => {
                   setEditingPolicy(policy);
+                  setFormData(policy);
                   setDialogOpen(true);
                 }}>
                   <EditIcon />
                 </IconButton>
-                <IconButton>
+                <IconButton onClick={() => handleDelete(policy.id)}>
                   <DeleteIcon />
                 </IconButton>
               </ListItemSecondaryAction>
@@ -173,7 +246,8 @@ export default function ComplianceView() {
             fullWidth
             label="Policy Name"
             margin="normal"
-            value={editingPolicy?.name || ''}
+            value={formData.name || ''}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
           <TextField
             fullWidth
@@ -181,7 +255,8 @@ export default function ComplianceView() {
             margin="normal"
             multiline
             rows={2}
-            value={editingPolicy?.description || ''}
+            value={formData.description || ''}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
           <TextField
             fullWidth
@@ -189,17 +264,38 @@ export default function ComplianceView() {
             margin="normal"
             multiline
             rows={4}
-            value={editingPolicy?.rule || ''}
+            value={formData.rule || ''}
+            onChange={(e) => setFormData({ ...formData, rule: e.target.value })}
             helperText="Enter policy rule using the compliance DSL"
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => setDialogOpen(false)}>
+          <Button variant="contained" onClick={handleSave}>
             Save
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={6000} 
+        onClose={() => setError(null)}
+      >
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar 
+        open={!!success} 
+        autoHideDuration={6000} 
+        onClose={() => setSuccess(null)}
+      >
+        <Alert severity="success" onClose={() => setSuccess(null)}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 } 
