@@ -14,3 +14,5 @@ env:
     value: "app_data"
   - name: "DATABRICKS_SCHEMA"
     value: "app_ucsak"
+  - name: "DATABRICKS_VOLUME"
+    value: "app_files"

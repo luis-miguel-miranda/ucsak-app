@@ -1,20 +1,11 @@
 import yaml
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 from pathlib import Path
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service import jobs
-from api.models.settings import Settings, JobCluster
-
-@dataclass
-class WorkflowInstallation:
-    id: str
-    name: str
-    installed_at: datetime
-    updated_at: datetime
-    status: str
-    workspace_id: str
+from api.common.config import Settings
+from api.models.settings import JobCluster, WorkflowInstallation
 
 class SettingsManager:
     def __init__(self, workspace_client: WorkspaceClient):
@@ -27,6 +18,7 @@ class SettingsManager:
             'mdm_jobs',
             'catalog_commander_jobs'
         ]
+        self._installations: Dict[str, WorkflowInstallation] = {}
 
     def get_job_clusters(self) -> List[JobCluster]:
         """Get available job clusters"""

@@ -6,20 +6,25 @@ from databricks.sdk.service.jobs import RunLifeCycleState, RunResultState
 from databricks.sdk.service.jobs import RunTask, Run, JobSettings
 from databricks.sdk.service.workspace import ImportFormat, ExportFormat
 from databricks.sdk.service.catalog import VolumeInfo
+from fastapi import Depends
 
 from .logging import get_logger
-from .config import get_settings
-from .workspace_client import workspace_client
+from .config import get_settings, Settings
+from .workspace_client import get_workspace_client
 
 logger = get_logger(__name__)
 
 class JobRunner:
     """Manages Databricks workflow jobs."""
     
-    def __init__(self) -> None:
-        """Initialize the job runner with Databricks workspace client."""
-        settings = get_settings()
-        self.client = workspace_client  # Use shared, cached client
+    def __init__(self, client: WorkspaceClient, settings: Settings) -> None:
+        """Initialize the job runner with Databricks workspace client.
+        
+        Args:
+            client: Databricks workspace client instance
+            settings: Application settings
+        """
+        self.client = client
         self.workflows_dir = Path(__file__).parent.parent / "workflows"
         self.settings = settings
     
@@ -298,23 +303,17 @@ class JobRunner:
             logger.error(f"Error deleting job {job_id}: {str(e)}")
             raise
 
-# Global job runner instance
-job_runner: Optional[JobRunner] = None
-
-def init_job_runner() -> None:
-    """Initialize the global job runner instance."""
-    global job_runner
-    job_runner = JobRunner()
-
-def get_job_runner() -> JobRunner:
-    """Get the global job runner instance.
+def get_job_runner(
+    client: WorkspaceClient = Depends(get_workspace_client),
+    settings: Settings = Depends(get_settings)
+) -> JobRunner:
+    """Get a configured job runner instance.
     
-    Returns:
-        Job runner
+    Args:
+        client: Cached workspace client (injected by FastAPI)
+        settings: Application settings (injected by FastAPI)
         
-    Raises:
-        RuntimeError: If job runner is not initialized
+    Returns:
+        Configured job runner instance
     """
-    if not job_runner:
-        raise RuntimeError("Job runner not initialized")
-    return job_runner 
+    return JobRunner(client, settings) 

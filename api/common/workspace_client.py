@@ -3,14 +3,17 @@ import time
 import logging
 from functools import wraps
 from typing import Dict, Any, Callable
+from fastapi import Depends
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.core import Config
-from databricks import sql  # Add this import
+from databricks import sql
+
+from .config import get_settings, Settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-class CachedWorkspaceClient:
+class CachedWorkspaceClient(WorkspaceClient):
     def __init__(self, client: WorkspaceClient):
         self._client = client
         self._cache: Dict[str, Any] = {}
@@ -58,40 +61,43 @@ class CachedWorkspaceClient:
     def __getattr__(self, name):
         return getattr(self._client, name)
 
-def get_workspace_client():
-    """Get a configured Databricks workspace client with caching"""
-    host = os.getenv('DATABRICKS_HOST')
-    token = os.getenv('DATABRICKS_TOKEN')
+def get_workspace_client(settings: Settings = Depends(get_settings)) -> WorkspaceClient:
+    """Get a configured Databricks workspace client with caching.
     
+    Args:
+        settings: Application settings (injected by FastAPI)
+        
+    Returns:
+        Cached workspace client instance
+    """
     # Log environment values with obfuscated token
-    masked_token = f"{token[:4]}...{token[-4:]}" if token else None
-    logger.info(f"Initializing workspace client with host: {host}, token: {masked_token}")
+    masked_token = f"{settings.DATABRICKS_TOKEN[:4]}...{settings.DATABRICKS_TOKEN[-4:]}" if settings.DATABRICKS_TOKEN else None
+    logger.info(f"Initializing workspace client with host: {settings.DATABRICKS_HOST}, token: {masked_token}")
     
     client = WorkspaceClient(
-        host=host,
-        token=token
+        host=settings.DATABRICKS_HOST,
+        token=settings.DATABRICKS_TOKEN
     )
     return CachedWorkspaceClient(client)
 
-def get_config():
-    """Get Databricks configuration for authentication"""
-    return Config()
-
-def get_sql_connection():
-    """Create and return a Databricks SQL connection."""
-    cfg = get_config()
-    if os.getenv('ENV') == 'LOCAL':
+def get_sql_connection(settings: Settings = Depends(get_settings)):
+    """Create and return a Databricks SQL connection.
+    
+    Args:
+        settings: Application settings (injected by FastAPI)
+        
+    Returns:
+        SQL connection instance
+    """
+    if settings.ENV == 'LOCAL':
         return sql.connect(
-            server_hostname=os.getenv('DATABRICKS_HOST'),
-            http_path=os.getenv('DATABRICKS_HTTP_PATH'),
-            access_token=os.getenv('DATABRICKS_TOKEN')
+            server_hostname=settings.DATABRICKS_HOST,
+            http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",
+            access_token=settings.DATABRICKS_TOKEN
         )
     else:
         return sql.connect(
-            server_hostname=cfg.host,
-            http_path=f"/sql/1.0/warehouses/{os.getenv('DATABRICKS_WAREHOUSE_ID')}",
-            credentials_provider=lambda: cfg.authenticate
+            server_hostname=settings.DATABRICKS_HOST,
+            http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",
+            credentials_provider=lambda: settings.authenticate
         ) 
-
-# Create a singleton instance of the cached workspace client
-workspace_client = get_workspace_client() 

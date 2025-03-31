@@ -2,8 +2,10 @@ import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
-from api.controller.settings_manager import SettingsManager
-from api.common.workspace_client import workspace_client
+from databricks.sdk import WorkspaceClient
+
+from ..controller.settings_manager import SettingsManager
+from ..common.workspace_client import get_workspace_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -11,35 +13,46 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 
-# Create a single instance of the manager
-settings_manager = SettingsManager(workspace_client)
+def get_settings_manager(client: WorkspaceClient = Depends(get_workspace_client)) -> SettingsManager:
+    """Get a configured settings manager instance.
+    
+    Args:
+        client: Databricks workspace client (injected by FastAPI)
+        
+    Returns:
+        Configured settings manager instance
+    """
+    return SettingsManager(client)
 
 @router.get('/settings')
-async def get_settings():
+async def get_settings(manager: SettingsManager = Depends(get_settings_manager)):
     """Get all settings including available job clusters"""
     try:
-        settings = settings_manager.get_settings()
+        settings = manager.get_settings()
         return settings
     except Exception as e:
         logger.error(f"Error getting settings: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put('/settings')
-async def update_settings(settings: dict):
+async def update_settings(
+    settings: dict,
+    manager: SettingsManager = Depends(get_settings_manager)
+):
     """Update settings"""
     try:
-        updated = settings_manager.update_settings(settings)
+        updated = manager.update_settings(settings)
         return updated.to_dict()
     except Exception as e:
         logger.error(f"Error updating settings: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/settings/health')
-async def health_check():
+async def health_check(manager: SettingsManager = Depends(get_settings_manager)):
     """Check if the settings API is healthy"""
     try:
         # Try to list workflows as a health check
-        settings_manager.list_available_workflows()
+        manager.list_available_workflows()
         logger.info("Workflows health check successful")
         return {"status": "healthy"}
     except Exception as e:
@@ -48,10 +61,10 @@ async def health_check():
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get('/settings/job-clusters')
-async def list_job_clusters():
+async def list_job_clusters(manager: SettingsManager = Depends(get_settings_manager)):
     """List all available job clusters"""
     try:
-        clusters = settings_manager.get_job_clusters()
+        clusters = manager.get_job_clusters()
         return [{
             'id': cluster.id,
             'name': cluster.name,

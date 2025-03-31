@@ -18,7 +18,7 @@ from api.routes import (
 from fastapi.middleware.cors import CORSMiddleware
 from importlib.resources import files
 from pathlib import Path
-from api.common.config import Config, init_config, get_settings, EndpointConfig
+from api.common.config import init_config, get_settings
 from api.common.middleware import LoggingMiddleware, ErrorHandlingMiddleware
 import logging
 
@@ -26,46 +26,16 @@ logger = logging.getLogger(__name__)
 
 # Define paths
 STATIC_ASSETS_PATH = Path("api/static")
-DOTENV_FILE = Path(__file__).parent.parent / Path(".env")
 
-# Singleton instance for configuration
-_config: Config | None = None
+# Initialize settings before creating the app
+init_config()
 
-def get_config() -> Config:
-    """Get the configuration singleton instance"""
-    global _config
-    if _config is None:
-        logger.info("Loading configuration")
-        if DOTENV_FILE.exists():
-            logger.info(f"Loading configuration from {DOTENV_FILE}")
-            load_dotenv(DOTENV_FILE)
-        else:
-            logger.info(f"Loading configuration from environment variables")
-        
-        # Initialize settings using Pydantic
-        init_config()
-        settings = get_settings()
-        
-        # Create Config from settings
-        _config = Config(
-            catalog=settings.DATABRICKS_CATALOG,
-            schema=settings.DATABRICKS_SCHEMA,
-            volume=settings.DATABRICKS_VOLUME,
-            endpoint=EndpointConfig(
-                host=settings.DATABRICKS_HOST,
-                http_path=settings.DATABRICKS_HTTP_PATH,
-                client_id=None,  # These are optional
-                client_secret=None
-            )
-        )
-    return _config
-
-# Create single FastAPI app with config dependency
+# Create single FastAPI app with settings dependency
 app = FastAPI(
     title="Unity Catalog Swiss Army Knife",
     description="A Databricks App for managing data products, contracts, and more",
     version="1.0.0",
-    dependencies=[Depends(get_config)]
+    dependencies=[Depends(get_settings)]
 )
 
 # Configure CORS

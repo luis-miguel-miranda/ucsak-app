@@ -2,75 +2,20 @@ from __future__ import annotations
 import sys
 import os
 from pathlib import Path
-from dataclasses import dataclass
-from databricks.sdk.core import Config as DatabricksConfig
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+from datetime import datetime
 
 from .logging import get_logger
 
 logger = get_logger(__name__)
 
-@dataclass(frozen=True)
-class EndpointConfig:
-    host: str
-    client_id: str
-    client_secret: str
-    http_path: str
-
-    def to_databricks_config(self) -> DatabricksConfig:
-        return DatabricksConfig(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            host=f"https://{self.host}",
-        )
-
-
-@dataclass(frozen=True)
-class Config:
-    catalog: str
-    schema: str
-    volume: str
-    density_table: str = "population_density"
-    endpoint: EndpointConfig | None = None
-
-    @property
-    def full_table_name(self) -> str:
-        return f"{self.catalog}.{self.schema}.{self.density_table}"
-
-    @staticmethod
-    def from_args() -> Config:
-        args = sys.argv[1:]
-        logger.info(f"Arguments: {args}")
-        catalog = args[0] if len(args) > 0 else "main"
-        schema = args[1] if len(args) > 1 else "terrametria"
-        volume = args[2] if len(args) > 2 else "raw"
-        return Config(catalog, schema, volume)
-
-    @staticmethod
-    def from_env() -> Config:
-        catalog = os.getenv("DATABRICKS_CATALOG", "app_data")
-        schema = os.getenv("DATABRICKS_SCHEMA", "app_ucsak")
-        volume = os.getenv("DATABRICKS_VOLUME", "raw")
-
-        def warehouse_id_to_http_path(wh_id: str) -> str:
-            return f"/sql/1.0/warehouses/{wh_id}"
-
-        endpoint_cfg = EndpointConfig(
-            host=os.environ["DATABRICKS_HOST"],
-            http_path=warehouse_id_to_http_path(os.environ["DATABRICKS_WAREHOUSE_ID"]),
-            client_id=os.getenv("DATABRICKS_CLIENT_ID", None),
-            client_secret=os.getenv("DATABRICKS_CLIENT_SECRET", None),
-        )
-        return Config(
-            catalog=catalog,
-            schema=schema,
-            volume=volume,
-            endpoint=endpoint_cfg,
-        )
+# Define paths
+DOTENV_FILE = Path(__file__).parent.parent.parent / Path(".env")
 
 class Settings(BaseSettings):
     """Application settings."""
@@ -78,18 +23,17 @@ class Settings(BaseSettings):
     # Database settings
     DATABASE_URL: Optional[str] = Field(None, env='DATABASE_URL')
     
-    # Databricks settings
-    DATABRICKS_HOST: str = Field(..., env='DATABRICKS_HOST')
-    DATABRICKS_TOKEN: str = Field(..., env='DATABRICKS_TOKEN')
-    DATABRICKS_WORKSPACE_ID: Optional[str] = Field(None, env='DATABRICKS_WORKSPACE_ID')
-    DATABRICKS_HTTP_PATH: str = Field(..., env='DATABRICKS_HTTP_PATH')
-    DATABRICKS_WAREHOUSE_ID: str = Field(..., env='DATABRICKS_WAREHOUSE_ID')
-    DATABRICKS_CATALOG: str = Field(..., env='DATABRICKS_CATALOG')
-    DATABRICKS_SCHEMA: str = Field(..., env='DATABRICKS_SCHEMA')
-    DATABRICKS_VOLUME: str = Field(..., env='DATABRICKS_VOLUME')
+    # Databricks connection settings
+    DATABRICKS_HOST: str
+    DATABRICKS_WAREHOUSE_ID: str
+    DATABRICKS_CATALOG: str
+    DATABRICKS_SCHEMA: str
+    DATABRICKS_VOLUME: str
+    DATABRICKS_TOKEN: Optional[str] = None  # Optional since handled by SDK
+    DATABRICKS_HTTP_PATH: Optional[str] = None  # Optional since handled by SDK
     
     # Environment
-    ENV: str = Field('LOCAL', env='ENV')
+    ENV: str = "LOCAL"  # LOCAL, DEV, PROD
     
     # Application settings
     DEBUG: bool = Field(False, env='DEBUG')
@@ -102,9 +46,25 @@ class Settings(BaseSettings):
     GIT_USERNAME: Optional[str] = Field(None, env='GIT_USERNAME')
     GIT_PASSWORD: Optional[str] = Field(None, env='GIT_PASSWORD')
     
+    # Job settings
+    job_cluster_id: Optional[str] = None
+    sync_enabled: bool = False
+    sync_repository: Optional[str] = None
+    enabled_jobs: List[str] = Field(default_factory=list)
+    updated_at: Optional[datetime] = None
+    
     class Config:
-        env_file = '.env'
+        env_file = DOTENV_FILE
         case_sensitive = True
+    
+    def to_dict(self):
+        return {
+            'job_cluster_id': self.job_cluster_id,
+            'sync_enabled': self.sync_enabled,
+            'sync_repository': self.sync_repository,
+            'enabled_jobs': self.enabled_jobs,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
 
 class ConfigManager:
     """Manages application configuration and YAML files."""
@@ -162,14 +122,22 @@ class ConfigManager:
             raise
 
 # Global configuration instances
-settings: Optional[Settings] = None
+_settings: Optional[Settings] = None
 config_manager: Optional[ConfigManager] = None
 
 def init_config() -> None:
     """Initialize the global configuration instances."""
-    global settings, config_manager
-    settings = Settings()
-    config_manager = ConfigManager(settings)
+    global _settings, config_manager
+    
+    # Load environment variables from .env file if it exists
+    if DOTENV_FILE.exists():
+        logger.info(f"Loading environment from {DOTENV_FILE}")
+        _settings = Settings(_env_file=DOTENV_FILE)
+    else:
+        logger.info("No .env file found, using existing environment variables")
+        _settings = Settings()
+    
+    config_manager = ConfigManager(_settings)
 
 def get_settings() -> Settings:
     """Get the global settings instance.
@@ -180,9 +148,9 @@ def get_settings() -> Settings:
     Raises:
         RuntimeError: If settings are not initialized
     """
-    if not settings:
+    if not _settings:
         raise RuntimeError("Settings not initialized")
-    return settings
+    return _settings
 
 def get_config() -> ConfigManager:
     """Get the global configuration manager instance.
