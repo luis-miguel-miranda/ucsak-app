@@ -283,43 +283,52 @@ function CatalogCommanderView() {
       return <Typography color="error">{error}</Typography>;
     }
     return (
-      <RichTreeView
-        items={catalogData}
-        getItemLabel={(item) => (
-          loadingNodes.has(item.id)
-            ? `${item.name} (loading...) [${item.type}]`
-            : `${item.name} [${item.type}]`
-        )}
-        slots={{
-          item: CustomTreeItem,
-          collapseIcon: ExpandMoreIcon,
-          expandIcon: ChevronRightIcon,
-        }}
-        selectedItems={side === 'left' ? selectedLeft : selectedRight}
-        onSelectedItemsChange={(event, items) => {
-          if (side === 'left') {
-            setSelectedLeft(items);
-            if (items.length > 0) {
-              setSelectedObjectInfo({ id: items[0], side: 'left' });
+      <Box sx={{ 
+        height: 'calc(100% - 48px)', // Account for Typography height and padding
+        overflow: 'auto',
+        '& .MuiTreeView-root': {
+          height: '100%',
+          overflow: 'auto'
+        }
+      }}>
+        <RichTreeView
+          items={catalogData}
+          getItemLabel={(item) => (
+            loadingNodes.has(item.id)
+              ? `${item.name} (loading...) [${item.type}]`
+              : `${item.name} [${item.type}]`
+          )}
+          slots={{
+            item: CustomTreeItem,
+            collapseIcon: ExpandMoreIcon,
+            expandIcon: ChevronRightIcon,
+          }}
+          selectedItems={side === 'left' ? selectedLeft : selectedRight}
+          onSelectedItemsChange={(event, items) => {
+            if (side === 'left') {
+              setSelectedLeft(items);
+              if (items.length > 0) {
+                setSelectedObjectInfo({ id: items[0], side: 'left' });
+              }
+            } else {
+              setSelectedRight(items);
+              if (items.length > 0) {
+                setSelectedObjectInfo({ id: items[0], side: 'right' });
+              }
             }
-          } else {
-            setSelectedRight(items);
-            if (items.length > 0) {
-              setSelectedObjectInfo({ id: items[0], side: 'right' });
+          }}
+          expandedItems={side === 'left' ? expandedLeft : expandedRight}
+          onExpandedItemsChange={(event, items) => {
+            if (side === 'left') {
+              handleNodeExpand(items);
+            } else {
+              setExpandedRight(items);
             }
-          }
-        }}
-        expandedItems={side === 'left' ? expandedLeft : expandedRight}
-        onExpandedItemsChange={(event, items) => {
-          if (side === 'left') {
-            handleNodeExpand(items);
-          } else {
-            setExpandedRight(items);
-          }
-        }}
-        multiSelect
-        aria-label={`${side === 'left' ? 'Source' : 'Target'} catalog browser`}
-      />
+          }}
+          multiSelect
+          aria-label={`${side === 'left' ? 'Source' : 'Target'} catalog browser`}
+        />
+      </Box>
     );
   };
 
@@ -432,8 +441,8 @@ function CatalogCommanderView() {
         <Grid item xs={12}>
           <Grid container spacing={0} sx={{ height: '60vh' }}>
             {/* Left Tree */}
-            <Grid item xs={5.5}>
-              <Paper sx={{ height: '100%', p: 2, overflow: 'auto', mr: -2 }}>
+            <Grid item xs={5.5} sx={{ height: '100%' }}>
+              <Paper sx={{ height: '100%', p: 2, mr: -2, display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom>
                   Left
                 </Typography>
@@ -459,8 +468,8 @@ function CatalogCommanderView() {
             </Grid>
 
             {/* Right Tree */}
-            <Grid item xs={5.5}>
-              <Paper sx={{ height: '100%', p: 2, overflow: 'auto', ml: -2 }}>
+            <Grid item xs={5.5} sx={{ height: '100%' }}>
+              <Paper sx={{ height: '100%', p: 2, ml: -2, display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom>
                   Right
                 </Typography>
