@@ -81,14 +81,9 @@ function Layout({ children }: LayoutProps) {
       <Toolbar sx={{ 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: isCollapsed ? 'center' : 'space-between',
-        px: isCollapsed ? 1 : 2
+        justifyContent: 'flex-end',
+        px: 2
       }}>
-        {!isCollapsed && (
-          <Typography variant="h6" noWrap component="div">
-            UC Toolkit
-          </Typography>
-        )}
         <IconButton onClick={handleDrawerCollapse}>
           {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </IconButton>

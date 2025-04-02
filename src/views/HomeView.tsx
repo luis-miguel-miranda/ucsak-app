@@ -200,15 +200,6 @@ function HomeView() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Welcome to the Unity Catalog Swiss Army Knife
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage your data assets, contracts, and governance processes in one place.
-        </Typography>
-      </Box>
-
       <Container maxWidth="md" sx={{ mt: 8, mb: 4 }}>
         <Typography variant="h4" align="center" gutterBottom>
           Unity Catalog Swiss Army Knife
