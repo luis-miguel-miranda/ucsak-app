@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -7,74 +7,139 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
-import { Plus, Pencil, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
+import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, XCircle, Gavel, Scale } from 'lucide-react';
+import { Sparklines, SparklinesLine } from 'react-sparklines';
 
-interface ComplianceRule {
+interface CompliancePolicy {
   id: string;
   name: string;
   description: string;
-  category: string;
+  rule: string;
+  compliance: number;
+  history: number[];
+  is_active: boolean;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'active' | 'inactive';
-  complianceScore: number;
-  lastChecked: string;
+  category: string;
+}
+
+interface ComplianceStats {
+  overall_compliance: number;
+  active_policies: number;
+  critical_issues: number;
 }
 
 export default function Compliance() {
-  const [rules, setRules] = useState<ComplianceRule[]>([
-    {
-      id: '1',
-      name: 'PII Data Encryption',
-      description: 'Ensures PII data is encrypted at rest',
-      category: 'Security',
-      severity: 'high',
-      status: 'active',
-      complianceScore: 85,
-      lastChecked: '2024-03-29T12:30:00Z'
-    },
-    {
-      id: '2',
-      name: 'Data Quality Thresholds',
-      description: 'Maintains data quality metrics above defined thresholds',
-      category: 'Data Quality',
-      severity: 'medium',
-      status: 'active',
-      complianceScore: 92,
-      lastChecked: '2024-03-29T12:30:00Z'
-    },
-    {
-      id: '3',
-      name: 'Access Control',
-      description: 'Verifies proper access controls on sensitive data',
-      category: 'Security',
-      severity: 'critical',
-      status: 'active',
-      complianceScore: 65,
-      lastChecked: '2024-03-29T12:30:00Z'
+  const [policies, setPolicies] = useState<CompliancePolicy[]>([]);
+  const [stats, setStats] = useState<ComplianceStats>({
+    overall_compliance: 0,
+    active_policies: 0,
+    critical_issues: 0
+  });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<CompliancePolicy | null>(null);
+  const [formData, setFormData] = useState<Partial<CompliancePolicy>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const [policiesRes, statsRes] = await Promise.all([
+        fetch('/api/compliance/policies'),
+        fetch('/api/compliance/stats')
+      ]);
+      
+      if (!policiesRes.ok || !statsRes.ok) throw new Error('Failed to fetch data');
+      
+      const policiesData = await policiesRes.json();
+      const statsData = await statsRes.json();
+      
+      setPolicies(policiesData);
+      setStats(statsData);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load compliance data"
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedRule, setSelectedRule] = useState<ComplianceRule | null>(null);
+  const handleSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      const url = editingPolicy 
+        ? `/api/compliance/policies/${editingPolicy.id}`
+        : '/api/compliance/policies';
+      
+      const method = editingPolicy ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) throw new Error('Failed to save policy');
+      
+      toast({
+        title: "Success",
+        description: "Policy saved successfully"
+      });
+      
+      setDialogOpen(false);
+      fetchData();
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save policy"
+      });
+    }
+  };
 
-  const overallCompliance = rules.reduce((acc, rule) => acc + rule.complianceScore, 0) / rules.length;
-  const activeRules = rules.filter(rule => rule.status === 'active').length;
-  const criticalIssues = rules.filter(rule => rule.severity === 'critical' && rule.complianceScore < 80).length;
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/compliance/policies/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete policy');
+      
+      toast({
+        title: "Success",
+        description: "Policy deleted successfully"
+      });
+      
+      fetchData();
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete policy"
+      });
+    }
+  };
+
+  const overallCompliance = stats.overall_compliance;
+  const activePolicies = stats.active_policies;
+  const criticalIssues = stats.critical_issues;
 
   const handleCreateRule = () => {
-    setSelectedRule(null);
-    setOpenDialog(true);
+    setEditingPolicy(null);
+    setDialogOpen(true);
   };
 
-  const handleEditRule = (rule: ComplianceRule) => {
-    setSelectedRule(rule);
-    setOpenDialog(true);
-  };
-
-  const handleSaveRule = (event: React.FormEvent) => {
-    event.preventDefault();
-    // TODO: Implement save logic
-    setOpenDialog(false);
+  const handleEditRule = (policy: CompliancePolicy) => {
+    setEditingPolicy(policy);
+    setDialogOpen(true);
   };
 
   const getComplianceColor = (score: number) => {
@@ -94,12 +159,16 @@ export default function Compliance() {
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container py-6">
+      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
+        <Scale className="w-8 h-8" />
+        Compliance
+      </h1>
+
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Compliance</h1>
-        <Button onClick={handleCreateRule}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Compliance Rule
+        <Button onClick={handleCreateRule} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Rule
         </Button>
       </div>
 
@@ -121,7 +190,7 @@ export default function Compliance() {
             <CardTitle className="text-lg">Active Rules</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{activeRules}</div>
+            <div className="text-3xl font-bold">{activePolicies}</div>
             <p className="text-sm text-muted-foreground mt-2">Currently enforced</p>
           </CardContent>
         </Card>
@@ -147,33 +216,33 @@ export default function Compliance() {
 
       {/* Compliance Rules */}
       <div className="space-y-4">
-        {rules.map((rule) => (
-          <Card key={rule.id}>
+        {policies.map((policy) => (
+          <Card key={policy.id}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-semibold">{rule.name[0]}</span>
+                    <span className="text-primary font-semibold">{policy.name[0]}</span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{rule.name}</h3>
-                    <p className="text-sm text-muted-foreground">{rule.description}</p>
+                    <h3 className="text-lg font-semibold">{policy.name}</h3>
+                    <p className="text-sm text-muted-foreground">{policy.description}</p>
                     <div className="flex items-center space-x-2 mt-2">
-                      <Badge variant="outline">{rule.category}</Badge>
-                      <Badge className={getSeverityBadge(rule.severity)}>
-                        {rule.severity}
+                      <Badge variant="outline">{policy.category}</Badge>
+                      <Badge className={getSeverityBadge(policy.severity)}>
+                        {policy.severity}
                       </Badge>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <div className={`text-lg font-semibold ${getComplianceColor(rule.complianceScore)}`}>
-                      {rule.complianceScore}%
+                    <div className={`text-lg font-semibold ${getComplianceColor(policy.compliance)}`}>
+                      {policy.compliance}%
                     </div>
                     <p className="text-sm text-muted-foreground">Compliant</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
+                  <Button variant="ghost" size="sm" onClick={() => handleEditRule(policy)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
@@ -183,19 +252,19 @@ export default function Compliance() {
         ))}
       </div>
 
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedRule ? 'Edit Compliance Rule' : 'Create New Compliance Rule'}
+              {editingPolicy ? 'Edit Compliance Rule' : 'Create New Compliance Rule'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSaveRule} className="space-y-4">
+          <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                defaultValue={selectedRule?.name}
+                defaultValue={editingPolicy?.name}
                 required
               />
             </div>
@@ -203,13 +272,13 @@ export default function Compliance() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                defaultValue={selectedRule?.description}
+                defaultValue={editingPolicy?.description}
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select defaultValue={selectedRule?.category}>
+              <Select defaultValue={editingPolicy?.category}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -223,7 +292,7 @@ export default function Compliance() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="severity">Severity</Label>
-              <Select defaultValue={selectedRule?.severity}>
+              <Select defaultValue={editingPolicy?.severity}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select severity" />
                 </SelectTrigger>
@@ -236,13 +305,13 @@ export default function Compliance() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="complianceScore">Compliance Score</Label>
+              <Label htmlFor="compliance">Compliance</Label>
               <Input
-                id="complianceScore"
+                id="compliance"
                 type="number"
                 min="0"
                 max="100"
-                defaultValue={selectedRule?.complianceScore}
+                defaultValue={editingPolicy?.compliance}
                 required
               />
             </div>

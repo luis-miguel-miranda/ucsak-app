@@ -6,7 +6,7 @@ from typing import List
 
 import yaml
 
-from api.models.notification import Notification
+from api.models.notifications import Notification
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class NotificationNotFoundError(Exception):
     """Raised when a notification is not found."""
 
-class NotificationManager:
+class NotificationsManager:
     def __init__(self):
         """Initialize the notification manager."""
         self.notifications: List[Notification] = []

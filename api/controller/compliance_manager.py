@@ -1,5 +1,5 @@
-from typing import List, Optional, Dict
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 
 import yaml
 
@@ -94,7 +94,7 @@ class ComplianceManager:
 
             # Calculate average compliance for this date
             avg_compliance = sum(daily_scores) / len(daily_scores)
-            
+
             trend_data.append({
                 "date": date,
                 "compliance": round(avg_compliance, 2)

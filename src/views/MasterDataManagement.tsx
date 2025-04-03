@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Badge } from '../components/ui/badge';
-import { ScrollArea } from '../components/ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Progress } from '../components/ui/progress';
-import { AlertCircle, GitCompareArrows, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
+import { AlertCircle, GitCompare, Plus } from 'lucide-react';
 
 interface Dataset {
   id: string;
@@ -42,7 +42,7 @@ interface ComparisonResult {
   }>;
 }
 
-export default function MasterData() {
+export default function MasterDataManagement() {
   const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
   const [entityType, setEntityType] = useState<string>('');
   const [analyzing, setAnalyzing] = useState(false);
@@ -50,22 +50,88 @@ export default function MasterData() {
   const [detailedResults, setDetailedResults] = useState<ComparisonResult[]>([]);
   const [selectedComparison, setSelectedComparison] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-
-  useEffect(() => {
-    fetchDatasets();
-  }, []);
-
-  const fetchDatasets = async () => {
-    try {
-      const response = await fetch('/api/master-data-management/datasets');
-      if (!response.ok) throw new Error('Failed to fetch datasets');
-      const data = await response.json();
-      setDatasets(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch datasets');
+  const [datasets, setDatasets] = useState<Dataset[]>([
+    {
+      id: '1',
+      name: 'CRM Customers',
+      catalog: 'sales',
+      schema: 'crm',
+      table: 'customers',
+      entityColumn: 'customer_id',
+      type: 'customer',
+      totalRecords: 50000
+    },
+    {
+      id: '2',
+      name: 'ERP Customers',
+      catalog: 'finance',
+      schema: 'erp',
+      table: 'customers',
+      entityColumn: 'cust_id',
+      type: 'customer',
+      totalRecords: 45000
+    },
+    {
+      id: '3',
+      name: 'Marketing Contacts',
+      catalog: 'marketing',
+      schema: 'campaigns',
+      table: 'contacts',
+      entityColumn: 'contact_id',
+      type: 'customer',
+      totalRecords: 75000
+    },
+    {
+      id: '4',
+      name: 'Product Catalog',
+      catalog: 'products',
+      schema: 'master',
+      table: 'products',
+      entityColumn: 'product_id',
+      type: 'product',
+      totalRecords: 25000
+    },
+    {
+      id: '5',
+      name: 'ERP Products',
+      catalog: 'finance',
+      schema: 'erp',
+      table: 'products',
+      entityColumn: 'sku',
+      type: 'product',
+      totalRecords: 22000
+    },
+    {
+      id: '6',
+      name: 'Supplier Directory',
+      catalog: 'procurement',
+      schema: 'master',
+      table: 'suppliers',
+      entityColumn: 'supplier_id',
+      type: 'supplier',
+      totalRecords: 5000
+    },
+    {
+      id: '7',
+      name: 'Store Locations',
+      catalog: 'retail',
+      schema: 'master',
+      table: 'locations',
+      entityColumn: 'location_id',
+      type: 'location',
+      totalRecords: 1200
+    },
+    {
+      id: '8',
+      name: 'Warehouse Locations',
+      catalog: 'logistics',
+      schema: 'master',
+      table: 'warehouses',
+      entityColumn: 'warehouse_id',
+      type: 'location',
+      totalRecords: 150
     }
-  };
+  ]);
 
   const handleAnalyze = async () => {
     if (selectedDatasets.length < 2) {
@@ -77,18 +143,43 @@ export default function MasterData() {
     setError(null);
 
     try {
-      const response = await fetch('/api/master-data-management/compare', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(selectedDatasets),
-      });
+      // Mock API call with delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate mock results
+      const mockResults: ComparisonResult[] = [];
+      for (let i = 0; i < selectedDatasets.length; i++) {
+        for (let j = i + 1; j < selectedDatasets.length; j++) {
+          const datasetA = datasets.find(d => d.id === selectedDatasets[i]);
+          const datasetB = datasets.find(d => d.id === selectedDatasets[j]);
+          
+          if (!datasetA || !datasetB) continue;
 
-      if (!response.ok) throw new Error('Failed to analyze datasets');
-      const data = await response.json();
-      setDetailedResults(data);
-      setResults(data);
+          mockResults.push({
+            datasetA: datasetA.name,
+            datasetB: datasetB.name,
+            matchingEntities: Math.floor(Math.random() * 40000),
+            uniqueToA: Math.floor(Math.random() * 10000),
+            uniqueToB: Math.floor(Math.random() * 10000),
+            matchScore: Math.random() * 100,
+            commonColumns: ['id', 'name', 'email', 'phone', 'address'],
+            sampleMatches: [
+              { entityA: "CUST001", entityB: "C-001", confidence: 0.95 },
+              { entityA: "CUST002", entityB: "C-002", confidence: 0.88 },
+              { entityA: "CUST003", entityB: "C-003", confidence: 0.92 }
+            ],
+            columnStats: [
+              { column: 'id', matchRate: 0.95, nullRate: 0.01 },
+              { column: 'name', matchRate: 0.85, nullRate: 0.05 },
+              { column: 'email', matchRate: 0.75, nullRate: 0.15 },
+              { column: 'phone', matchRate: 0.65, nullRate: 0.25 }
+            ]
+          });
+        }
+      }
+      
+      setDetailedResults(mockResults);
+      setResults(mockResults);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze datasets');
     } finally {
@@ -173,9 +264,13 @@ export default function MasterData() {
 
   return (
     <div className="container py-6">
+      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
+        <GitCompare className="w-8 h-8" />
+        Master Data Management
+      </h1>
+
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-4xl font-bold">Master Data Management</h1>
           <p className="text-muted-foreground mt-1">
             Analyze and manage entity overlaps across your data estate
           </p>
@@ -219,20 +314,50 @@ export default function MasterData() {
                 <div className="space-y-2">
                   <Label>Datasets to Compare</Label>
                   <Select
-                    value={selectedDatasets.join(',')}
-                    onValueChange={(value) => setSelectedDatasets(value.split(',').filter(Boolean))}
+                    value={selectedDatasets[0] || ''}
+                    onValueChange={(value) => {
+                      if (!selectedDatasets.includes(value)) {
+                        setSelectedDatasets([...selectedDatasets, value]);
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select datasets" />
                     </SelectTrigger>
                     <SelectContent>
-                      {datasets.map((dataset) => (
-                        <SelectItem key={dataset.id} value={dataset.id}>
-                          {dataset.name}
-                        </SelectItem>
-                      ))}
+                      {datasets
+                        .filter(dataset => !selectedDatasets.includes(dataset.id))
+                        .map((dataset) => (
+                          <SelectItem key={dataset.id} value={dataset.id}>
+                            {dataset.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
+                  {selectedDatasets.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedDatasets.map(id => {
+                        const dataset = datasets.find(d => d.id === id);
+                        return dataset ? (
+                          <Badge 
+                            key={id} 
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            {dataset.name}
+                            <button
+                              onClick={() => {
+                                setSelectedDatasets(selectedDatasets.filter(d => d !== id));
+                              }}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end">
@@ -240,7 +365,7 @@ export default function MasterData() {
                   onClick={handleAnalyze}
                   disabled={analyzing || selectedDatasets.length < 2}
                 >
-                  <GitCompareArrows className="h-4 w-4 mr-2" />
+                  <GitCompare className="h-4 w-4 mr-2" />
                   Analyze Overlaps
                 </Button>
               </div>

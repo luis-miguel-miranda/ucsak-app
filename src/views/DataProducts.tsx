@@ -6,8 +6,10 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import { Plus, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, Database } from 'lucide-react';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Card, CardContent } from '../components/ui/card';
 
 export default function DataProducts() {
   const [products, setProducts] = useState<DataProduct[]>([]);
@@ -136,10 +138,29 @@ export default function DataProducts() {
     return status?.name || statusId;
   };
 
+  const getStatusColor = (statusId: string) => {
+    switch (statusId) {
+      case 'published':
+        return 'success';
+      case 'draft':
+        return 'default';
+      case 'deprecated':
+        return 'warning';
+      case 'archived':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
   return (
     <div className="container py-6">
+      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
+        <Database className="w-8 h-8" />
+        Data Products
+      </h1>
+
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold">Data Products</h1>
         <Button onClick={handleCreateProduct} className="gap-2">
           <Plus className="h-4 w-4" />
           Create Data Product
@@ -158,44 +179,71 @@ export default function DataProducts() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="rounded-md border">
-          {products.map((product) => (
-            <div key={product.id} className="p-4 border-b last:border-b-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-semibold">DP</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.description}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">
-                    {getStatusName(product.status)}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditProduct(product)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => product.id && handleDeleteProduct(product.id)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tags</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell>{product.owner}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {product.type || 'No type'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusColor(product.status) as any}>
+                        {getStatusName(product.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(product.tags || []).map(tag => (
+                          <Badge key={tag} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {product.updated_at ? new Date(product.updated_at).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => product.id && handleDeleteProduct(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>

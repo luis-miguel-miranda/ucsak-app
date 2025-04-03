@@ -8,15 +8,12 @@ personas:
   - analytics_users
   - compliance_team
   created_at: '2023-06-15T10:30:00Z'
-  updated_at: '2025-04-02T14:04:44Z'
+  updated_at: '2025-04-03T08:33:40Z'
   privileges:
   - securable_id: main.analytics.sales_data
     securable_type: table
     permission: READ
   - securable_id: main.analytics.product_data
-    securable_type: table
-    permission: READ
-  - securable_id: etfrhret
     securable_type: table
     permission: READ
 - id: 2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q

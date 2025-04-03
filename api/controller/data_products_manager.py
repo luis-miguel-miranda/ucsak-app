@@ -5,11 +5,18 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from api.models.data_product import DataOutput, DataProduct, DataProductStatus, DataProductType, DataSource, SchemaField
+from api.models.data_products import (
+    DataOutput,
+    DataProduct,
+    DataProductStatus,
+    DataProductType,
+    DataSource,
+    SchemaField,
+)
 
 logger = logging.getLogger(__name__)
 
-class DataProductManager:
+class DataProductsManager:
     def __init__(self):
         self._products: Dict[str, DataProduct] = {}
 

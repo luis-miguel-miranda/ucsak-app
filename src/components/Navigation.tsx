@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { ChevronDown, Wrench } from 'lucide-react';
+import { ChevronDown, Wrench, Shield, ArrowLeftRight, Gavel } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UserInfo from './UserInfo';
 
@@ -20,13 +20,15 @@ const navigationGroups = [
       { name: 'Data Contracts', path: '/data-contracts' },
       { name: 'Business Glossary', path: '/business-glossary' },
       { name: 'Master Data Management', path: '/master-data' },
+      { name: 'Compliance', path: '/compliance' },
     ],
   },
   {
     name: 'Security',
     items: [
+      { name: 'Security Features', path: '/security' },
       { name: 'Entitlements', path: '/entitlements' },
-      { name: 'Features', path: '/security' },
+      { name: 'Entitlements Sync', path: '/entitlements-sync' },
     ],
   },
   {

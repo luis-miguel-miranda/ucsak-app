@@ -1,12 +1,13 @@
 import logging
-from fastapi import APIRouter, HTTPException
 from typing import List, Optional
-from ..models.master_data_management import (
-    MasterDataManagementDataset,
-    MasterDataManagementComparisonResult,
-    MasterDataManagementResponse
-)
+
+from fastapi import APIRouter, HTTPException
+
 from ..controller.master_data_management_manager import MasterDataManagementManager
+from ..models.master_data_management import (
+    MasterDataManagementComparisonResult,
+    MasterDataManagementDataset,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -71,4 +72,4 @@ async def get_comparison(dataset_a: str, dataset_b: str):
 def register_routes(app):
     """Register master data management routes with the app"""
     app.include_router(router)
-    logger.info("Master data management routes registered") 
+    logger.info("Master data management routes registered")

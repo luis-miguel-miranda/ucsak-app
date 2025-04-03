@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Plus, Pencil, Trash2, AlertCircle, FileText, ChevronRight, ChevronDown, Folder, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, FileText, ChevronRight, ChevronDown, Folder, GripVertical, Book } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactFlow, { Node, Edge, Background, MarkerType, Controls } from 'reactflow';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
@@ -669,7 +669,12 @@ export default function BusinessGlossary() {
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container py-6">
+      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
+        <Book className="w-8 h-8" />
+        Business Glossary
+      </h1>
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Business Glossary</h1>
         <div className="flex space-x-2">

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 interface Privilege {
   securable_id: string;
@@ -287,12 +287,15 @@ const Entitlements: React.FC = () => {
   return (
     <div className="container py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold">Entitlements</h1>
+        <h1 className="text-4xl font-bold flex items-center gap-2">
+          <Shield className="w-8 h-8" />
+          Entitlements
+        </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={handleAddPersona}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Persona
+            <Button onClick={handleAddPersona} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Persona
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -495,7 +498,7 @@ const Entitlements: React.FC = () => {
               <div className="flex flex-col items-center justify-center h-[70vh] text-muted-foreground">
                 <Settings className="w-12 h-12 mb-4" />
                 <p className="text-lg">Select a persona to view details</p>
-                <p className="text-sm">Or create a new one using the "Add Persona" button</p>
+                <p className="text-sm">Or create a new one using the "Create Persona" button</p>
               </div>
             )}
           </CardContent>

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from api.controller.business_glossary_manager import BusinessGlossaryManager
+from api.controller.business_glossaries_manager import BusinessGlossariesManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["business-glossaries"])
 
 # Create a single instance of the manager
-glossary_manager = BusinessGlossaryManager()
+glossary_manager = BusinessGlossariesManager()
 
 # Check for YAML file in data directory
-yaml_path = Path(__file__).parent.parent / 'data' / 'business_glossary.yaml'
+yaml_path = Path(__file__).parent.parent / 'data' / 'business_glossaries.yaml'
 if os.path.exists(yaml_path):
     # Load data from YAML file
     try:

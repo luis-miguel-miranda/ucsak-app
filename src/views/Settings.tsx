@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
+import { Loader2, Settings as SettingsIcon, Plus, Pencil, Trash2, AlertCircle } from 'lucide-react';
 
 interface JobCluster {
   id: string;
@@ -211,6 +211,10 @@ export default function Settings() {
 
   return (
     <div className="container py-6">
+      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
+        <SettingsIcon className="w-8 h-8" />
+        Settings
+      </h1>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>

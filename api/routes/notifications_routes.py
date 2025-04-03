@@ -4,15 +4,15 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from api.controller.notification_manager import NotificationManager, NotificationNotFoundError
-from api.models.notification import Notification
+from api.controller.notifications_manager import NotificationNotFoundError, NotificationsManager
+from api.models.notifications import Notification
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["notifications"])
-notifications_manager = NotificationManager()
+notifications_manager = NotificationsManager()
 
 # Check for YAML file in data directory
 yaml_path = Path(__file__).parent.parent / 'data' / 'notifications.yaml'

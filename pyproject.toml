@@ -28,7 +28,8 @@ dependencies = [
     "pyyaml>=6.0.1",
     "requests>=2.31.0",
     "pydantic-settings>=2.2.1",
-    "GitPython>=3.1.44"
+    "GitPython>=3.1.44",
+    "pyarrow>=15.0.0"
 ]
 
 [tool.hatch.build.targets.wheel]

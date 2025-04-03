@@ -9,7 +9,7 @@ from api.models.business_glossary import BusinessGlossary, Domain, GlossaryTerm
 
 logger = logging.getLogger(__name__)
 
-class BusinessGlossaryManager:
+class BusinessGlossariesManager:
     def __init__(self):
         self._domains: Dict[str, Domain] = {}
         self._glossaries: Dict[str, BusinessGlossary] = {}

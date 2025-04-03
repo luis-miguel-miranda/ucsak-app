@@ -1,13 +1,15 @@
-from typing import List, Optional, Dict
-from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
+from typing import List
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class MasterDataManagementDataset(BaseModel):
     model_config = ConfigDict(
         alias_generator=lambda x: ''.join(word.capitalize() for word in x.split('_')),
         populate_by_name=True
     )
-    
+
     id: str
     name: str
     catalog: str
@@ -24,7 +26,7 @@ class MasterDataManagementColumnStat(BaseModel):
         alias_generator=lambda x: ''.join(word.capitalize() for word in x.split('_')),
         populate_by_name=True
     )
-    
+
     column: str
     match_rate: float = Field(alias="matchRate")
     null_rate: float = Field(alias="nullRate")
@@ -34,7 +36,7 @@ class MasterDataManagementSampleMatch(BaseModel):
         alias_generator=lambda x: ''.join(word.capitalize() for word in x.split('_')),
         populate_by_name=True
     )
-    
+
     entity_a: str = Field(alias="entityA")
     entity_b: str = Field(alias="entityB")
     confidence: float
@@ -44,7 +46,7 @@ class MasterDataManagementComparisonResult(BaseModel):
         alias_generator=lambda x: ''.join(word.capitalize() for word in x.split('_')),
         populate_by_name=True
     )
-    
+
     dataset_a: str = Field(alias="datasetA")
     dataset_b: str = Field(alias="datasetB")
     matching_entities: int = Field(alias="matchingEntities")
@@ -58,4 +60,4 @@ class MasterDataManagementComparisonResult(BaseModel):
 
 class MasterDataManagementResponse(BaseModel):
     datasets: List[MasterDataManagementDataset]
-    comparisons: List[MasterDataManagementComparisonResult] 
+    comparisons: List[MasterDataManagementComparisonResult]

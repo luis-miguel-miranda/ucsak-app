@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Request
 
-from api.models.user import UserInfo
+from api.models.users import UserInfo
 
 logger = logging.getLogger(__name__)
 

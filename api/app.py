@@ -16,9 +16,11 @@ from api.routes import (
     data_contract_routes,
     data_product_routes,
     entitlements_routes,
+    entitlements_sync_routes,
     master_data_management_routes,
     notifications_routes,
     search_routes,
+    security_features_routes,
     settings_routes,
     user_routes,
 )
@@ -73,6 +75,7 @@ data_product_routes.register_routes(app)
 data_contract_routes.register_routes(app)
 business_glossary_routes.register_routes(app)
 entitlements_routes.register_routes(app)
+entitlements_sync_routes.register_routes(app)
 catalog_commander_routes.register_routes(app)
 settings_routes.register_routes(app)
 user_routes.register_routes(app)
@@ -80,6 +83,9 @@ search_routes.register_routes(app)
 notifications_routes.register_routes(app)
 compliance_routes.register_routes(app)
 master_data_management_routes.register_routes(app)
+logger.info("Registering security features routes...")
+security_features_routes.register_routes(app)
+logger.info("Security features routes registered")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

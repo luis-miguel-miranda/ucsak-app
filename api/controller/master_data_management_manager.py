@@ -1,12 +1,13 @@
-from typing import List, Optional
-from ..models.master_data_management import (
-    MasterDataManagementDataset,
-    MasterDataManagementComparisonResult,
-    MasterDataManagementResponse
-)
-import yaml
 import os
-from datetime import datetime
+from typing import List, Optional
+
+import yaml
+
+from ..models.master_data_management import (
+    MasterDataManagementComparisonResult,
+    MasterDataManagementDataset,
+)
+
 
 class MasterDataManagementManager:
     def __init__(self):
@@ -18,7 +19,7 @@ class MasterDataManagementManager:
         """Load sample data from YAML file"""
         data_file = os.path.join(os.path.dirname(__file__), '../data/master_data_management.yaml')
         if os.path.exists(data_file):
-            with open(data_file, 'r') as f:
+            with open(data_file) as f:
                 data = yaml.safe_load(f)
                 self.datasets = [MasterDataManagementDataset(**dataset) for dataset in data.get('datasets', [])]
                 self.comparisons = [MasterDataManagementComparisonResult(**comp) for comp in data.get('comparisons', [])]
@@ -62,7 +63,7 @@ class MasterDataManagementManager:
             for j in range(i + 1, len(dataset_ids)):
                 dataset_a = self.get_dataset_by_id(dataset_ids[i])
                 dataset_b = self.get_dataset_by_id(dataset_ids[j])
-                
+
                 if not dataset_a or not dataset_b:
                     continue
 
@@ -99,8 +100,8 @@ class MasterDataManagementManager:
     def get_comparison_by_datasets(self, dataset_a: str, dataset_b: str) -> Optional[MasterDataManagementComparisonResult]:
         """Get comparison result for specific datasets"""
         return next(
-            (c for c in self.comparisons 
+            (c for c in self.comparisons
              if (c.dataset_a == dataset_a and c.dataset_b == dataset_b) or
                 (c.dataset_a == dataset_b and c.dataset_b == dataset_a)),
             None
-        ) 
+        )

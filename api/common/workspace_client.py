@@ -1,7 +1,8 @@
 import logging
+import signal
 import time
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from databricks import sql
 from databricks.sdk import WorkspaceClient
@@ -12,12 +13,48 @@ from .config import Settings, get_settings
 # Configure logging
 logger = logging.getLogger(__name__)
 
-class CachedWorkspaceClient(WorkspaceClient):
-    def __init__(self, client: WorkspaceClient):
+class TimeoutError(Exception):
+    """Exception raised when a function times out."""
+
+class CachingWorkspaceClient(WorkspaceClient):
+    def __init__(self, client: WorkspaceClient, timeout: int = 30):
         self._client = client
         self._cache: Dict[str, Any] = {}
         self._cache_times: Dict[str, float] = {}
-        self._cache_duration = 60  # 1 minute in seconds
+        self._cache_duration = 300  # 5 minutes in seconds
+        self._timeout = timeout
+
+    def __call__(self, timeout: int = 30):
+        return CachingWorkspaceClient(self._client, timeout=timeout)
+
+    def _make_api_call(self, func: Callable, *args, **kwargs) -> Any:
+        """Execute a function with a timeout.
+        
+        Args:
+            func: The function to execute
+            *args: Positional arguments to pass to the function
+            **kwargs: Keyword arguments to pass to the function
+            
+        Returns:
+            The result of the function call
+            
+        Raises:
+            TimeoutError: If the function call times out
+        """
+        def handler(signum, frame):
+            raise TimeoutError(f"Function call timed out after {self._timeout} seconds")
+
+        # Set the timeout handler
+        original_handler = signal.signal(signal.SIGALRM, handler)
+        signal.alarm(self._timeout)
+
+        try:
+            result = func(*args, **kwargs)
+            return result
+        finally:
+            # Restore the original handler and cancel the alarm
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, original_handler)
 
     def _cache_result(self, key: str) -> Callable:
         def decorator(func: Callable) -> Callable:
@@ -35,11 +72,25 @@ class CachedWorkspaceClient(WorkspaceClient):
 
                 # Call the actual function and cache the result
                 logger.info(f"Cache miss for {key}, calling Databricks workspace")
-                result = func(*args, **kwargs)
-                logger.info(result)
-                self._cache[key] = result
-                self._cache_times[key] = current_time
-                return result
+                try:
+                    result = self._make_api_call(func, *args, **kwargs)
+                    self._cache[key] = result
+                    self._cache_times[key] = current_time
+                    return result
+                except TimeoutError as e:
+                    logger.error(f"Timeout while fetching {key}: {e}")
+                    # Return cached data if available, even if expired
+                    if key in self._cache:
+                        logger.warning(f"Returning stale cached data for {key}")
+                        return self._cache[key]
+                    raise
+                except Exception as e:
+                    logger.error(f"Error fetching {key}: {e}")
+                    # Return cached data if available, even if expired
+                    if key in self._cache:
+                        logger.warning(f"Returning stale cached data for {key}")
+                        return self._cache[key]
+                    raise
             return wrapper
         return decorator
 
@@ -56,28 +107,71 @@ class CachedWorkspaceClient(WorkspaceClient):
 
         return CachedClusters(self)
 
+    @property
+    def connections(self):
+        class CachedConnections:
+            def __init__(self, parent):
+                self._parent = parent
+
+            def list(self):
+                return self._parent._cache_result('connections.list')(
+                    lambda: list(self._parent._client.connections.list())
+                )()
+
+        return CachedConnections(self)
+
+    @property
+    def catalogs(self):
+        class CachedCatalogs:
+            def __init__(self, parent):
+                self._parent = parent
+
+            def list(self):
+                return self._parent._cache_result('catalogs.list')(
+                    lambda: list(self._parent._client.catalogs.list())
+                )()
+
+        return CachedCatalogs(self)
+
     # Delegate all other attributes to the original client
     def __getattr__(self, name):
         return getattr(self._client, name)
 
-def get_workspace_client(settings: Settings = Depends(get_settings)) -> WorkspaceClient:
+def get_workspace_client(settings: Optional[Settings] = None, timeout: int = 30) -> WorkspaceClient:
     """Get a configured Databricks workspace client with caching.
     
     Args:
-        settings: Application settings (injected by FastAPI)
+        settings: Application settings (optional, will be fetched if not provided)
+        timeout: Timeout in seconds for API calls
         
     Returns:
         Cached workspace client instance
     """
+    if settings is None:
+        settings = get_settings()
+
     # Log environment values with obfuscated token
     masked_token = f"{settings.DATABRICKS_TOKEN[:4]}...{settings.DATABRICKS_TOKEN[-4:]}" if settings.DATABRICKS_TOKEN else None
-    logger.info(f"Initializing workspace client with host: {settings.DATABRICKS_HOST}, token: {masked_token}")
+    logger.info(f"Initializing workspace client with host: {settings.DATABRICKS_HOST}, token: {masked_token}, timeout: {timeout}s")
 
     client = WorkspaceClient(
         host=settings.DATABRICKS_HOST,
         token=settings.DATABRICKS_TOKEN
     )
-    return CachedWorkspaceClient(client)
+    return CachingWorkspaceClient(client, timeout=timeout)
+
+def get_workspace_client_dependency(timeout: int = 30):
+    """FastAPI dependency for getting a workspace client.
+    
+    Args:
+        timeout: Timeout in seconds for API calls
+        
+    Returns:
+        FastAPI dependency function
+    """
+    def dependency(settings: Settings = Depends(get_settings)):
+        return get_workspace_client(settings, timeout)
+    return dependency
 
 def get_sql_connection(settings: Settings = Depends(get_settings)):
     """Create and return a Databricks SQL connection.

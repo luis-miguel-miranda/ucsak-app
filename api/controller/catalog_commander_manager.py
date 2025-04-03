@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 
-import pandas as pd
 from databricks import sql
 from databricks.sdk import WorkspaceClient
 
@@ -119,7 +118,11 @@ class CatalogCommanderManager:
             # Get data with Arrow for better performance
             logger.info(f"Executing SQL query: SELECT * FROM {quoted_path} LIMIT 1000")
             cursor.execute(f"SELECT * FROM {quoted_path} LIMIT 1000")
-            df = cursor.fetchall_arrow().to_pandas()
+            arrow_table = cursor.fetchall_arrow()
+
+            # Convert Arrow table to pandas DataFrame
+            import pandas as pd
+            df = arrow_table.to_pandas()
 
             # Get schema from DataFrame
             schema = [

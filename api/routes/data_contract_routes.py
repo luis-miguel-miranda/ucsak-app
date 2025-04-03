@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from api.controller.data_contract_manager import DataContractManager
+from api.controller.data_contracts_manager import DataContractsManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["data-contracts"])
 
 # Create a single instance of the manager
-contract_manager = DataContractManager()
+contract_manager = DataContractsManager()
 
 # Check for YAML file in data directory
 yaml_path = Path(__file__).parent.parent / 'data' / 'data_contracts.yaml'

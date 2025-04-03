@@ -1,20 +1,20 @@
 import logging
 from typing import Any, Dict, List
 
-from api.controller.business_glossary_manager import BusinessGlossaryManager
-from api.controller.data_contract_manager import DataContractManager
-from api.controller.data_product_manager import DataProductManager
-from api.controller.notification_manager import NotificationManager
+from api.controller.business_glossaries_manager import BusinessGlossariesManager
+from api.controller.data_contracts_manager import DataContractsManager
+from api.controller.data_products_manager import DataProductsManager
+from api.controller.notifications_manager import NotificationsManager
 
 logger = logging.getLogger(__name__)
 
 class SearchManager:
     def __init__(self):
         """Initialize search manager with access to other managers."""
-        self.notification_manager = NotificationManager()
-        self.glossary_manager = BusinessGlossaryManager()
-        self.contract_manager = DataContractManager()
-        self.product_manager = DataProductManager()
+        self.notification_manager = NotificationsManager()
+        self.glossary_manager = BusinessGlossariesManager()
+        self.contract_manager = DataContractsManager()
+        self.product_manager = DataProductsManager()
 
     def search(self, query: str) -> Dict[str, List[Dict[str, Any]]]:
         """Search across all data types.
