@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  IconButton,
-  Menu,
-  MenuItem,
-  Avatar,
-  Tooltip,
-} from '@mui/material';
-import AccountCircle from '@mui/icons-material/AccountCircle';
+import { User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserInfo {
   email: string | null;
@@ -17,9 +12,8 @@ interface UserInfo {
   ip: string | null;
 }
 
-function UserInfo() {
+export default function UserInfo() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,72 +37,38 @@ function UserInfo() {
     fetchUserInfo();
   }, []);
 
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    console.log('Opening user info menu');
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    console.log('Closing user info menu');
-    setAnchorEl(null);
-  };
-
   const displayName = userInfo?.username || userInfo?.email || userInfo?.user || 'n/a';
 
   return (
-    <>
-      <Tooltip title="User Information">
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="menu-appbar"
-          aria-haspopup="true"
-          onClick={handleMenu}
-          color="inherit"
-        >
-          <Avatar sx={{ width: 32, height: 32 }}>
-            {displayName.charAt(0).toUpperCase()}
-          </Avatar>
-        </IconButton>
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>User Information</TooltipContent>
       </Tooltip>
-      <Menu
-        id="menu-appbar"
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-      >
-        <MenuItem>
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle1">{displayName}</Typography>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex flex-col gap-1 p-2">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             {userInfo?.email && (
-              <Typography variant="body2" color="text.secondary">
-                {userInfo.email}
-              </Typography>
+              <p className="text-xs text-muted-foreground">{userInfo.email}</p>
             )}
             {userInfo?.ip && (
-              <Typography variant="caption" color="text.secondary">
-                IP: {userInfo.ip}
-              </Typography>
+              <p className="text-xs text-muted-foreground">IP: {userInfo.ip}</p>
             )}
             {error && (
-              <Typography variant="caption" color="error">
-                Error: {error}
-              </Typography>
+              <p className="text-xs text-destructive">Error: {error}</p>
             )}
-          </Box>
-        </MenuItem>
-      </Menu>
-    </>
+          </div>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
-}
-
-export default UserInfo; 
+} 

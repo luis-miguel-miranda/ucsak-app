@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Badge,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemText,
-  ListItemIcon,
-  Typography,
-  Box,
-  Divider,
-} from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Bell, Info, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Notification {
   id: string;
@@ -30,7 +19,6 @@ interface Notification {
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -77,109 +65,93 @@ export default function NotificationBell() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'info':
-        return <InfoIcon color="info" />;
+        return <Info className="h-4 w-4 text-blue-500" />;
       case 'success':
-        return <CheckCircleIcon color="success" />;
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'warning':
-        return <WarningIcon color="warning" />;
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
       case 'error':
-        return <ErrorIcon color="error" />;
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <InfoIcon />;
+        return <Info className="h-4 w-4" />;
     }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <>
-      <Box sx={{ position: 'relative' }}>
-        <Badge 
-          badgeContent={unreadCount} 
-          color="error"
-          sx={{ 
-            '& .MuiBadge-badge': { 
-              right: -3, 
-              top: 13 
-            } 
-          }}
-        >
-          <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-            <NotificationsIcon sx={{ 
-              color: notifications.length > 0 ? 'white' : 'action.disabled' 
-            }} />
-          </IconButton>
-        </Badge>
-      </Box>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-        PaperProps={{
-          sx: { width: 350, maxHeight: 400 }
-        }}
-      >
-        {notifications.length === 0 ? (
-          <MenuItem>
-            <Typography color="text.secondary">No notifications</Typography>
-          </MenuItem>
-        ) : (
-          notifications.map((notification, index) => (
-            <React.Fragment key={notification.id}>
-              {index > 0 && <Divider />}
-              <MenuItem
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-[10px] leading-none"
+                >
+                  {unreadCount}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Notifications</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end" className="w-80">
+        <ScrollArea className="h-[400px]">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No notifications
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                className="flex items-start gap-2 p-2"
                 onClick={() => handleMarkRead(notification.id)}
-                sx={{
-                  backgroundColor: notification.read ? 'inherit' : 'action.hover',
-                  py: 1,
-                  position: 'relative',
-                }}
               >
-                <ListItemIcon>
-                  {getIcon(notification.type)}
-                </ListItemIcon>
-                <ListItemText
-                  primary={notification.title}
-                  secondary={
-                    <Box>
-                      {notification.subtitle && (
-                        <Typography variant="body2">
-                          {notification.subtitle}
-                        </Typography>
-                      )}
-                      {notification.description && (
-                        <Typography variant="body2" color="text.secondary">
-                          {notification.description}
-                        </Typography>
-                      )}
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(notification.created_at).toLocaleString()}
-                      </Typography>
-                    </Box>
-                  }
-                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    {getIcon(notification.type)}
+                    <p className="text-sm font-medium">{notification.title}</p>
+                  </div>
+                  {notification.subtitle && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {notification.subtitle}
+                    </p>
+                  )}
+                  {notification.description && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {notification.description}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(notification.created_at).toLocaleString()}
+                  </p>
+                </div>
                 {notification.can_delete && (
-                  <IconButton
-                    size="small"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(notification.id);
                     }}
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                    }}
                   >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+                    <X className="h-4 w-4" />
+                  </Button>
                 )}
-              </MenuItem>
-            </React.Fragment>
-          ))
-        )}
-      </Menu>
-    </>
+                {!notification.read && (
+                  <div className="h-2 w-2 rounded-full bg-primary absolute right-2 top-2" />
+                )}
+              </DropdownMenuItem>
+            ))
+          )}
+        </ScrollArea>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 } 

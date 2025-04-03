@@ -10,7 +10,7 @@ from ..controller.catalog_commander_manager import CatalogCommanderManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["catalog-commander"])
 
 def get_catalog_manager(client: WorkspaceClient = Depends(get_workspace_client)) -> CatalogCommanderManager:
     """Get a configured catalog commander manager instance.
@@ -23,64 +23,79 @@ def get_catalog_manager(client: WorkspaceClient = Depends(get_workspace_client))
     """
     return CatalogCommanderManager(client)
 
-@router.get('/api/catalogs')
-async def list_catalogs(manager: CatalogCommanderManager = Depends(get_catalog_manager)):
+@router.get('/catalogs')
+async def list_catalogs(catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)):
     """List all catalogs in the Databricks workspace."""
     try:
-        return manager.list_catalogs()
+        logger.info("Starting to fetch catalogs")
+        catalogs = catalog_manager.list_catalogs()
+        logger.info(f"Successfully fetched {len(catalogs)} catalogs")
+        return catalogs
     except Exception as e:
-        error_msg = f"Error fetching catalogs: {e!s}"
-        logger.error(error_msg)
+        error_msg = f"Failed to fetch catalogs: {e!s}"
+        logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/catalogs/{catalog_name}/schemas')
+@router.get('/catalogs/{catalog_name}/schemas')
 async def list_schemas(
     catalog_name: str,
-    manager: CatalogCommanderManager = Depends(get_catalog_manager)
+    catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)
 ):
     """List all schemas in a catalog."""
     try:
-        return manager.list_schemas(catalog_name)
+        logger.info(f"Fetching schemas for catalog: {catalog_name}")
+        schemas = catalog_manager.list_schemas(catalog_name)
+        logger.info(f"Successfully fetched {len(schemas)} schemas for catalog {catalog_name}")
+        return schemas
     except Exception as e:
-        error_msg = f"Error fetching schemas for catalog {catalog_name}: {e!s}"
-        logger.error(error_msg)
+        error_msg = f"Failed to fetch schemas for catalog {catalog_name}: {e!s}"
+        logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/catalogs/{catalog_name}/schemas/{schema_name}/tables')
+@router.get('/catalogs/{catalog_name}/schemas/{schema_name}/tables')
 async def list_tables(
     catalog_name: str,
     schema_name: str,
-    manager: CatalogCommanderManager = Depends(get_catalog_manager)
+    catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)
 ):
-    """List all tables and views in a schema."""
+    """List all tables in a schema."""
     try:
-        return manager.list_tables(catalog_name, schema_name)
+        logger.info(f"Fetching tables for schema: {catalog_name}.{schema_name}")
+        tables = catalog_manager.list_tables(catalog_name, schema_name)
+        logger.info(f"Successfully fetched {len(tables)} tables for schema {catalog_name}.{schema_name}")
+        return tables
     except Exception as e:
-        error_msg = f"Error fetching tables for schema {catalog_name}.{schema_name}: {e!s}"
-        logger.error(error_msg)
+        error_msg = f"Failed to fetch tables for schema {catalog_name}.{schema_name}: {e!s}"
+        logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/catalogs/dataset/{dataset_path:path}')
+@router.get('/catalogs/dataset/{dataset_path:path}')
 async def get_dataset(
     dataset_path: str,
-    manager: CatalogCommanderManager = Depends(get_catalog_manager)
+    catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)
 ):
-    """Get dataset content and schema from a specific path"""
+    """Get dataset content and schema."""
     try:
-        return manager.get_dataset(dataset_path)
+        logger.info(f"Fetching dataset: {dataset_path}")
+        dataset = catalog_manager.get_dataset(dataset_path)
+        logger.info(f"Successfully fetched dataset {dataset_path}")
+        return dataset
     except Exception as e:
-        error_msg = f"Error fetching dataset {dataset_path}: {e!s}"
-        logger.error(error_msg)
+        error_msg = f"Failed to fetch dataset {dataset_path}: {e!s}"
+        logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get('/api/catalogs/health')
-async def health_check(manager: CatalogCommanderManager = Depends(get_catalog_manager)):
-    """Check if the catalog API is healthy"""
+@router.get('/catalogs/health')
+async def health_check(catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)):
+    """Check if the catalog API is healthy."""
     try:
-        return manager.health_check()
+        logger.info("Performing health check")
+        status = catalog_manager.health_check()
+        logger.info("Health check successful")
+        return status
     except Exception as e:
         error_msg = f"Health check failed: {e!s}"
-        logger.error(error_msg)
+        logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
 def register_routes(app):

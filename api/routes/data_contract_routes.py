@@ -12,7 +12,7 @@ from api.controller.data_contract_manager import DataContractManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["data-contracts"])
 
 # Create a single instance of the manager
 contract_manager = DataContractManager()

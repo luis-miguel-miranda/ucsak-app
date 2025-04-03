@@ -10,7 +10,7 @@ from api.common.job_runner import JobRunner
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["jobs"])
 
 @router.get('/jobs/{run_id}/status')
 async def get_job_status(

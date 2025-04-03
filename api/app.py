@@ -16,6 +16,7 @@ from api.routes import (
     data_contract_routes,
     data_product_routes,
     entitlements_routes,
+    master_data_management_routes,
     notifications_routes,
     search_routes,
     settings_routes,
@@ -41,9 +42,15 @@ app = FastAPI(
 
 # Configure CORS
 origins = [
+    "http://localhost:3000",
     "http://localhost:8000",
+    "http://localhost:8001",
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
     "http://0.0.0.0:5173",
+    "http://0.0.0.0:5174",
+    "http://0.0.0.0:5175",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -72,6 +79,7 @@ user_routes.register_routes(app)
 search_routes.register_routes(app)
 notifications_routes.register_routes(app)
 compliance_routes.register_routes(app)
+master_data_management_routes.register_routes(app)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

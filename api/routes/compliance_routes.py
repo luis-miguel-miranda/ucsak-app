@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
 
@@ -58,6 +59,11 @@ async def delete_policy(policy_id: str):
 async def get_stats():
     """Get compliance statistics"""
     return manager.get_compliance_stats()
+
+@router.get("/compliance/trend")
+async def get_compliance_trend():
+    """Get compliance trend data for the last 30 days"""
+    return manager.get_compliance_trend()
 
 def register_routes(app: FastAPI) -> None:
     """Register all compliance routes with the FastAPI app"""

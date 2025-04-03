@@ -1,56 +1,51 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from './components/theme-provider';
 import Layout from './components/Layout';
-import HomeView from './views/HomeView';
-import DataContractsView from './views/DataContractsView';
-import DataProductsView from './views/DataProductsView';
-import CatalogCommanderView from './views/CatalogCommanderView';
-import BusinessGlossariesView from './views/BusinessGlossariesView';
-import EntitlementsView from './views/EntitlementsView';
-import SettingsView from './views/SettingsView';
-import AboutView from './views/AboutView';
-import NotFoundView from './views/NotFoundView';
-import MasterDataManagementView from './views/MasterDataManagementView';
-import SecurityView from './views/SecurityView';
-import ComplianceView from './views/ComplianceView';
+import { Toaster } from './components/ui/toaster';
+import { TooltipProvider } from './components/ui/tooltip';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+// Import views
+import Home from './views/Home';
+import DataProducts from './views/DataProducts';
+import DataContracts from './views/DataContracts';
+import BusinessGlossary from './views/BusinessGlossary';
+import MasterData from './views/MasterData';
+import Entitlements from './views/Entitlements';
+import Security from './views/Security';
+import Compliance from './views/Compliance';
+import CatalogCommander from './views/CatalogCommander';
+import Settings from './views/Settings';
+import About from './views/About';
+import NotFound from './views/NotFound';
 
-function App() {
+export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<HomeView />} />
-            <Route path="/data-contracts" element={<DataContractsView />} />
-            <Route path="/data-products" element={<DataProductsView />} />
-            <Route path="/business-glossary" element={<BusinessGlossariesView />} />
-            <Route path="/master-data" element={<MasterDataManagementView />} />
-            <Route path="/entitlements" element={<EntitlementsView />} />
-            <Route path="/catalog-commander" element={<CatalogCommanderView />} />
-            <Route path="/settings" element={<SettingsView />} />
-            <Route path="/about" element={<AboutView />} />
-            <Route path="/security" element={<SecurityView />} />
-            <Route path="/compliance" element={<ComplianceView />} />
-            <Route path="*" element={<NotFoundView />} />
-          </Routes>
-        </Layout>
-      </Router>
+    <ThemeProvider defaultTheme="system" storageKey="ucapp-theme">
+      <TooltipProvider>
+        <Router future={{ 
+          v7_relativeSplatPath: true,
+          v7_startTransition: true 
+        }}>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/data-products" element={<DataProducts />} />
+              <Route path="/data-contracts" element={<DataContracts />} />
+              <Route path="/business-glossary" element={<BusinessGlossary />} />
+              <Route path="/master-data" element={<MasterData />} />
+              <Route path="/entitlements" element={<Entitlements />} />
+              <Route path="/security" element={<Security />} />
+              <Route path="/compliance" element={<Compliance />} />
+              <Route path="/catalog-commander" element={<CatalogCommander />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/about" element={<About />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </Router>
+        <Toaster />
+      </TooltipProvider>
     </ThemeProvider>
   );
 }
-
-export default App;

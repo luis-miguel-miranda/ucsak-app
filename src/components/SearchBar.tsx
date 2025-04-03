@@ -1,286 +1,148 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  TextField, 
-  InputAdornment, 
-  Paper, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  ListItemIcon,
-  Typography,
-  Box,
-  CircularProgress,
-  Divider,
-  Popper,
-  ClickAwayListener,
-  useTheme
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import DescriptionIcon from '@mui/icons-material/Description';
-import CategoryIcon from '@mui/icons-material/Category';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useNavigate } from 'react-router-dom';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { ScrollArea } from './ui/scroll-area';
+import { Search, FileText, Database, Book, Shield, Settings, Info } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface SearchResult {
   id: string;
+  type: 'data-product' | 'data-contract' | 'glossary-term' | 'persona';
   title: string;
-  type: string;
+  description: string;
   link: string;
 }
 
-interface SearchResults {
-  notifications: SearchResult[];
-  terms: SearchResult[];
-  contracts: SearchResult[];
-  products: SearchResult[];
-}
-
 interface SearchBarProps {
-  variant?: 'large' | 'compact';
+  variant?: 'default' | 'large';
   placeholder?: string;
-  width?: string | number;
 }
 
-export default function SearchBar({ 
-  variant = 'compact', 
-  placeholder = 'Search...',
-  width = 300
-}: SearchBarProps) {
+export default function SearchBar({ variant = 'default', placeholder = 'Search...' }: SearchBarProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResults>({
-    notifications: [],
-    terms: [],
-    contracts: [],
-    products: []
-  });
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef<HTMLDivElement>(null);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const theme = useTheme();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (query.length >= 2) {
-        searchData();
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
       }
-    }, 300);
+    };
 
-    return () => clearTimeout(timer);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const search = async () => {
+      if (!query.trim()) {
+        setResults([]);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        setResults(data);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(search, 300);
+    return () => clearTimeout(debounceTimer);
   }, [query]);
 
-  const searchData = async () => {
-    if (!query) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error('Search failed');
-      const data = await response.json();
-      setResults(data);
-      setOpen(true);
-    } catch (error) {
-      console.error('Error searching:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResultClick = (link: string) => {
-    navigate(link);
-    setOpen(false);
-    setQuery('');
-  };
-
-  const getIcon = (type: string) => {
+  const getIcon = (type: SearchResult['type']) => {
     switch (type) {
-      case 'notification':
-        return <NotificationsIcon color="info" />;
-      case 'term':
-        return <MenuBookIcon color="primary" />;
-      case 'contract':
-        return <DescriptionIcon color="secondary" />;
-      case 'product':
-        return <CategoryIcon color="success" />;
+      case 'data-product':
+        return <Database className="h-4 w-4" />;
+      case 'data-contract':
+        return <FileText className="h-4 w-4" />;
+      case 'glossary-term':
+        return <Book className="h-4 w-4" />;
+      case 'persona':
+        return <Shield className="h-4 w-4" />;
       default:
-        return <SearchIcon />;
+        return <Search className="h-4 w-4" />;
     }
   };
 
-  const hasResults = Object.values(results).some(group => group.length > 0);
+  const handleResultClick = (result: SearchResult) => {
+    navigate(result.link);
+    setIsOpen(false);
+  };
 
   return (
-    <ClickAwayListener onClickAway={() => setOpen(false)}>
-      <Box ref={anchorRef} sx={{ width: variant === 'large' ? '100%' : width }}>
-        <TextField
-          fullWidth
-          placeholder={placeholder}
+    <div ref={searchRef} className="relative w-full">
+      <div className={cn(
+        "relative",
+        variant === 'large' ? "w-full max-w-2xl mx-auto" : "w-full"
+      )}>
+        <Input
+          type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          variant={variant === 'large' ? "outlined" : "standard"}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: loading && (
-              <InputAdornment position="end">
-                <CircularProgress size={20} />
-              </InputAdornment>
-            ),
-            sx: {
-              borderRadius: variant === 'large' ? 28 : 0,
-              bgcolor: variant === 'large' ? 'background.paper' : 'transparent',
-              color: variant === 'large' ? 'text.primary' : 'white',
-              '& .MuiInputBase-input': {
-                py: variant === 'large' ? 1.5 : 1,
-              },
-              '& .MuiSvgIcon-root': {
-                color: variant === 'large' ? 'action.active' : 'white',
-              }
-            }
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
           }}
-          sx={{
-            boxShadow: variant === 'large' ? 3 : 0,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: variant === 'large' ? 28 : 0,
-              '& fieldset': {
-                border: variant === 'large' ? 'none' : undefined,
-              },
-              '&:hover fieldset': {
-                border: variant === 'large' ? 'none' : undefined,
-              },
-              '&.Mui-focused fieldset': {
-                border: variant === 'large' ? 'none' : undefined,
-              },
-            },
-            '& .MuiInput-underline:before': {
-              borderBottomColor: variant === 'compact' ? 'rgba(255, 255, 255, 0.7)' : undefined,
-            },
-            '& .MuiInput-underline:hover:before': {
-              borderBottomColor: variant === 'compact' ? 'white' : undefined,
-            },
-          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder={placeholder}
+          className={cn(
+            "w-full",
+            variant === 'large' ? "h-12 text-lg" : "h-10"
+          )}
         />
-
-        <Popper
-          open={open && query.length >= 2}
-          anchorEl={anchorRef.current}
-          placement="bottom-start"
-          style={{ width: anchorRef.current?.clientWidth, zIndex: 1300 }}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
         >
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              mt: 1, 
-              maxHeight: 400, 
-              overflow: 'auto',
-              border: `1px solid ${theme.palette.divider}`
-            }}
-          >
-            {!hasResults ? (
-              <Box p={2} textAlign="center">
-                <Typography color="text.secondary">No results found</Typography>
-              </Box>
+          <Search className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {isOpen && (query.trim() || results.length > 0) && (
+        <Card className="absolute z-50 w-full mt-1 shadow-lg">
+          <ScrollArea className="h-[300px]">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : results.length > 0 ? (
+              <div className="p-2">
+                {results.map((result) => (
+                  <Button
+                    key={result.id}
+                    variant="ghost"
+                    className="w-full justify-start gap-2 p-2 h-auto"
+                    onClick={() => handleResultClick(result)}
+                  >
+                    {getIcon(result.type)}
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{result.title}</span>
+                      <span className="text-sm text-muted-foreground">{result.description}</span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
             ) : (
-              <List dense>
-                {results.notifications.length > 0 && (
-                  <>
-                    <ListItem sx={{ bgcolor: 'action.hover' }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Notifications
-                      </Typography>
-                    </ListItem>
-                    {results.notifications.map(result => (
-                      <ListItem 
-                        key={result.id}
-                        onClick={() => handleResultClick(result.link)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          {getIcon(result.type)}
-                        </ListItemIcon>
-                        <ListItemText primary={result.title} />
-                      </ListItem>
-                    ))}
-                    <Divider />
-                  </>
-                )}
-
-                {results.terms.length > 0 && (
-                  <>
-                    <ListItem sx={{ bgcolor: 'action.hover' }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Business Terms
-                      </Typography>
-                    </ListItem>
-                    {results.terms.map(result => (
-                      <ListItem 
-                        key={result.id}
-                        onClick={() => handleResultClick(result.link)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          {getIcon(result.type)}
-                        </ListItemIcon>
-                        <ListItemText primary={result.title} />
-                      </ListItem>
-                    ))}
-                    <Divider />
-                  </>
-                )}
-
-                {results.contracts.length > 0 && (
-                  <>
-                    <ListItem sx={{ bgcolor: 'action.hover' }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Data Contracts
-                      </Typography>
-                    </ListItem>
-                    {results.contracts.map(result => (
-                      <ListItem 
-                        key={result.id}
-                        onClick={() => handleResultClick(result.link)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          {getIcon(result.type)}
-                        </ListItemIcon>
-                        <ListItemText primary={result.title} />
-                      </ListItem>
-                    ))}
-                    <Divider />
-                  </>
-                )}
-
-                {results.products.length > 0 && (
-                  <>
-                    <ListItem sx={{ bgcolor: 'action.hover' }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Data Products
-                      </Typography>
-                    </ListItem>
-                    {results.products.map(result => (
-                      <ListItem 
-                        key={result.id}
-                        onClick={() => handleResultClick(result.link)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          {getIcon(result.type)}
-                        </ListItemIcon>
-                        <ListItemText primary={result.title} />
-                      </ListItem>
-                    ))}
-                  </>
-                )}
-              </List>
+              <div className="p-4 text-center text-muted-foreground">
+                No results found
+              </div>
             )}
-          </Paper>
-        </Popper>
-      </Box>
-    </ClickAwayListener>
+          </ScrollArea>
+        </Card>
+      )}
+    </div>
   );
 } 

@@ -10,7 +10,7 @@ from api.controller.business_glossary_manager import BusinessGlossaryManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["business-glossaries"])
 
 # Create a single instance of the manager
 glossary_manager = BusinessGlossaryManager()

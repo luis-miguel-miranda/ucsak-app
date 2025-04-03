@@ -10,7 +10,7 @@ from ..controller.settings_manager import SettingsManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["settings"])
 
 def get_settings_manager(client: WorkspaceClient = Depends(get_workspace_client)) -> SettingsManager:
     """Get a configured settings manager instance.

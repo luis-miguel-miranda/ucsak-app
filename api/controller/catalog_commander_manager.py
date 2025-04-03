@@ -17,7 +17,9 @@ class CatalogCommanderManager:
         Args:
             client: Databricks workspace client
         """
+        logger.info("Initializing CatalogCommanderManager...")
         self.client = client
+        logger.info("CatalogCommanderManager initialized successfully")
 
     def list_catalogs(self) -> List[Dict[str, Any]]:
         """List all catalogs in the Databricks workspace.
@@ -25,19 +27,24 @@ class CatalogCommanderManager:
         Returns:
             List of catalog information dictionaries
         """
-        logger.info("Fetching all catalogs from Databricks workspace")
-        catalogs = self.client.catalogs.list()
+        try:
+            logger.info("Fetching all catalogs from Databricks workspace")
+            catalogs = list(self.client.catalogs.list())  # Convert generator to list
+            logger.info(f"Retrieved {len(catalogs)} catalogs from Databricks")
 
-        result = [{
-            'id': catalog.name,
-            'name': catalog.name,
-            'type': 'catalog',
-            'children': [],  # Empty array means children not fetched yet
-            'hasChildren': True  # Catalogs can always have schemas
-        } for catalog in catalogs]
+            result = [{
+                'id': catalog.name,
+                'name': catalog.name,
+                'type': 'catalog',
+                'children': [],  # Empty array means children not fetched yet
+                'hasChildren': True  # Catalogs can always have schemas
+            } for catalog in catalogs]
 
-        logger.info(f"Successfully retrieved {len(result)} catalogs")
-        return result
+            logger.info(f"Successfully formatted {len(result)} catalogs")
+            return result
+        except Exception as e:
+            logger.error(f"Error in list_catalogs: {e!s}", exc_info=True)
+            raise
 
     def list_schemas(self, catalog_name: str) -> List[Dict[str, Any]]:
         """List all schemas in a catalog.
@@ -49,7 +56,7 @@ class CatalogCommanderManager:
             List of schema information dictionaries
         """
         logger.info(f"Fetching schemas for catalog: {catalog_name}")
-        schemas = self.client.schemas.list(catalog_name=catalog_name)
+        schemas = list(self.client.schemas.list(catalog_name=catalog_name))  # Convert generator to list
 
         result = [{
             'id': f"{catalog_name}.{schema.name}",
@@ -73,7 +80,7 @@ class CatalogCommanderManager:
             List of table/view information dictionaries
         """
         logger.info(f"Fetching tables for schema: {catalog_name}.{schema_name}")
-        tables = self.client.tables.list(catalog_name=catalog_name, schema_name=schema_name)
+        tables = list(self.client.tables.list(catalog_name=catalog_name, schema_name=schema_name))  # Convert generator to list
 
         result = [{
             'id': f"{catalog_name}.{schema_name}.{table.name}",

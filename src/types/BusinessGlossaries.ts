@@ -29,11 +29,12 @@ export interface BusinessGlossary {
   scope: string;
   org_unit: string;
   domain: string;
-  parent_glossary_ids: string[];
-  terms: { [key: string]: GlossaryTerm };
-  tags: string[];
   owner: string;
   status: string;
+  tags: string[];
+  terms: { [key: string]: GlossaryTerm };
+  parent_glossary_ids: string[];
+  children?: BusinessGlossary[];
   created_at: string;
   updated_at: string;
   taggedAssets?: TaggedAsset[];

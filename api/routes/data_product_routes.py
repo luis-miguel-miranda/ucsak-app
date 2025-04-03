@@ -10,7 +10,7 @@ from api.controller.data_product_manager import DataProductManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["data-products"])
 
 # Create a single instance of the manager
 data_product_manager = DataProductManager()

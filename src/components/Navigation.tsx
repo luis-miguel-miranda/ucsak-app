@@ -1,59 +1,104 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { ThemeToggle } from './theme-toggle';
 import {
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-} from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import DescriptionIcon from '@mui/icons-material/Description';
-import CategoryIcon from '@mui/icons-material/Category';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import SecurityIcon from '@mui/icons-material/Security';
-import SettingsIcon from '@mui/icons-material/Settings';
-import InfoIcon from '@mui/icons-material/Info';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Button } from './ui/button';
+import { ChevronDown, Wrench } from 'lucide-react';
+import NotificationBell from './NotificationBell';
+import UserInfo from './UserInfo';
 
-function Navigation() {
+const navigationGroups = [
+  {
+    name: 'Data Management',
+    items: [
+      { name: 'Data Products', path: '/data-products' },
+      { name: 'Data Contracts', path: '/data-contracts' },
+      { name: 'Business Glossary', path: '/business-glossary' },
+      { name: 'Master Data Management', path: '/master-data' },
+    ],
+  },
+  {
+    name: 'Security',
+    items: [
+      { name: 'Entitlements', path: '/entitlements' },
+      { name: 'Features', path: '/security' },
+    ],
+  },
+  {
+    name: 'Tools',
+    items: [
+      { name: 'Catalog Commander', path: '/catalog-commander' },
+    ],
+  },
+];
+
+const standaloneItems = [
+  { name: 'Settings', path: '/settings' },
+  { name: 'About', path: '/about' },
+];
+
+export default function Navigation() {
   const location = useLocation();
-  
-  const menuItems = [
-    { text: 'Home', icon: <HomeIcon />, path: '/' },
-    { text: 'Data Products', icon: <CategoryIcon />, path: '/data-products' },
-    { text: 'Data Contracts', icon: <DescriptionIcon />, path: '/data-contracts' },
-    { text: 'Business Glossary', icon: <MenuBookIcon />, path: '/business-glossary' },
-    { text: 'Master Data', icon: <CompareArrowsIcon />, path: '/master-data' },
-    { text: 'Entitlements', icon: <SecurityIcon />, path: '/entitlements' },
-    { text: 'Catalog Commander', icon: <Inventory2OutlinedIcon />, path: '/catalog-commander' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { text: 'About', icon: <InfoIcon />, path: '/about' },
-  ];
 
   return (
-    <>
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              component={Link}
+    <div className="flex w-full items-center justify-between">
+      <div className="flex items-center">
+        <Link to="/" className="mr-6 flex items-center space-x-2">
+          <Wrench className="h-5 w-5" />
+          <span className="font-bold">UC Swiss Army Knife</span>
+        </Link>
+        <div className="flex items-center space-x-6">
+          {navigationGroups.map((group) => (
+            <DropdownMenu key={group.name}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-1">
+                  {group.name}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {group.items.map((item) => (
+                  <DropdownMenuItem key={item.path} asChild>
+                    <Link
+                      to={item.path}
+                      className={`${
+                        location.pathname === item.path
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ))}
+          {standaloneItems.map((item) => (
+            <Link
+              key={item.path}
               to={item.path}
-              selected={location.pathname === item.path}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === item.path
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              }`}
             >
-              <ListItemIcon>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-    </>
+              {item.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center space-x-4">
+        <NotificationBell />
+        <ThemeToggle />
+        <UserInfo />
+      </div>
+    </div>
   );
-}
-
-export default Navigation; 
+} 

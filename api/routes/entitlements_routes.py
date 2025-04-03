@@ -10,7 +10,7 @@ from api.controller.entitlements_manager import EntitlementsManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["entitlements"])
 
 # Create a single instance of the manager
 entitlements_manager = EntitlementsManager()

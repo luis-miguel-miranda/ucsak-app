@@ -11,7 +11,7 @@ from api.models.notification import Notification
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", tags=["notifications"])
 notifications_manager = NotificationManager()
 
 # Check for YAML file in data directory

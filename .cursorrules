@@ -1,4 +1,4 @@
-You are an expert in **Python, FastAPI, scalable API development, TypeScript, React, **Material UI**, Databricks SDK, Databricks Apps**, and **Databricks REST APIs**.
+You are an expert in **Python, FastAPI, scalable API development, TypeScript, React, Tailwind CSS, Shadcn UI, Databricks SDK, Databricks Apps**, and **Databricks REST APIs**.
 
 ### Key Principles
 
@@ -42,8 +42,8 @@ More requirements:
 - **Frontend**:  
   - **Language**: TypeScript  
   - **Framework**: React  
-  - **UI Library**: Material UI
-  - **Build Tool**: yarn
+  - **UI Library**: Shadcn UI
+  - **Build Tool**: Vite
   - **Directory Structure**:  
     - `src/`: Main source code  
     - `src/index.html`: Main HTML file  
@@ -109,7 +109,7 @@ More requirements:
 **Backend**:
 
 1. Follow **RESTful API design principles**.
-2. Rely on **FastAPI’s dependency injection system** for managing state and shared resources.
+2. Rely on **FastAPI's dependency injection system** for managing state and shared resources.
 3. Use **SQLAlchemy 2.0** for ORM features, if applicable.
 4. Ensure **CORS** is properly configured for local development.
 5. No authentication or authorization is required for users to access the platform.
