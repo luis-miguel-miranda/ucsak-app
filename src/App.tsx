@@ -1,23 +1,24 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './components/theme-provider';
-import Layout from './components/Layout';
+import { ThemeProvider } from './components/theme';
+import Layout from './components/layout/layout';
 import { TooltipProvider } from './components/ui/tooltip';
 import { Toaster } from './components/ui/toaster';
 
 // Import views
-import Home from './views/Home';
-import DataProducts from './views/DataProducts';
-import DataContracts from './views/DataContracts';
-import BusinessGlossary from './views/BusinessGlossary';
-import MasterDataManagement from './views/MasterDataManagement';
-import Entitlements from './views/Entitlements';
-import SecurityFeatures from './views/SecurityFeatures';
-import Compliance from './views/Compliance';
-import CatalogCommander from './views/CatalogCommander';
-import Settings from './views/Settings';
-import About from './views/About';
-import NotFound from './views/NotFound';
-import EntitlementsSync from './views/EntitlementsSync';
+import Home from './views/home';
+import DataProducts from './views/data-products';
+import DataContracts from './views/data-contracts';
+import BusinessGlossary from './views/business-glossary';
+import MasterDataManagement from './views/master-data-management';
+import Entitlements from './views/entitlements';
+import SecurityFeatures from './views/security-features';
+import Compliance from './views/compliance';
+import CatalogCommander from './views/catalog-commander';
+import Settings from './views/settings';
+import About from './views/about';
+import NotFound from './views/not-found';
+import EntitlementsSync from './views/entitlements-sync';
+import EstateManager from './views/estate-manager';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/catalog-commander" element={<CatalogCommander />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/about" element={<About />} />
+              <Route path="/estate-manager" element={<EstateManager />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

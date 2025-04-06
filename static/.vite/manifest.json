@@ -1,0 +1,18 @@
+{
+  "_vendor-BbMx8q9L.js": {
+    "file": "vendor-BbMx8q9L.js",
+    "name": "vendor"
+  },
+  "index.html": {
+    "file": "index-DzpABGq8.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "imports": [
+      "_vendor-BbMx8q9L.js"
+    ],
+    "css": [
+      "index-BzfsUW29.css"
+    ]
+  }
+}

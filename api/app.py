@@ -4,8 +4,9 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from api.common.config import get_settings, init_config
 from api.common.middleware import ErrorHandlingMiddleware, LoggingMiddleware
@@ -17,6 +18,7 @@ from api.routes import (
     data_product_routes,
     entitlements_routes,
     entitlements_sync_routes,
+    estate_manager_routes,
     master_data_management_routes,
     notifications_routes,
     search_routes,
@@ -28,7 +30,7 @@ from api.routes import (
 logger = logging.getLogger(__name__)
 
 # Define paths
-STATIC_ASSETS_PATH = Path(__file__).parent.parent / "build"
+STATIC_ASSETS_PATH = Path(__file__).parent.parent / "static"
 logger.info(f"STATIC_ASSETS_PATH: {STATIC_ASSETS_PATH}")
 
 # Initialize settings before creating the app
@@ -67,8 +69,7 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
 
 # Mount static files for the React application
-app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH / "static"), name="static")
-app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_PATH), name="assets")
+app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH), name="static")
 
 # Register routes from each module
 data_product_routes.register_routes(app)
@@ -76,6 +77,7 @@ data_contract_routes.register_routes(app)
 business_glossary_routes.register_routes(app)
 entitlements_routes.register_routes(app)
 entitlements_sync_routes.register_routes(app)
+estate_manager_routes.register_routes(app)
 catalog_commander_routes.register_routes(app)
 settings_routes.register_routes(app)
 user_routes.register_routes(app)
@@ -83,24 +85,18 @@ search_routes.register_routes(app)
 notifications_routes.register_routes(app)
 compliance_routes.register_routes(app)
 master_data_management_routes.register_routes(app)
-logger.info("Registering security features routes...")
 security_features_routes.register_routes(app)
-logger.info("Security features routes registered")
 
-@app.get("/", response_class=HTMLResponse)
-async def read_root():
-    """Serve the React application's index.html"""
-    with open(STATIC_ASSETS_PATH / "index.html") as f:
-        html_content = f.read()
-    return HTMLResponse(content=html_content)
-
-@app.exception_handler(404)
-async def client_side_routing(_, __):
-    """Handle 404 errors by serving the React application's index.html"""
-    with open(STATIC_ASSETS_PATH / "index.html") as f:
-        html_content = f.read()
-    return HTMLResponse(content=html_content)
-
+# @app.get("/{full_path:path}")
+# def serve_spa(full_path: str):
+#     # Only catch routes that aren't API routes or static files
+#     if not full_path.startswith("api/") and not full_path.startswith("static/"):
+#         return FileResponse(STATIC_ASSETS_PATH / "index.html", media_type="text/html")
+@app.get("/{full_path:path}")
+def serve_spa(full_path: str):
+    if not full_path.startswith("api/"):
+        return FileResponse(STATIC_ASSETS_PATH / "index.html", media_type="text/html")
+        
 @app.get("/api/time")
 async def get_current_time():
     """Get the current time (for testing purposes mostly)"""

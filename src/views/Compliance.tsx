@@ -1,15 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Textarea } from '../components/ui/textarea';
-import { useToast } from '@/hooks/useToast';
-import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, XCircle, Gavel, Scale } from 'lucide-react';
-import { Sparklines, SparklinesLine } from 'react-sparklines';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Scale, MoreHorizontal, ChevronDown } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useApi } from '@/hooks/use-api';
 
 interface CompliancePolicy {
   id: string;
@@ -29,57 +59,80 @@ interface ComplianceStats {
   critical_issues: number;
 }
 
+interface ComplianceApiResponse {
+  policies: CompliancePolicy[];
+  stats: ComplianceStats;
+}
+
 export default function Compliance() {
+  const { toast } = useToast();
+  const api = useApi();
   const [policies, setPolicies] = useState<CompliancePolicy[]>([]);
   const [stats, setStats] = useState<ComplianceStats>({
     overall_compliance: 0,
     active_policies: 0,
     critical_issues: 0
   });
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingPolicy, setEditingPolicy] = useState<CompliancePolicy | null>(null);
-  const [formData, setFormData] = useState<Partial<CompliancePolicy>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [selectedPolicy, setSelectedPolicy] = useState<CompliancePolicy | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [globalFilter, setGlobalFilter] = useState("");
 
   useEffect(() => {
-    fetchData();
+    loadPolicies();
   }, []);
 
-  const fetchData = async () => {
+  const loadPolicies = async () => {
     try {
-      setIsLoading(true);
-      const [policiesRes, statsRes] = await Promise.all([
-        fetch('/api/compliance/policies'),
-        fetch('/api/compliance/stats')
-      ]);
+      const response = await api.get<ComplianceApiResponse>('/api/compliance/policies');
+      setPolicies(response.data.policies || []);
+      setStats(response.data.stats || {
+        overall_compliance: 0,
+        active_policies: 0,
+        critical_issues: 0
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load compliance policies",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreatePolicy = async () => {
+    try {
+      if (!selectedPolicy) return;
       
-      if (!policiesRes.ok || !statsRes.ok) throw new Error('Failed to fetch data');
+      await api.post('/api/compliance/policies', selectedPolicy);
       
-      const policiesData = await policiesRes.json();
-      const statsData = await statsRes.json();
+      toast({
+        title: "Success",
+        description: "Policy created successfully"
+      });
       
-      setPolicies(policiesData);
-      setStats(statsData);
+      setIsDialogOpen(false);
+      loadPolicies();
     } catch (err) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to load compliance data"
+        description: "Failed to create policy",
+        variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      const url = editingPolicy 
-        ? `/api/compliance/policies/${editingPolicy.id}`
+      const url = selectedPolicy 
+        ? `/api/compliance/policies/${selectedPolicy.id}`
         : '/api/compliance/policies';
       
-      const method = editingPolicy ? 'PUT' : 'POST';
+      const method = selectedPolicy ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
         method,
@@ -94,8 +147,8 @@ export default function Compliance() {
         description: "Policy saved successfully"
       });
       
-      setDialogOpen(false);
-      fetchData();
+      setIsDialogOpen(false);
+      loadPolicies();
     } catch (err) {
       toast({
         variant: "destructive",
@@ -118,7 +171,7 @@ export default function Compliance() {
         description: "Policy deleted successfully"
       });
       
-      fetchData();
+      loadPolicies();
     } catch (err) {
       toast({
         variant: "destructive",
@@ -133,13 +186,13 @@ export default function Compliance() {
   const criticalIssues = stats.critical_issues;
 
   const handleCreateRule = () => {
-    setEditingPolicy(null);
-    setDialogOpen(true);
+    setSelectedPolicy(null);
+    setIsDialogOpen(true);
   };
 
   const handleEditRule = (policy: CompliancePolicy) => {
-    setEditingPolicy(policy);
-    setDialogOpen(true);
+    setSelectedPolicy(policy);
+    setIsDialogOpen(true);
   };
 
   const getComplianceColor = (score: number) => {
@@ -157,6 +210,147 @@ export default function Compliance() {
     };
     return variants[severity as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
+
+  const columns: ColumnDef<CompliancePolicy>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => (
+        <Badge variant="outline">{row.getValue("category")}</Badge>
+      ),
+    },
+    {
+      accessorKey: "severity",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Severity
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <Badge className={getSeverityBadge(row.getValue("severity"))}>
+          {row.getValue("severity")}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "compliance",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Compliance
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className={`font-semibold ${getComplianceColor(row.getValue("compliance"))}`}>
+          {row.getValue("compliance")}%
+        </div>
+      ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.getValue("is_active") ? "default" : "secondary"}>
+          {row.getValue("is_active") ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const policy = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleEditRule(policy)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => handleDelete(policy.id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: policies,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+      globalFilter,
+    },
+  });
 
   return (
     <div className="container py-6">
@@ -216,47 +410,203 @@ export default function Compliance() {
 
       {/* Compliance Rules */}
       <div className="space-y-4">
-        {policies.map((policy) => (
-          <Card key={policy.id}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-semibold">{policy.name[0]}</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">{policy.name}</h3>
-                    <p className="text-sm text-muted-foreground">{policy.description}</p>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Badge variant="outline">{policy.category}</Badge>
-                      <Badge className={getSeverityBadge(policy.severity)}>
-                        {policy.severity}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className={`text-lg font-semibold ${getComplianceColor(policy.compliance)}`}>
-                      {policy.compliance}%
-                    </div>
-                    <p className="text-sm text-muted-foreground">Compliant</p>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleEditRule(policy)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Filter rules..."
+              value={globalFilter ?? ""}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="max-w-sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {Object.keys(rowSelection).length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => {
+                  const selectedIds = table
+                    .getSelectedRowModel()
+                    .rows.map((row) => row.original.id);
+                  // Add bulk delete functionality here
+                  console.log("Selected IDs:", selectedIds);
+                }}
+              >
+                Delete Selected
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => {
+                  const selectedIds = table
+                    .getSelectedRowModel()
+                    .rows.map((row) => row.original.id);
+                  // Add bulk activate/deactivate functionality here
+                  console.log("Toggle Status for:", selectedIds);
+                }}
+              >
+                Toggle Status
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="flex-1 text-sm text-muted-foreground">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected.
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <p className="text-sm font-medium">Rows per page</p>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue placeholder={table.getState().pagination.pageSize} />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <span className="sr-only">Go to first page</span>
+                <ChevronDown className="h-4 w-4 rotate-90" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <span className="sr-only">Go to previous page</span>
+                <ChevronDown className="h-4 w-4 rotate-90" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Go to next page</span>
+                <ChevronDown className="h-4 w-4 -rotate-90" />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Go to last page</span>
+                <ChevronDown className="h-4 w-4 -rotate-90" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingPolicy ? 'Edit Compliance Rule' : 'Create New Compliance Rule'}
+              {selectedPolicy ? 'Edit Compliance Rule' : 'Create New Compliance Rule'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
@@ -264,7 +614,7 @@ export default function Compliance() {
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                defaultValue={editingPolicy?.name}
+                defaultValue={selectedPolicy?.name}
                 required
               />
             </div>
@@ -272,13 +622,13 @@ export default function Compliance() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                defaultValue={editingPolicy?.description}
+                defaultValue={selectedPolicy?.description}
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select defaultValue={editingPolicy?.category}>
+              <Select defaultValue={selectedPolicy?.category}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -292,7 +642,7 @@ export default function Compliance() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="severity">Severity</Label>
-              <Select defaultValue={editingPolicy?.severity}>
+              <Select defaultValue={selectedPolicy?.severity}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select severity" />
                 </SelectTrigger>
@@ -305,14 +655,14 @@ export default function Compliance() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="compliance">Compliance</Label>
-              <Input
-                id="compliance"
-                type="number"
-                min="0"
-                max="100"
-                defaultValue={editingPolicy?.compliance}
+              <Label htmlFor="rule">Rule Code</Label>
+              <Textarea
+                id="rule"
+                defaultValue={selectedPolicy?.rule}
+                className="font-mono text-sm"
+                rows={8}
                 required
+                placeholder="Enter the compliance rule in Compliance DSL format"
               />
             </div>
             <DialogFooter>

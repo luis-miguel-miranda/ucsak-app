@@ -1,4 +1,3 @@
-import React from 'react';
 import { Info, Github, Shield, BookOpen, FileText, Users, Lock, CheckCircle, Settings, Database, GitBranch, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

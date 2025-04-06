@@ -63,7 +63,6 @@ include = [
 
 [tool.hatch.envs.dev.scripts]
 dev-frontend = "yarn dev:frontend"
-build-frontend = "yarn build:frontend && python scripts/copy_static.py"
 dev-backend = "uvicorn api.app:app --reload --host=0.0.0.0 --port=8000"
 deploy-and-run = [
   'databricks bundle deploy --var="catalog=app_data" --var="schema=app_ucsak"',

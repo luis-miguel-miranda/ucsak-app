@@ -1,6 +1,6 @@
 # Unity Catalog Swiss Army Knife
 
-A comprehensive tool for managing Databricks Unity Catalog resources, featuring a React frontend and Flask backend.
+A comprehensive tool for managing Databricks Unity Catalog resources, featuring a React frontend with Tailwind CSS and Shadcn UI, powered by a FastAPI backend.
 
 ![Home](docs/images/home.png)
 
@@ -18,80 +18,58 @@ The Unity Catalog Swiss Army Knife provides a unified interface for managing var
 
 ### Frontend (React + TypeScript)
 
-The frontend is built with React and Material-UI, providing a modern and responsive user interface.
+The frontend is built with React, TypeScript, Tailwind CSS, and Shadcn UI, providing a modern and responsive user interface.
 
 Key features:
 - Tab-based navigation
 - Real-time data synchronization
 - Interactive data management interfaces
 - Responsive dashboard with summary metrics
-- Material Design components
+- Clean, accessible UI components with Shadcn UI
 
-### Backend (Python + Flask)
+### Backend (Python + FastAPI)
 
-The backend API is built with Flask, providing RESTful endpoints for all data operations.
+The backend API is built with FastAPI, providing RESTful endpoints for all data operations.
 
 #### API Endpoints
 
 ##### Data Products
 
-# Getting Started with Create React App
+# Getting Started
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project uses Vite for the frontend build system and Hatch for the Python backend.
 
 ## Available Scripts
 
 In the project directory, you can run:
 
-### `npm start`
+### `npm run dev`
 
-Runs the app in the development mode.\
+Runs the app in development mode with Vite.\
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
-### `npm start-api`
+### `npm run dev:backend`
 
-Runs the Python based API server in the development mode.
+Runs the Python-based FastAPI server in development mode.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### `npm run test`
 
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Launches the test runner in the interactive watch mode.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `static` folder.\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
 ## Environment Configuration
 
-The application requires a `.env` file in the `api` directory for configuration. Create a file named `.env` with the following variables:
+The application requires a `.env` file in the root directory for configuration. Create a file named `.env` with the following variables:
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
@@ -100,24 +78,16 @@ The application requires a `.env` file in the `api` directory for configuration.
 | DATABRICKS_HTTP_PATH | SQL warehouse HTTP path | /sql/1.0/warehouses/abc123 |
 | DATABRICKS_CATALOG | Default catalog to use | main |
 | DATABRICKS_SCHEMA | Default schema to use | default |
-| FLASK_DEBUG | Enable Flask debug mode | True |
-| FLASK_ENV | Flask environment setting | development |
-
-Example `.env` file:
-
-### Backend Setup
-
-The Flask application is configured to run from the project root directory using a `.flaskenv` file. This allows you to run both the frontend and backend from the same directory.
 
 # Unified Catalog Application
 
-A modern web application for managing data catalogs, built with FastAPI and React.
+A modern web application for managing data catalogs, built with FastAPI and React with Tailwind CSS and Shadcn UI.
 
 ## Prerequisites
 
 - Python 3.8 or higher
-- Node.js 14 or higher
-- npm 6 or higher
+- Node.js 16 or higher
+- npm 7 or higher
 - Hatch (Python build tool)
 
 ## Installation
@@ -146,7 +116,7 @@ npm run dev
 ```
 
 This will:
-- Start the React development server on port 3000
+- Start the Vite development server on port 3000
 - Start the FastAPI development server on port 8000
 - Enable hot reloading for both frontend and backend
 
@@ -169,7 +139,7 @@ npm run build:all
 ```
 
 This will:
-1. Build the React application
+1. Build the React application with Vite
 2. Copy the built files to the FastAPI static directory
 3. Build the Python package
 
@@ -205,8 +175,14 @@ ucapp/
 │   ├── static/           # Static files (frontend build)
 │   └── app.py            # Main application file
 ├── src/                   # Frontend React application
+│   ├── components/       # Reusable UI components
+│   ├── views/            # Page components
+│   ├── hooks/            # Custom React hooks
+│   └── app.tsx           # Main app component
 ├── public/               # Public assets
-├── build.py              # Build script
+├── vite.config.ts        # Vite configuration
+├── tailwind.config.js    # Tailwind CSS configuration
+├── components.json       # Shadcn UI configuration
 ├── pyproject.toml        # Hatch configuration
 ├── package.json          # Frontend dependencies
 └── README.md            # This file

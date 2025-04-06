@@ -1,15 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import SearchBar from '../components/SearchBar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Loader2, Database, FileText, Book, GitCompare, Shield, Gavel, FolderKanban, Settings, Info, TrendingUp, FileText as FileTextIcon, BookOpen, Users, ClipboardList, ArrowLeftRight, CheckCircle, FolderTree, Scale } from 'lucide-react';
+import SearchBar from '@/components/ui/search-bar';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { Loader2, Database, Book, GitCompare, Shield, Gavel, FolderKanban, Settings, Info, TrendingUp, FileText as FileTextIcon, BookOpen, ArrowLeftRight, Scale, Globe } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { UnityCatalogLogo } from '@/components/unity-catalog-logo';
 
 interface Stats {
   dataContracts: { count: number; loading: boolean; error: string | null };
   dataProducts: { count: number; loading: boolean; error: string | null };
   glossaries: { count: { glossaries: number; terms: number }; loading: boolean; error: string | null };
   personas: { count: number; loading: boolean; error: string | null };
+  estates: { 
+    count: number; 
+    loading: boolean; 
+    error: string | null;
+    lastSync: string | null;
+    syncStatus: 'success' | 'failed' | 'in_progress' | null;
+  };
 }
 
 interface ComplianceData {
@@ -23,6 +31,13 @@ export default function Home() {
     dataProducts: { count: 0, loading: true, error: null },
     glossaries: { count: { glossaries: 0, terms: 0 }, loading: true, error: null },
     personas: { count: 0, loading: true, error: null },
+    estates: { 
+      count: 0, 
+      loading: true, 
+      error: null,
+      lastSync: null,
+      syncStatus: null
+    },
   });
   const [complianceData, setComplianceData] = useState<ComplianceData[]>([]);
   const [complianceLoading, setComplianceLoading] = useState(true);
@@ -108,6 +123,47 @@ export default function Home() {
         }));
       });
 
+    // Fetch estates count and sync status
+    fetch('/api/estates')
+      .then(response => response.json())
+      .then(data => {
+        const lastSync = data.length > 0 
+          ? new Date(Math.max(...data.map((estate: any) => new Date(estate.last_sync).getTime())))
+          : null;
+        
+        const syncStatus = data.length > 0
+          ? data.every((estate: any) => estate.sync_status === 'success')
+            ? 'success'
+            : data.some((estate: any) => estate.sync_status === 'in_progress')
+              ? 'in_progress'
+              : 'failed'
+          : null;
+
+        setStats(prev => ({
+          ...prev,
+          estates: { 
+            count: data.length, 
+            loading: false, 
+            error: null,
+            lastSync: lastSync?.toLocaleDateString() || null,
+            syncStatus
+          }
+        }));
+      })
+      .catch(error => {
+        console.error('Error fetching estates:', error);
+        setStats(prev => ({
+          ...prev,
+          estates: { 
+            count: 0, 
+            loading: false, 
+            error: error.message,
+            lastSync: null,
+            syncStatus: null
+          }
+        }));
+      });
+
     // Fetch compliance trend data
     fetch('/api/compliance/trend')
       .then(response => response.json())
@@ -158,6 +214,17 @@ export default function Home() {
       link: '/compliance',
       icon: <Scale className="h-4 w-4" />,
       description: 'Current compliance score',
+    },
+    {
+      title: 'Estates',
+      value: stats.estates.count,
+      loading: stats.estates.loading,
+      error: stats.estates.error,
+      link: '/estate-manager',
+      icon: <Globe className="h-4 w-4" />,
+      description: stats.estates.lastSync 
+        ? `Last sync: ${stats.estates.lastSync} (${stats.estates.syncStatus?.replace('_', ' ') || 'unknown'})`
+        : 'No estates configured',
     },
   ];
 
@@ -217,6 +284,12 @@ export default function Home() {
       link: '/catalog-commander',
     },
     {
+      name: 'Estate Manager',
+      description: 'Manage multiple Databricks instances across regions and clouds',
+      icon: <Globe className="h-6 w-6" />,
+      link: '/estate-manager',
+    },
+    {
       name: 'Settings',
       description: 'Configure app settings and jobs',
       icon: <Settings className="h-6 w-6" />,
@@ -233,7 +306,10 @@ export default function Home() {
   return (
     <div className="container py-6">
       <div className="max-w-2xl mx-auto text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">Unity Catalog Swiss Army Knife</h1>
+        <div className="flex items-center justify-center mb-4">
+          <UnityCatalogLogo />
+          <h1 className="text-4xl font-bold">Unity Catalog Swiss Army Knife</h1>
+        </div>
         <p className="text-lg text-muted-foreground mb-6">
           Manage business glossaries, data contracts, data products, personas, and more
         </p>
@@ -318,17 +394,8 @@ export default function Home() {
                       domain={[0, 100]}
                       tickFormatter={(value) => `${value}%`}
                     />
-                    <Tooltip 
-                      labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                      formatter={(value) => [`${value}%`, 'Compliance']}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="compliance" 
-                      stroke="#2563eb" 
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
+                    <Tooltip labelFormatter={(value) => `Date: ${value[0]}`} />
+                    <Line type="monotone" dataKey="compliance" stroke="#8884d8" activeDot={{ r: 8 }} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -337,21 +404,23 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Feature Tiles */}
-      <div>
+      {/* Features */}
+      <div className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
             <Link key={feature.name} to={feature.link} className="block">
               <Card className="hover:bg-accent/50 transition-colors">
                 <CardContent className="p-6">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">
+                      {feature.name}
+                    </CardTitle>
+                    <div className="h-4 w-4 text-muted-foreground">
                       {feature.icon}
                     </div>
-                    <h3 className="text-xl font-semibold">{feature.name}</h3>
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {feature.description}
                   </p>
                 </CardContent>
@@ -362,4 +431,4 @@ export default function Home() {
       </div>
     </div>
   );
-} 
+}

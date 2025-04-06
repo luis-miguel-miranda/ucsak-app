@@ -12,11 +12,6 @@ class SecurityFeaturesManager:
     def __init__(self):
         logging.info("Initializing SecurityFeaturesManager...")
         self.features: Dict[str, SecurityFeature] = {}
-        # Load sample data on initialization
-        yaml_path = Path(__file__).parent.parent / 'data' / 'security_features.yaml'
-        logging.info(f"Loading sample data from {yaml_path}")
-        self.load_from_yaml(yaml_path)
-        logging.info("SecurityFeaturesManager initialized")
 
     def create_feature(self, feature: SecurityFeature) -> SecurityFeature:
         logging.info(f"Creating security feature: {feature}")
@@ -77,21 +72,17 @@ class SecurityFeaturesManager:
 
     def load_from_yaml(self, yaml_path: Path) -> None:
         try:
-            logger.info(f"Loading security features from {yaml_path}")
             if not yaml_path.exists():
                 logger.warning(f"YAML file not found at {yaml_path}")
                 return
             with open(yaml_path) as f:
                 data = yaml.safe_load(f)
-                logger.info(f"Loaded YAML data: {data}")
                 if not data or 'features' not in data:
                     logger.warning("No features found in YAML data")
                     return
                 for feature_data in data['features']:
                     try:
-                        logger.info(f"Processing feature data: {feature_data}")
                         feature = SecurityFeature.from_dict(feature_data)
-                        logger.info(f"Created feature: {feature.to_dict()}")
                         self.features[feature.id] = feature
                     except Exception as e:
                         logger.error(f"Error processing feature data: {feature_data}")

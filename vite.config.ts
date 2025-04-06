@@ -3,11 +3,26 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  base: '/',
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  build: {
+    outDir: './static/', // Change output directory
+    sourcemap: true,
+    emptyOutDir: true,
+    assetsDir: "", // Customize assets directory
+    manifest: true, // Generate manifest file
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    }
   },
   server: {
     port: 3000,

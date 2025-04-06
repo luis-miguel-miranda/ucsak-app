@@ -13,14 +13,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["settings"])
 
 def get_settings_manager(client: WorkspaceClient = Depends(get_workspace_client)) -> SettingsManager:
-    """Get a configured settings manager instance.
-    
-    Args:
-        client: Databricks workspace client (injected by FastAPI)
-        
-    Returns:
-        Configured settings manager instance
-    """
     return SettingsManager(client)
 
 @router.get('/settings')
