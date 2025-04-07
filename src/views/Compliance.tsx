@@ -48,6 +48,8 @@ interface CompliancePolicy {
   rule: string;
   compliance: number;
   history: number[];
+  created_at: string;
+  updated_at: string;
   is_active: boolean;
   severity: 'low' | 'medium' | 'high' | 'critical';
   category: string;
@@ -88,6 +90,9 @@ export default function Compliance() {
   const loadPolicies = async () => {
     try {
       const response = await api.get<ComplianceApiResponse>('/api/compliance/policies');
+      if (response.error) {
+        throw new Error(response.error);
+      }
       setPolicies(response.data.policies || []);
       setStats(response.data.stats || {
         overall_compliance: 0,
@@ -95,6 +100,7 @@ export default function Compliance() {
         critical_issues: 0
       });
     } catch (error) {
+      console.error('Error loading policies:', error); // Debug log
       toast({
         title: "Error",
         description: "Failed to load compliance policies",
@@ -128,6 +134,21 @@ export default function Compliance() {
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
+      const form = event.target as HTMLFormElement;
+      const formData = {
+        id: selectedPolicy?.id || crypto.randomUUID(),
+        name: (form.querySelector('#name') as HTMLInputElement).value,
+        description: (form.querySelector('#description') as HTMLTextAreaElement).value,
+        category: (form.querySelector('#category') as HTMLSelectElement).value,
+        severity: (form.querySelector('#severity') as HTMLSelectElement).value,
+        rule: (form.querySelector('#rule') as HTMLTextAreaElement).value,
+        compliance: selectedPolicy?.compliance || 0,
+        history: selectedPolicy?.history || [],
+        is_active: selectedPolicy?.is_active ?? true,
+        created_at: selectedPolicy?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
       const url = selectedPolicy 
         ? `/api/compliance/policies/${selectedPolicy.id}`
         : '/api/compliance/policies';

@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 import time
 from pathlib import Path
 
@@ -36,6 +37,10 @@ logger.info(f"STATIC_ASSETS_PATH: {STATIC_ASSETS_PATH}")
 # Initialize settings before creating the app
 init_config()
 
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('image/svg+xml', '.svg')
+mimetypes.add_type('image/png', '.png')
+
 # Create single FastAPI app with settings dependency
 app = FastAPI(
     title="Unity Catalog Swiss Army Knife",
@@ -69,7 +74,7 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
 
 # Mount static files for the React application
-app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH, html=True), name="static")
 
 # Register routes from each module
 data_product_routes.register_routes(app)
@@ -87,14 +92,10 @@ compliance_routes.register_routes(app)
 master_data_management_routes.register_routes(app)
 security_features_routes.register_routes(app)
 
-# @app.get("/{full_path:path}")
-# def serve_spa(full_path: str):
-#     # Only catch routes that aren't API routes or static files
-#     if not full_path.startswith("api/") and not full_path.startswith("static/"):
-#         return FileResponse(STATIC_ASSETS_PATH / "index.html", media_type="text/html")
 @app.get("/{full_path:path}")
 def serve_spa(full_path: str):
-    if not full_path.startswith("api/"):
+    # Only catch routes that aren't API routes or static files
+    if not full_path.startswith("api/") and not full_path.startswith("static/"):
         return FileResponse(STATIC_ASSETS_PATH / "index.html", media_type="text/html")
         
 @app.get("/api/time")

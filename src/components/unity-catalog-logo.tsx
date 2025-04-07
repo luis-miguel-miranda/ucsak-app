@@ -5,7 +5,7 @@ export function UnityCatalogLogo() {
   
   return (
     <img
-      src={theme === 'dark' ? '/uc-logo-mark-reverse.svg' : '/uc-logo-mark.svg'}
+      src={theme === 'dark' ? '/static/uc-logo-mark-reverse.svg' : '/static/uc-logo-mark.svg'}
       alt="Unity Catalog Logo"
       className="h-10 w-10 mr-2"
     />

@@ -24,7 +24,7 @@ yaml_path = Path(__file__).parent.parent / 'data' / 'security_features.yaml'
 if os.path.exists(yaml_path):
     try:
         # Load data from YAML file
-        success = manager.load_from_yaml(str(yaml_path))
+        success = manager.load_from_yaml(yaml_path)
         if success:
             logger.info(f"Successfully loaded security features from {yaml_path}")
         else:

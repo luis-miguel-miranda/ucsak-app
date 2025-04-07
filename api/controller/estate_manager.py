@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 from api.common.workspace_client import WorkspaceClient
@@ -16,7 +17,7 @@ class EstateManager:
         self.job_runner = JobRunner(client, settings)
         self.estates: List[Estate] = []
 
-    def load_from_yaml(self, yaml_path: str) -> None:
+    def load_from_yaml(self, yaml_path: Path) -> None:
         """Load estates from a YAML file"""
         try:
             with open(yaml_path) as f:
@@ -45,6 +46,7 @@ class EstateManager:
 
     async def list_estates(self) -> List[Estate]:
         """List all configured estates"""
+        logger.info(f"Returning {len(self.estates)} estates.")
         return self.estates
 
     async def get_estate(self, estate_id: str) -> Optional[Estate]:

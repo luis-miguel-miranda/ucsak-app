@@ -10,34 +10,23 @@ logger = logging.getLogger(__name__)
 
 class SecurityFeaturesManager:
     def __init__(self):
-        logging.info("Initializing SecurityFeaturesManager...")
         self.features: Dict[str, SecurityFeature] = {}
 
     def create_feature(self, feature: SecurityFeature) -> SecurityFeature:
-        logging.info(f"Creating security feature: {feature}")
         self.features[feature.id] = feature
-        logging.info(f"Created security feature: {self.features[feature.id]}")
         return feature
 
     def get_feature(self, feature_id: str) -> Optional[SecurityFeature]:
-        logging.info(f"Getting security feature: {feature_id}")
         feature = self.features.get(feature_id)
-        logging.info(f"Found security feature: {feature}")
         return feature
 
     def list_features(self) -> List[SecurityFeature]:
         try:
-            logger.info("Listing security features...")
             features = list(self.features.values())
-            logger.info(f"Found {len(features)} security features")
             for feature in features:
                 try:
-                    logger.info(f"Feature ID: {feature.id}")
-                    logger.info(f"Feature type: {feature.type}")
-                    logger.info(f"Feature dict: {feature.to_dict()}")
                     # Verify the feature can be converted to dict
                     feature_dict = feature.to_dict()
-                    logger.info(f"Feature dict verified: {feature_dict}")
                 except Exception as e:
                     logger.error(f"Error processing feature {feature.id if hasattr(feature, 'id') else 'unknown'}")
                     logger.error(f"Error: {e!s}")
@@ -53,21 +42,17 @@ class SecurityFeaturesManager:
             raise
 
     def update_feature(self, feature_id: str, feature: SecurityFeature) -> Optional[SecurityFeature]:
-        logging.info(f"Updating security feature: {feature_id}")
         if feature_id not in self.features:
             logging.warning(f"Security feature not found: {feature_id}")
             return None
         self.features[feature_id] = feature
-        logging.info(f"Updated security feature: {self.features[feature_id]}")
         return feature
 
     def delete_feature(self, feature_id: str) -> bool:
-        logging.info(f"Deleting security feature: {feature_id}")
         if feature_id not in self.features:
             logging.warning(f"Security feature not found: {feature_id}")
             return False
         del self.features[feature_id]
-        logging.info(f"Deleted security feature: {feature_id}")
         return True
 
     def load_from_yaml(self, yaml_path: Path) -> None:
@@ -100,12 +85,9 @@ class SecurityFeaturesManager:
 
     def save_to_yaml(self, yaml_path: Path) -> None:
         try:
-            logging.info(f"Saving security features to {yaml_path}")
             data = {'features': [feature.to_dict() for feature in self.features.values()]}
-            logging.info(f"Saving data: {data}")
             with open(yaml_path, 'w') as f:
                 yaml.dump(data, f)
-            logging.info(f"Successfully saved {len(self.features)} security features")
         except Exception as e:
             logging.exception(f"Error saving security features to YAML: {e!s}")
             raise

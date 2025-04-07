@@ -21,10 +21,15 @@ if os.path.exists(yaml_path):
     except Exception as e:
         logging.exception(f"Error loading compliance policies from YAML: {e!s}")
 
-@router.get("/compliance/policies", response_model=List[CompliancePolicy])
+@router.get("/compliance/policies")
 async def get_policies():
-    """Get all compliance policies"""
-    return manager.get_policies()
+    """Get all compliance policies and stats"""
+    policies = manager.get_policies()
+    stats = manager.get_compliance_stats()
+    return {
+        "policies": policies,
+        "stats": stats
+    }
 
 @router.get("/compliance/policies/{policy_id}", response_model=CompliancePolicy)
 async def get_policy(policy_id: str):

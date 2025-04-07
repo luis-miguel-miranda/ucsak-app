@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CatalogItem {
   id: string;
@@ -46,6 +47,16 @@ interface DatasetContent {
   total_rows: number;
 }
 
+interface Estate {
+  id: string;
+  name: string;
+  description: string;
+  workspace_url: string;
+  cloud_type: string;
+  metastore_name: string;
+  is_enabled: boolean;
+}
+
 const CatalogCommander: React.FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -61,6 +72,9 @@ const CatalogCommander: React.FC = () => {
   const [selectedObjectInfo, setSelectedObjectInfo] = useState<any>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [loadingNodes, setLoadingNodes] = useState<Set<string>>(new Set());
+  const [estates, setEstates] = useState<Estate[]>([]);
+  const [selectedSourceEstate, setSelectedSourceEstate] = useState<string>('');
+  const [selectedTargetEstate, setSelectedTargetEstate] = useState<string>('');
 
   const handleViewDataset = async (path: string) => {
     setSelectedDataset(path);
@@ -184,7 +198,21 @@ const CatalogCommander: React.FC = () => {
 
   useEffect(() => {
     fetchCatalogs();
+    fetchEstates();
   }, []);
+
+  const fetchEstates = async () => {
+    try {
+      const response = await fetch('/api/estates');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch estates: ${response.status}`);
+      }
+      const data = await response.json();
+      setEstates(data || []);
+    } catch (err) {
+      console.error('Error fetching estates:', err);
+    }
+  };
 
   const fetchCatalogs = async () => {
     try {
@@ -309,6 +337,23 @@ const CatalogCommander: React.FC = () => {
             <CardTitle>Source</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col h-full min-h-0">
+            <div className="mb-2">
+              <Select
+                value={selectedSourceEstate}
+                onValueChange={setSelectedSourceEstate}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Estate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {estates.map(estate => (
+                    <SelectItem key={estate.id} value={estate.id}>
+                      {estate.name} <span className="text-xs text-muted-foreground ml-1">({estate.metastore_name})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input
               placeholder="Search"
               value={searchInput}
@@ -339,6 +384,23 @@ const CatalogCommander: React.FC = () => {
             <CardTitle>Target</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col h-full min-h-0">
+            <div className="mb-2">
+              <Select
+                value={selectedTargetEstate}
+                onValueChange={setSelectedTargetEstate}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Estate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {estates.map(estate => (
+                    <SelectItem key={estate.id} value={estate.id}>
+                      {estate.name} <span className="text-xs text-muted-foreground ml-1">({estate.metastore_name})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input
               placeholder="Search"
               value={searchInput}
