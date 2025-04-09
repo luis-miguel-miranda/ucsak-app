@@ -1,228 +1,106 @@
-- dataProductSpecification: 0.0.1
-  id: customer-360
+- dataProductSpecification: "0.0.1"
+  id: "customer-360"
   info:
-    title: Customer 360
-    owner: Customer Analytics Team
-    domain: customer
-    description: Comprehensive view of customer data across all touchpoints
-    status: active
-    archetype: consumer-aligned
-    maturity: null
+    title: "Customer 360"
+    owner: "Customer Analytics Team"
+    domain: "customer"
+    description: "Comprehensive view of customer data across all touchpoints"
+    status: "active"
+    archetype: "consumer-aligned"
   inputPorts:
-  - id: crm-system
-    name: CRM System
-    description: null
-    type: application
-    location: jdbc:postgresql://crm-db:5432/customers
-    links: {}
-    custom: {}
-    tags:
-    - crm
-    sourceSystemId: crm-prod
-  - id: web-analytics
-    name: Web Analytics
-    description: null
-    type: streaming
-    location: kafka://analytics-cluster:9092/web-events
-    links: {}
-    custom: {}
-    tags:
-    - kafka
-    - web
-    sourceSystemId: web-tracker
+    - id: "crm-system"
+      name: "CRM System"
+      sourceSystemId: "crm-prod"
+      type: "application"
+      location: "jdbc:postgresql://crm-db:5432/customers"
+      tags: ["crm"]
+    - id: "web-analytics"
+      name: "Web Analytics"
+      sourceSystemId: "web-tracker"
+      type: "streaming"
+      location: "kafka://analytics-cluster:9092/web-events"
+      tags: ["kafka", "web"]
   outputPorts:
-  - id: customer-profile-table
-    name: customer_profile_table
-    description: Aggregated customer profile table
-    type: table
-    location: null
-    links: {}
-    custom: {}
-    tags:
-    - s3
-    - delta
-    - profile
-    status: active
-    server:
-      project: null
-      dataset: null
-      account: null
-      database: null
-      schema: null
-      host: null
-      topic: null
-      location: s3://data-products/customer/profile
-      delimiter: null
-      format: delta
-      table: null
-      view: null
-      share: null
-      additionalProperties: null
-    containsPii: true
-    autoApprove: false
-    dataContractId: null
+    - id: "customer-profile-table"
+      name: "customer_profile_table"
+      description: "Aggregated customer profile table"
+      type: "table"
+      status: "active"
+      server:
+        location: "s3://data-products/customer/profile"
+        format: "delta"
+      containsPii: true
+      tags: ["s3", "delta", "profile"]
+  tags: ["customer", "analytics", "master data"]
   links:
-    catalog: https://catalog.example.com/customer/customer-360
-  custom: {}
-  tags:
-  - customer
-  - analytics
-  - master data
-  created_at: 2025-04-09 15:48:19.422239
-  updated_at: 2025-04-09 15:48:19.422243
-- dataProductSpecification: 0.0.1
-  id: sales-analytics
+    catalog: "https://catalog.example.com/customer/customer-360"
+
+- dataProductSpecification: "0.0.1"
+  id: "sales-analytics"
   info:
-    title: Sales Analytics
-    owner: Sales Operations
-    domain: sales
-    description: Sales performance metrics and forecasting
-    status: active
-    archetype: aggregate
-    maturity: null
+    title: "Sales Analytics"
+    owner: "Sales Operations"
+    domain: "sales"
+    description: "Sales performance metrics and forecasting"
+    status: "active"
+    archetype: "aggregate"
   inputPorts:
-  - id: oms-orders
-    name: Order Management System
-    description: null
-    type: application
-    location: jdbc:postgresql://sales-db:5432/orders
-    links: {}
-    custom: {}
-    tags: []
-    sourceSystemId: oms-prod
-  - id: crm-opportunities
-    name: CRM System Opportunities
-    description: null
-    type: application
-    location: jdbc:postgresql://crm-db:5432/opportunities
-    links: {}
-    custom: {}
-    tags: []
-    sourceSystemId: crm-prod
+    - id: "oms-orders"
+      name: "Order Management System"
+      sourceSystemId: "oms-prod"
+      type: "application"
+      location: "jdbc:postgresql://sales-db:5432/orders"
+    - id: "crm-opportunities"
+      name: "CRM System Opportunities"
+      sourceSystemId: "crm-prod"
+      type: "application"
+      location: "jdbc:postgresql://crm-db:5432/opportunities"
   outputPorts:
-  - id: sales-performance-view
-    name: sales_performance_view
-    description: View for sales performance reporting
-    type: view
-    location: null
-    links: {}
-    custom: {}
-    tags:
-    - databricks
-    - view
-    - reporting
-    status: active
-    server:
-      project: null
-      dataset: null
-      account: null
-      database: sales_db
-      schema: null
-      host: null
-      topic: null
-      location: databricks://workspace/sales_db/performance_view
-      delimiter: null
-      format: null
-      table: null
-      view: performance_view
-      share: null
-      additionalProperties: null
-    containsPii: false
-    autoApprove: false
-    dataContractId: null
+    - id: "sales-performance-view"
+      name: "sales_performance_view"
+      description: "View for sales performance reporting"
+      type: "view"
+      status: "active"
+      server:
+        location: "databricks://workspace/sales_db/performance_view"
+        database: "sales_db"
+        view: "performance_view"
+      containsPii: false
+      tags: ["databricks", "view", "reporting"]
+  tags: ["sales", "analytics", "forecasting"]
   links:
-    dashboard: https://dashboards.example.com/sales-perf
-  custom: {}
-  tags:
-  - sales
-  - analytics
-  - forecasting
-  created_at: 2025-04-09 15:48:19.422336
-  updated_at: 2025-04-09 15:48:19.422337
-- dataProductSpecification: 0.0.1
-  id: product-recommendations-model
+    dashboard: "https://dashboards.example.com/sales-perf"
+
+- dataProductSpecification: "0.0.1"
+  id: "product-recommendations-model"
   info:
-    title: Product Recommendations Model
-    owner: Data Science Team
-    domain: product
-    description: ML-based product recommendations for customers
-    status: in development
-    archetype: model
-    maturity: null
+    title: "Product Recommendations Model"
+    owner: "Data Science Team"
+    domain: "product"
+    description: "ML-based product recommendations for customers"
+    status: "in development"
+    archetype: "model"
   inputPorts:
-  - id: customer-360-input
-    name: Customer 360 Data Product
-    description: null
-    type: data-product
-    location: null
-    links: {}
-    custom: {}
-    tags: []
-    sourceSystemId: data-product:customer-360
-  - id: product-catalog-db
-    name: Product Catalog DB
-    description: null
-    type: application
-    location: jdbc:postgresql://product-db:5432/catalog
-    links: {}
-    custom: {}
-    tags: []
-    sourceSystemId: product-db-prod
+    - id: "customer-360-input"
+      name: "Customer 360 Data Product"
+      sourceSystemId: "data-product:customer-360"
+      type: "data-product"
+    - id: "product-catalog-db"
+      name: "Product Catalog DB"
+      sourceSystemId: "product-db-prod"
+      type: "application"
+      location: "jdbc:postgresql://product-db:5432/catalog"
   outputPorts:
-  - id: product-recs-api
-    name: Product Recommendations API
-    description: API endpoint for getting recommendations
-    type: api
-    location: null
-    links: {}
-    custom: {}
-    tags:
-    - api
-    - ml
-    - realtime
-    status: proposed
-    server:
-      project: null
-      dataset: null
-      account: null
-      database: null
-      schema: null
-      host: null
-      topic: null
-      location: https://api.example.com/recommendations/v1
-      delimiter: null
-      format: null
-      table: null
-      view: null
-      share: null
-      additionalProperties: null
-    containsPii: false
-    autoApprove: false
-    dataContractId: null
-  links: {}
+    - id: "product-recs-api"
+      name: "Product Recommendations API"
+      description: "API endpoint for getting recommendations"
+      type: "api"
+      status: "proposed"
+      server:
+        location: "https://api.example.com/recommendations/v1"
+      containsPii: false
+      tags: ["api", "ml", "realtime"]
+  tags: ["recommendations", "machine learning", "product"]
   custom:
-    model_framework: tensorflow
-    training_schedule: daily
-  tags:
-  - recommendations
-  - machine learning
-  - product
-  created_at: 2025-04-09 15:48:19.422349
-  updated_at: 2025-04-09 15:48:19.422349
-- dataProductSpecification: 0.0.1
-  id: 56c7bfa8-a8f1-4220-ba12-73196e2ec317
-  info:
-    title: fceewf
-    owner: wefewf
-    domain: null
-    description: null
-    status: null
-    archetype: null
-    maturity: null
-  inputPorts: []
-  outputPorts: []
-  links: {}
-  custom: {}
-  tags: []
-  created_at: &id001 2025-04-09 15:54:57.008596
-  updated_at: *id001
+    model_framework: "tensorflow"
+    training_schedule: "daily" 

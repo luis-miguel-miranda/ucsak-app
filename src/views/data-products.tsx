@@ -57,6 +57,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { RelativeDate } from '@/components/common/relative-date';
 
 // --- Helper Function Type Definition --- 
 type CheckApiResponseFn = <T>(
@@ -536,8 +537,6 @@ export default function DataProducts() {
         if (product && product.id) {
             // --- EDIT MODE --- 
             console.log(`Fetching product ${product.id} for editing...`);
-            // Show loading indicator toast while fetching
-            toast({ description: `Loading data for product ${product.info.title}...` });
             
             const response = await get<DataProduct>(`/api/data-products/${product.id}`);
             const productDataForEdit = checkApiResponse(response, `Fetch product ${product.id}`);
@@ -685,14 +684,25 @@ export default function DataProducts() {
     formData.append('file', file);
     try {
       const response = await post<DataProduct[]>('/api/data-products/upload', formData);
+      // Use the response error if present
       if (response.error) {
         throw new Error(response.error);
       }
       console.log('Successfully uploaded products:', response.data);
-      await fetchProducts(); 
+      toast({ 
+        title: "Upload Successful",
+        description: `Successfully processed file ${file.name}. Added ${response.data?.length || 0} product(s).`,
+      });
+      await fetchProducts();
     } catch (err: any) {
       console.error('Error uploading file:', err);
-      setError(err.message || 'Failed to upload file');
+      // Use the error message directly in the toast
+      toast({
+          title: "Upload Failed",
+          description: err.message || 'An unexpected error occurred during upload.',
+          variant: "destructive"
+      });
+      setError(err.message || 'Failed to upload file'); // Optionally keep setting general error state too
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -961,12 +971,7 @@ export default function DataProducts() {
         </Button>
       ),
       cell: ({ row }) => {
-        const date = row.original.created_at ? new Date(row.original.created_at) : null;
-        return date ? (
-          <div title={date.toLocaleString()}>{date.toLocaleDateString()}</div>
-        ) : (
-          'N/A'
-        );
+        return <RelativeDate date={row.original.created_at} />;
       },
     },
     {
@@ -977,12 +982,7 @@ export default function DataProducts() {
         </Button>
       ),
       cell: ({ row }) => {
-        const date = row.original.updated_at ? new Date(row.original.updated_at) : null;
-        return date ? (
-          <div title={date.toLocaleString()}>{date.toLocaleDateString()}</div>
-        ) : (
-          'N/A'
-        );
+        return <RelativeDate date={row.original.updated_at} />;
       },
     },
     {

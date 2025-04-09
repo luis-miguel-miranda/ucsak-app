@@ -106,43 +106,68 @@ async def upload_data_products(file: UploadFile = File(...), manager: DataProduc
             import json
             data = json.loads(content)
             
-        if not isinstance(data, list):
-            raise HTTPException(status_code=400, detail="File must contain a JSON array or YAML list of data product objects.")
+        # Allow either a single object or a list
+        data_list: List[Dict[str, Any]]
+        if isinstance(data, dict): 
+            data_list = [data] # Wrap single object in a list
+        elif isinstance(data, list):
+            data_list = data # Use the list directly
+        else:
+            # Raise error if it's neither a dict nor a list
+            raise HTTPException(status_code=400, detail="File must contain a JSON object/array or a YAML mapping/list of data product objects.")
 
         created_products = []
         errors = []
-        for product_data in data:
+        # Process the unified data_list
+        for product_data in data_list:
              if not isinstance(product_data, dict):
-                 errors.append({"error": "Skipping non-dictionary item.", "item": product_data})
+                 errors.append({"error": "Skipping non-dictionary item within list/array.", "item": product_data})
                  continue
+             
+             product_id_in_data = product_data.get('id')
+             
              try:
+                 # --- Generate ID if missing BEFORE validation --- 
+                 if not product_id_in_data:
+                     generated_id = str(uuid.uuid4())
+                     product_data['id'] = generated_id
+                     logger.info(f"Generated ID {generated_id} for uploaded product lacking one.")
+                     # Update product_id_in_data for the duplicate check below
+                     product_id_in_data = generated_id 
+                 
+                 # --- Duplicate Check (using potentially generated ID) --- 
+                 if product_id_in_data and manager.get_product(product_id_in_data):
+                     errors.append({"id": product_id_in_data, "error": "Product with this ID already exists. Skipping."})
+                     continue
+                 
+                 # --- Pydantic Validation --- 
+                 # Now validate with the ID definitely present
                  product_model = DataProduct(**product_data)
                  product_dict = product_model.model_dump(by_alias=True)
-
-                 if product_model.id and manager.get_product(product_model.id):
-                     errors.append({"id": product_model.id, "error": "Product with this ID already exists. Skipping."})
-                     continue
-                 if not product_model.id:
-                    product_dict['id'] = str(uuid.uuid4()) 
                  
+                 # --- Creation --- 
+                 # The ID is already in product_dict from model_dump
                  created_product = manager.create_product(product_dict)
                  created_products.append(created_product)
+                 
              except ValidationError as e:
-                 errors.append({"id": product_data.get('id', 'N/A'), "error": f"Validation failed: {e}"})
+                 # Use the ID we determined (original or generated) for the error message
+                 error_id = product_id_in_data if product_id_in_data else 'N/A_ValidationFailure'
+                 errors.append({"id": error_id, "error": f"Validation failed: {e}"})
              except Exception as e:
-                 errors.append({"id": product_data.get('id', 'N/A'), "error": f"Creation failed: {e!s}"})
+                 error_id = product_id_in_data if product_id_in_data else 'N/A_CreationFailure'
+                 errors.append({"id": error_id, "error": f"Creation failed: {e!s}"})
 
-        # Attempt to save all changes to YAML after processing the file
-        if created_products:
-            YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-            if not manager.save_to_yaml(str(YAML_PATH)):
-                logger.warning(f"Could not save updated data products to {YAML_PATH} after batch upload.")
-
+        # After processing all items, check if any errors occurred
         if errors:
             logger.warning(f"Encountered {len(errors)} errors during file upload processing.")
-            # Optionally return errors, or just log them. For now, returning only created ones.
-            # Consider raising an exception or returning a mixed response if errors are critical.
+            # Return a 422 error if any product failed validation or processing
+            raise HTTPException(
+                status_code=422, 
+                detail={"message": "Validation errors occurred during upload.", "errors": errors}
+            )
 
+        # If no errors, proceed with success logging and return
         logger.info(f"Successfully created {len(created_products)} data products from uploaded file {file.filename}")
         return created_products # Return list of successfully created products
 
@@ -150,6 +175,9 @@ async def upload_data_products(file: UploadFile = File(...), manager: DataProduc
         raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON format: {e}")
+    except HTTPException as e:
+        # Re-raise specific HTTPExceptions (like 400 for non-list input)
+        raise e
     except Exception as e:
         error_msg = f"Error processing uploaded file: {e!s}"
         logger.exception(error_msg)
@@ -171,30 +199,38 @@ async def get_data_products(manager: DataProductsManager = Depends(get_data_prod
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post('/data-products', response_model=DataProduct, status_code=201)
-async def create_data_product(product_data: DataProduct = Body(...), manager: DataProductsManager = Depends(get_data_products_manager)):
-    """Create a new data product from a JSON payload conforming to the schema."""
+async def create_data_product(payload: Dict[str, Any] = Body(...), manager: DataProductsManager = Depends(get_data_products_manager)):
+    """Create a new data product from a JSON payload dictionary."""
     try:
-        logger.info(f"Received request to create data product: {product_data.id if product_data.id else '(new ID will be generated)'}")
-        product_dict = product_data.model_dump(by_alias=True)
+        logger.info(f"Received raw payload for creation: {payload}")
+        product_id = payload.get('id')
 
-        if product_data.id and manager.get_product(product_data.id):
-             raise HTTPException(status_code=409, detail=f"Data product with ID {product_data.id} already exists.")
-        if not product_data.id:
-             product_dict['id'] = str(uuid.uuid4())
+        # Existence check
+        if product_id and manager.get_product(product_id):
+             raise HTTPException(status_code=409, detail=f"Data product with ID {product_id} already exists.")
+        # ID generation if missing (fallback, frontend should provide it)
+        if not product_id:
+             payload['id'] = str(uuid.uuid4())
+             logger.info(f"Generated ID for new product: {payload['id']}")
 
-        created_product = manager.create_product(product_dict)
+        # --- Explicit Validation (Optional but recommended for 422 errors) ---
+        # Although the manager validates internally, doing it here allows returning detailed 422 errors.
+        try:
+            _ = DataProduct(**payload) # Attempt validation
+        except ValidationError as e:
+             logger.error(f"Validation failed for payload: {e}")
+             raise HTTPException(status_code=422, detail=e.errors()) # Return Pydantic validation errors
+
+        created_product = manager.create_product(payload)
         
-        YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-        if not manager.save_to_yaml(str(YAML_PATH)):
-             logger.warning(f"Could not save updated data products to {YAML_PATH} after creating {created_product.id}")
-
         logger.info(f"Successfully created data product with ID: {created_product.id}")
         return created_product
-    except ValueError as e: 
-        logger.error(f"Validation error during product creation: {e!s}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except HTTPException:
+    
+    except HTTPException: # Re-raise specific HTTP exceptions (like 409, 422)
         raise
+    # Note: ValueError from manager.create_product (if internal validation fails) 
+    # might be caught here if explicit validation above is skipped or passes unexpectedly.
+    # It would result in a 500 error unless specifically caught.
     except Exception as e:
         error_msg = f"Unexpected error creating data product: {e!s}"
         logger.exception(error_msg)
@@ -235,10 +271,6 @@ async def update_data_product(product_id: str, product_data: DataProduct = Body(
             logger.warning(f"Update failed: Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
 
-        YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-        if not manager.save_to_yaml(str(YAML_PATH)):
-            logger.warning(f"Could not save updated data products to {YAML_PATH} after updating {product_id}")
-
         logger.info(f"Successfully updated data product with ID: {product_id}")
         return updated_product
     except ValueError as e: # Catch validation errors from manager
@@ -260,10 +292,6 @@ async def delete_data_product(product_id: str, manager: DataProductsManager = De
         if not deleted:
             logger.warning(f"Deletion failed: Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
-
-        YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-        if not manager.save_to_yaml(str(YAML_PATH)):
-            logger.warning(f"Could not save updated data products to {YAML_PATH} after deleting {product_id}")
 
         logger.info(f"Successfully deleted data product with ID: {product_id}")
         return None 
