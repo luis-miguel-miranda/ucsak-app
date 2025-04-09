@@ -26,6 +26,7 @@ from api.routes import (
     security_features_routes,
     settings_routes,
     user_routes,
+    metadata_routes,
 )
 
 logger = logging.getLogger(__name__)
@@ -91,17 +92,31 @@ notifications_routes.register_routes(app)
 compliance_routes.register_routes(app)
 master_data_management_routes.register_routes(app)
 security_features_routes.register_routes(app)
+metadata_routes.register_routes(app)
 
-@app.get("/{full_path:path}")
-def serve_spa(full_path: str):
-    # Only catch routes that aren't API routes or static files
-    if not full_path.startswith("api/") and not full_path.startswith("static/"):
-        return FileResponse(STATIC_ASSETS_PATH / "index.html", media_type="text/html")
-        
+# Define other specific API routes BEFORE the catch-all
 @app.get("/api/time")
 async def get_current_time():
     """Get the current time (for testing purposes mostly)"""
     return {'time': time.time()}
+
+# Define the SPA catch-all route LAST
+@app.get("/{full_path:path}")
+def serve_spa(full_path: str):
+    # Only catch routes that aren't API routes or static files
+    # This check might be redundant now due to ordering, but safe to keep
+    if not full_path.startswith("api/") and not full_path.startswith("static/"):
+        # Ensure the path exists before serving
+        spa_index = STATIC_ASSETS_PATH / "index.html"
+        if spa_index.is_file():
+           return FileResponse(spa_index, media_type="text/html")
+        else:
+           # Optional: Return a 404 or a simple HTML message if index.html is missing
+           logger.error(f"SPA index.html not found at {spa_index}")
+           return HTMLResponse(content="<html><body>Frontend not built or index.html missing.</body></html>", status_code=404)
+    # If it starts with api/ or static/ but wasn't handled by a router/StaticFiles,
+    # FastAPI will return its default 404 Not Found, which is correct.
+    # No explicit return needed here for that case.
 
 if __name__ == '__main__':
     import uvicorn

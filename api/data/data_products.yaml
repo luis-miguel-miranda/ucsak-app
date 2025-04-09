@@ -1,105 +1,106 @@
-products:
-  - id: "product1"
-    name: "Customer 360"
-    description: "Comprehensive view of customer data across all touchpoints"
-    domain: "customer"
+- dataProductSpecification: "0.0.1"
+  id: "customer-360"
+  info:
+    title: "Customer 360"
     owner: "Customer Analytics Team"
+    domain: "customer"
+    description: "Comprehensive view of customer data across all touchpoints"
     status: "active"
-    created: "2024-01-15T00:00:00Z"
-    updated: "2024-02-01T00:00:00Z"
-    type: "consumer-aligned"
-    tags: ["customer", "analytics", "master data"]
-    sources:
-      - name: "CRM System"
-        type: "application"
-        connection: "jdbc:postgresql://crm-db:5432/customers"
-      - name: "Web Analytics"
-        type: "streaming"
-        connection: "kafka://analytics-cluster:9092/web-events"
-    outputs:
-      - name: "customer_profile"
-        type: "table"
+    archetype: "consumer-aligned"
+  inputPorts:
+    - id: "crm-system"
+      name: "CRM System"
+      sourceSystemId: "crm-prod"
+      type: "application"
+      location: "jdbc:postgresql://crm-db:5432/customers"
+      tags: ["crm"]
+    - id: "web-analytics"
+      name: "Web Analytics"
+      sourceSystemId: "web-tracker"
+      type: "streaming"
+      location: "kafka://analytics-cluster:9092/web-events"
+      tags: ["kafka", "web"]
+  outputPorts:
+    - id: "customer-profile-table"
+      name: "customer_profile_table"
+      description: "Aggregated customer profile table"
+      type: "table"
+      status: "active"
+      server:
         location: "s3://data-products/customer/profile"
-        schema:
-          - name: "customer_id"
-            type: "string"
-            description: "Unique customer identifier"
-          - name: "full_name"
-            type: "string"
-            description: "Customer's full name"
-          - name: "email"
-            type: "string"
-            description: "Primary email address"
-          - name: "lifetime_value"
-            type: "decimal"
-            description: "Customer lifetime value"
-    contracts: ["contract1"]
-    
-  - id: "product2"
-    name: "Sales Analytics"
-    description: "Sales performance metrics and forecasting"
-    domain: "sales"
+        format: "delta"
+      containsPii: true
+      tags: ["s3", "delta", "profile"]
+  tags: ["customer", "analytics", "master data"]
+  links:
+    catalog: "https://catalog.example.com/customer/customer-360"
+
+- dataProductSpecification: "0.0.1"
+  id: "sales-analytics"
+  info:
+    title: "Sales Analytics"
     owner: "Sales Operations"
+    domain: "sales"
+    description: "Sales performance metrics and forecasting"
     status: "active"
-    created: "2024-01-20T00:00:00Z"
-    updated: "2024-02-05T00:00:00Z"
-    type: "aggregate"
-    tags: ["sales", "analytics", "forecasting"]
-    sources:
-      - name: "Order Management System"
-        type: "application"
-        connection: "jdbc:postgresql://sales-db:5432/orders"
-      - name: "CRM System"
-        type: "application"
-        connection: "jdbc:postgresql://crm-db:5432/opportunities"
-    outputs:
-      - name: "sales_performance"
-        type: "table"
-        location: "s3://data-products/sales/performance"
-        schema:
-          - name: "date"
-            type: "date"
-            description: "Sales date"
-          - name: "product_id"
-            type: "string"
-            description: "Product identifier"
-          - name: "region"
-            type: "string"
-            description: "Sales region"
-          - name: "revenue"
-            type: "decimal"
-            description: "Total revenue"
-    contracts: ["contract1"]
-    
-  - id: "product3"
-    name: "Product Recommendations"
-    description: "ML-based product recommendations for customers"
-    domain: "product"
+    archetype: "aggregate"
+  inputPorts:
+    - id: "oms-orders"
+      name: "Order Management System"
+      sourceSystemId: "oms-prod"
+      type: "application"
+      location: "jdbc:postgresql://sales-db:5432/orders"
+    - id: "crm-opportunities"
+      name: "CRM System Opportunities"
+      sourceSystemId: "crm-prod"
+      type: "application"
+      location: "jdbc:postgresql://crm-db:5432/opportunities"
+  outputPorts:
+    - id: "sales-performance-view"
+      name: "sales_performance_view"
+      description: "View for sales performance reporting"
+      type: "view"
+      status: "active"
+      server:
+        location: "databricks://workspace/sales_db/performance_view"
+        database: "sales_db"
+        view: "performance_view"
+      containsPii: false
+      tags: ["databricks", "view", "reporting"]
+  tags: ["sales", "analytics", "forecasting"]
+  links:
+    dashboard: "https://dashboards.example.com/sales-perf"
+
+- dataProductSpecification: "0.0.1"
+  id: "product-recommendations-model"
+  info:
+    title: "Product Recommendations Model"
     owner: "Data Science Team"
-    status: "active"
-    created: "2024-01-25T00:00:00Z"
-    updated: "2024-02-10T00:00:00Z"
-    type: "model"
-    tags: ["recommendations", "machine learning", "product"]
-    sources:
-      - name: "Customer 360"
-        type: "data product"
-        connection: "s3://data-products/customer/profile"
-      - name: "Product Catalog"
-        type: "application"
-        connection: "jdbc:postgresql://product-db:5432/catalog"
-    outputs:
-      - name: "product_recommendations"
-        type: "api"
-        location: "https://api.example.com/recommendations"
-        schema:
-          - name: "customer_id"
-            type: "string"
-            description: "Customer identifier"
-          - name: "recommended_products"
-            type: "array"
-            description: "List of recommended product IDs"
-          - name: "confidence_score"
-            type: "float"
-            description: "Confidence score for recommendations"
-    contracts: ["contract2"] 
+    domain: "product"
+    description: "ML-based product recommendations for customers"
+    status: "in development"
+    archetype: "model"
+  inputPorts:
+    - id: "customer-360-input"
+      name: "Customer 360 Data Product"
+      sourceSystemId: "data-product:customer-360"
+      type: "data-product"
+    - id: "product-catalog-db"
+      name: "Product Catalog DB"
+      sourceSystemId: "product-db-prod"
+      type: "application"
+      location: "jdbc:postgresql://product-db:5432/catalog"
+  outputPorts:
+    - id: "product-recs-api"
+      name: "Product Recommendations API"
+      description: "API endpoint for getting recommendations"
+      type: "api"
+      status: "proposed"
+      server:
+        location: "https://api.example.com/recommendations/v1"
+      containsPii: false
+      tags: ["api", "ml", "realtime"]
+  tags: ["recommendations", "machine learning", "product"]
+  custom:
+    model_framework: "tensorflow"
+    training_schedule: "daily" 

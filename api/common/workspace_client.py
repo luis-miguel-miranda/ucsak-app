@@ -133,8 +133,45 @@ class CachingWorkspaceClient(WorkspaceClient):
 
         return CachedCatalogs(self)
 
+    @property
+    def schemas(self):
+        class CachedSchemas:
+            def __init__(self, parent):
+                self._parent = parent
+
+            # Schemas are listed per catalog
+            def list(self, catalog_name: str):
+                cache_key = f'schemas.list::{catalog_name}' 
+                return self._parent._cache_result(cache_key)(
+                    # Convert generator to list for caching
+                    lambda: list(self._parent._client.schemas.list(catalog_name=catalog_name))
+                )()
+
+        return CachedSchemas(self)
+
+    @property
+    def tables(self):
+        class CachedTables:
+            def __init__(self, parent):
+                self._parent = parent
+
+            # Tables are listed per catalog and schema
+            def list(self, catalog_name: str, schema_name: str):
+                cache_key = f'tables.list::{catalog_name}::{schema_name}'
+                return self._parent._cache_result(cache_key)(
+                    # Convert generator to list for caching
+                    lambda: list(self._parent._client.tables.list(catalog_name=catalog_name, schema_name=schema_name))
+                )()
+
+        return CachedTables(self)
+
     # Delegate all other attributes to the original client
     def __getattr__(self, name):
+        # Ensure we don't accidentally delegate properties we've explicitly handled
+        if name in ['clusters', 'connections', 'catalogs', 'schemas', 'tables']:
+            # This case shouldn't typically be hit due to @property lookups,
+            # but added as a safeguard.
+             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}' - use the property")
         return getattr(self._client, name)
 
 def get_workspace_client(settings: Optional[Settings] = None, timeout: int = 30) -> WorkspaceClient:
