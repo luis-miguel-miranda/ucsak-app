@@ -87,10 +87,10 @@ class Server(BaseModel):
     table: Optional[str] = Field(None, description="The table name (postgres)", example="search_queries")
     view: Optional[str] = Field(None, description="The view name (postgres)", example="search_queries")
     share: Optional[str] = Field(None, description="The share name (databricks)")
-    additionalProperties: Optional[Dict[str, str]] = Field(default_factory=dict)
+    additionalProperties: Optional[str] = Field(None, description="Field for additional server properties, expected as a single string by the schema.")
 
     class Config:
-        allow_population_by_field_name = True
+        from_attributes = True
 
 class OutputPort(Port):
     status: Optional[str] = Field(None, description="Status of the output port implementation", example="active")

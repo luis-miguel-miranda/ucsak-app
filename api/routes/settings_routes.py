@@ -7,8 +7,9 @@ from ..common.workspace_client import get_workspace_client
 from ..controller.settings_manager import SettingsManager
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api", tags=["settings"])
 

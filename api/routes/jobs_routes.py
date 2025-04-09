@@ -7,8 +7,9 @@ from api.common.deps import get_job_runner_dep
 from api.common.job_runner import JobRunner
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api", tags=["jobs"])
 

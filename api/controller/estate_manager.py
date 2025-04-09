@@ -9,8 +9,9 @@ import logging
 import yaml
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 class EstateManager:
     def __init__(self, client: WorkspaceClient, settings: Settings):

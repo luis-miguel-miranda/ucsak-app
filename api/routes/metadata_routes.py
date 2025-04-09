@@ -9,10 +9,12 @@ from api.controller.metadata_manager import MetadataManager
 from api.models.metadata import MetastoreTableInfo
 from api.common.workspace_client import get_workspace_client_dependency
 
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 # Define router with /api/metadata prefix
-router = APIRouter(prefix="/api/metadata", tags=["metadata"])
+router = APIRouter(prefix="/api", tags=["metadata"])
 
 # --- Manager Dependency --- 
 _metadata_manager_instance: Optional[MetadataManager] = None
@@ -35,7 +37,7 @@ async def get_metadata_manager(
 
 # --- Routes --- 
 
-@router.get("/tables", response_model=List[MetastoreTableInfo])
+@router.get("/metadata/tables", response_model=List[MetastoreTableInfo])
 async def list_metastore_tables_route(
     manager: MetadataManager = Depends(get_metadata_manager)
 ):
@@ -54,7 +56,7 @@ async def list_metastore_tables_route(
         logger.exception(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get("/tables/search", response_model=List[MetastoreTableInfo])
+@router.get("/metadata/tables/search", response_model=List[MetastoreTableInfo])
 async def search_metastore_tables_route(
     query: str, # Query parameter from request URL
     limit: int = 50, # Optional limit, default 50
@@ -71,7 +73,7 @@ async def search_metastore_tables_route(
         logger.exception(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get("/tables/initial", response_model=List[MetastoreTableInfo])
+@router.get("/metadata/tables/initial", response_model=List[MetastoreTableInfo])
 async def get_initial_metastore_tables_route(
     limit: int = 20, # Optional limit, default 20
     manager: MetadataManager = Depends(get_metadata_manager)
@@ -87,7 +89,7 @@ async def get_initial_metastore_tables_route(
         logger.exception(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get("/schemas/{schema_name}") # Response model can be Dict[str, Any] or just Any
+@router.get("/metadata/schemas/{schema_name}") # Response model can be Dict[str, Any] or just Any
 async def get_json_schema_route(
     schema_name: str,
     manager: MetadataManager = Depends(get_metadata_manager)

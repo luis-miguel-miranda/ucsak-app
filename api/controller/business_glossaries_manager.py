@@ -7,7 +7,9 @@ import yaml
 
 from api.models.business_glossary import BusinessGlossary, Domain, GlossaryTerm
 
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 class BusinessGlossariesManager:
     def __init__(self):

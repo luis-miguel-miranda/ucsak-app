@@ -5,7 +5,9 @@ from typing import Awaitable, Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Middleware for logging requests and responses."""

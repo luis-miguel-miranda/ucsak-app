@@ -7,7 +7,9 @@ from api.controller.data_products_manager import DataProductsManager
 from api.controller.notifications_manager import NotificationsManager
 from api.models.data_products import DataProduct
 
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 class SearchManager:
     def __init__(self, product_manager: DataProductsManager):

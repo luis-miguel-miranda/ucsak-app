@@ -17,8 +17,9 @@ from databricks.sdk.errors import PermissionDenied # Import specific error
 from api.common.workspace_client import get_workspace_client_dependency
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from api.common.logging import setup_logging, get_logger
+setup_logging(level=logging.INFO)
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api", tags=["data-products"])
 
@@ -115,11 +116,9 @@ async def upload_data_products(file: UploadFile = File(...), manager: DataProduc
                  errors.append({"error": "Skipping non-dictionary item.", "item": product_data})
                  continue
              try:
-                 # Use Pydantic for validation before sending to manager
                  product_model = DataProduct(**product_data)
-                 product_dict = product_model.dict(by_alias=True)
+                 product_dict = product_model.model_dump(by_alias=True)
 
-                 # Check for conflicts before attempting creation
                  if product_model.id and manager.get_product(product_model.id):
                      errors.append({"id": product_model.id, "error": "Product with this ID already exists. Skipping."})
                      continue
@@ -158,17 +157,17 @@ async def upload_data_products(file: UploadFile = File(...), manager: DataProduc
 
 # --- Generic List/Create Endpoints --- 
 
-@router.get('/data-products', response_model=List[DataProduct])
+@router.get('/data-products', response_model=Any)
 async def get_data_products(manager: DataProductsManager = Depends(get_data_products_manager)):
-    """Get all data products, conforming to the DataProduct schema."""
+    """Get all data products."""
     try:
-        logger.info("Retrieving all data products")
+        logger.info("Retrieving all data products via get_data_products route...")
         products = manager.list_products()
         logger.info(f"Retrieved {len(products)} data products")
-        return products
+        return [p.model_dump() for p in products]
     except Exception as e:
         error_msg = f"Error retrieving data products: {e!s}"
-        logger.error(error_msg)
+        logger.exception(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post('/data-products', response_model=DataProduct, status_code=201)
@@ -176,7 +175,7 @@ async def create_data_product(product_data: DataProduct = Body(...), manager: Da
     """Create a new data product from a JSON payload conforming to the schema."""
     try:
         logger.info(f"Received request to create data product: {product_data.id if product_data.id else '(new ID will be generated)'}")
-        product_dict = product_data.dict(by_alias=True)
+        product_dict = product_data.model_dump(by_alias=True)
 
         if product_data.id and manager.get_product(product_data.id):
              raise HTTPException(status_code=409, detail=f"Data product with ID {product_data.id} already exists.")
@@ -198,26 +197,27 @@ async def create_data_product(product_data: DataProduct = Body(...), manager: Da
         raise
     except Exception as e:
         error_msg = f"Unexpected error creating data product: {e!s}"
-        logger.exception(error_msg) # Log traceback for unexpected errors
+        logger.exception(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
 # --- Dynamic ID Endpoints (MUST BE LAST) --- 
 
-@router.get('/data-products/{product_id}', response_model=DataProduct)
-async def get_data_product(product_id: str, manager: DataProductsManager = Depends(get_data_products_manager)):
-    """Get a specific data product by ID, conforming to the DataProduct schema."""
+@router.get('/data-products/{product_id}', response_model=Any)
+async def get_data_product(
+    product_id: str,
+    manager: DataProductsManager = Depends(get_data_products_manager)
+) -> Any: # Return Any to allow returning a dict
+    """Gets a single data product by its ID."""
     try:
         product = manager.get_product(product_id)
         if not product:
-            logger.warning(f"Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
-        
-        logger.info(f"Retrieved data product with ID: {product_id}")
-        return product
+        return product.model_dump(exclude={'created_at', 'updated_at'}, exclude_none=True, exclude_unset=True)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        error_msg = f"Error retrieving data product {product_id}: {e!s}"
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
+        logger.exception(f"Unexpected error fetching product {product_id}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.put('/data-products/{product_id}', response_model=DataProduct)
 async def update_data_product(product_id: str, product_data: DataProduct = Body(...), manager: DataProductsManager = Depends(get_data_products_manager)):
@@ -228,20 +228,18 @@ async def update_data_product(product_id: str, product_data: DataProduct = Body(
     try:
         logger.info(f"Received request to update data product ID: {product_id}")
         
-        # Convert Pydantic model to dict for the manager
-        product_dict = product_data.dict(by_alias=True)
+        product_dict = product_data.model_dump(by_alias=True)
         
         updated_product = manager.update_product(product_id, product_dict)
         if not updated_product:
             logger.warning(f"Update failed: Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
 
-        # Attempt to save to YAML after successful update
+        YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
         if not manager.save_to_yaml(str(YAML_PATH)):
             logger.warning(f"Could not save updated data products to {YAML_PATH} after updating {product_id}")
 
         logger.info(f"Successfully updated data product with ID: {product_id}")
-        # Return the updated product
         return updated_product
     except ValueError as e: # Catch validation errors from manager
         logger.error(f"Validation error during product update for ID {product_id}: {e!s}")
@@ -263,12 +261,11 @@ async def delete_data_product(product_id: str, manager: DataProductsManager = De
             logger.warning(f"Deletion failed: Data product not found with ID: {product_id}")
             raise HTTPException(status_code=404, detail="Data product not found")
 
-        # Attempt to save to YAML after successful deletion
+        YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
         if not manager.save_to_yaml(str(YAML_PATH)):
             logger.warning(f"Could not save updated data products to {YAML_PATH} after deleting {product_id}")
 
         logger.info(f"Successfully deleted data product with ID: {product_id}")
-        # No content to return for 204 response
         return None 
     except HTTPException:
         raise

@@ -49,6 +49,14 @@ import { debounce } from 'lodash';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import Ajv, { ValidateFunction, ErrorObject } from "ajv"
+import addFormats from "ajv-formats" // Recommended for formats like date-time
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 // --- Helper Function Type Definition --- 
 type CheckApiResponseFn = <T>(
@@ -116,6 +124,56 @@ const portLinksObjectToArray = (obj: Record<string, string> | null | undefined):
 // Array back to Port['links'] object (same as generic arrayToObject)
 const portLinksArrayToObject = (arr: { key: string, value: string }[] | null | undefined): Record<string, string> => {
   return arrayToObject(arr);
+};
+
+// Helper to remove known optional fields if they are empty strings
+const cleanEmptyOptionalStrings = (data: Record<string, any>): Record<string, any> => {
+  const cleanedData = JSON.parse(JSON.stringify(data)); // Deep clone
+
+  const checkAndClean = (obj: any, fields: string[]) => {
+    if (typeof obj !== 'object' || obj === null) return;
+    fields.forEach(field => {
+      if (obj.hasOwnProperty(field) && obj[field] === "") {
+        delete obj[field];
+      }
+    });
+  };
+
+  // Clean top-level optional fields (if any - none currently identified)
+
+  // Clean Info fields
+  if (cleanedData.info) {
+    checkAndClean(cleanedData.info, ['domain', 'description', 'status', 'archetype', 'maturity']);
+  }
+
+  // Clean Port fields (common)
+  const cleanPort = (port: any) => {
+     checkAndClean(port, ['description', 'type', 'location']);
+     // Recursively clean Server if it exists
+     if (port.server) {
+        checkAndClean(port.server, [
+            'project', 'dataset', 'account', 'database', 'schema', // Assuming schema alias
+            'host', 'topic', 'location', 'delimiter', 'format', 
+            'table', 'view', 'share'
+        ]);
+        // Clean empty server object itself?
+        if (Object.keys(port.server).length === 0) {
+           delete port.server;
+        }
+     }
+     // Clean specific OutputPort fields
+      checkAndClean(port, ['status', 'dataContractId']); 
+  };
+
+  (cleanedData.inputPorts || []).forEach(cleanPort);
+  (cleanedData.outputPorts || []).forEach(cleanPort);
+  
+  // Also clean empty objects/arrays for tags/links/custom?
+  if (Array.isArray(cleanedData.tags) && cleanedData.tags.length === 0) delete cleanedData.tags;
+  if (typeof cleanedData.links === 'object' && Object.keys(cleanedData.links).length === 0) delete cleanedData.links;
+  if (typeof cleanedData.custom === 'object' && Object.keys(cleanedData.custom).length === 0) delete cleanedData.custom;
+
+  return cleanedData;
 };
 
 // --- Port Metadata Editor Sub-Component --- 
@@ -280,11 +338,35 @@ export default function DataProducts() {
   const [activeTab, setActiveTab] = useState<'ui' | 'json'>('ui');
   const [jsonString, setJsonString] = useState<string>('');
   const [isJsonValid, setIsJsonValid] = useState<boolean>(true);
-  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [jsonParseError, setJsonParseError] = useState<string | null>(null);
+
+  // State for Schema Validation
+  const [dataProductSchema, setDataProductSchema] = useState<object | null>(null);
+  const [schemaValidator, setSchemaValidator] = useState<ValidateFunction | null>(null);
+  const [schemaValidationErrors, setSchemaValidationErrors] = useState<ErrorObject[] | null>(null);
+  const [validationStatusMessage, setValidationStatusMessage] = useState<string | null>(null);
+  const [isSchemaLoading, setIsSchemaLoading] = useState<boolean>(false);
 
   const { get, post, put, delete: deleteApi } = useApi();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Initialize Ajv instance using useRef, but create/configure in useEffect
+  const ajv = useRef<Ajv | null>(null);
+
+  // Effect to initialize Ajv and add formats only once on mount
+  useEffect(() => {
+    if (!ajv.current) { // Only initialize if not already done
+      console.log("Initializing Ajv and adding formats...");
+      // Configure Ajv to log warnings for unknown keywords instead of throwing errors
+      const ajvInstance = new Ajv({ 
+          allErrors: true,
+          strict: "log" // Use "log" to allow keywords like "example"
+      });
+      addFormats(ajvInstance);
+      ajv.current = ajvInstance;
+    }
+  }, []); // Empty dependency array ensures this runs only once
 
   // React Hook Form setup
   const { 
@@ -442,27 +524,74 @@ export default function DataProducts() {
     };
   }
 
-  const handleOpenDialog = (product?: DataProduct) => {
+  const handleOpenDialog = async (product?: DataProduct) => {
     setFormError(null);
-    const defaultValues = product 
-      ? JSON.parse(JSON.stringify(product))
-      : createDefaultProduct();
+    setJsonParseError(null); // Clear JSON errors too
+    setActiveTab('ui'); // Always start in UI tab
+    setValidationStatusMessage(null); // Clear validation status
+    setSchemaValidationErrors(null); // Clear detailed errors
     
-    // Ensure arrays/objects exist for RHF
-    defaultValues.inputPorts = defaultValues.inputPorts || [];
-    defaultValues.outputPorts = defaultValues.outputPorts || [];
-    defaultValues.tags = defaultValues.tags || [];
-    defaultValues.links = defaultValues.links || {};
-    defaultValues.custom = defaultValues.custom || {};
-    defaultValues.info = defaultValues.info || { title: "", owner: "" };
+    try {
+        let defaultValues: DataProduct;
+        if (product && product.id) {
+            // --- EDIT MODE --- 
+            console.log(`Fetching product ${product.id} for editing...`);
+            // Show loading indicator toast while fetching
+            toast({ description: `Loading data for product ${product.info.title}...` });
+            
+            const response = await get<DataProduct>(`/api/data-products/${product.id}`);
+            const productDataForEdit = checkApiResponse(response, `Fetch product ${product.id}`);
 
-    reset(defaultValues);
+            // The fetched data *excludes* created_at/updated_at, which is correct for the form
+            defaultValues = productDataForEdit;
+            // Set selectedProduct *before* resetting, as reset might trigger effects
+            setSelectedProduct(product); // Keep original full row data if needed (e.g., for comparison)
+            console.log("Received data for edit form:", defaultValues);
 
-    // Populate state arrays from (potentially reset) form values
-    setLinksArray(linksObjectToArray(defaultValues.links));
-    setCustomArray(objectToArray(defaultValues.custom));
+        } else {
+            // --- CREATE MODE --- 
+            defaultValues = createDefaultProduct();
+            setSelectedProduct(null);
+        }
+        
+        // Ensure arrays/objects exist for RHF (common for both modes)
+        defaultValues.inputPorts = defaultValues.inputPorts || [];
+        defaultValues.outputPorts = defaultValues.outputPorts || [];
+        defaultValues.tags = defaultValues.tags || [];
+        defaultValues.links = defaultValues.links || {};
+        defaultValues.custom = defaultValues.custom || {};
+        defaultValues.info = defaultValues.info || { title: "", owner: "" };
 
-    setIsDialogOpen(true);
+        // Reset the form with the fetched or default data
+        reset(defaultValues);
+
+        // Populate state arrays for custom editors (Links, Custom) *after* reset
+        setLinksArray(linksObjectToArray(defaultValues.links));
+        setCustomArray(objectToArray(defaultValues.custom));
+
+        // Initialize JSON string based on the fetched/default data for the JSON editor tab
+        const cleanedDataForJson = cleanEmptyOptionalStrings(defaultValues);
+        const formattedJson = JSON.stringify(cleanedDataForJson, null, 2);
+        setJsonString(formattedJson);
+        setIsJsonValid(true); // Assume valid initially
+        // Optionally run validation immediately if schema is ready and we are editing
+        if (schemaValidator && product) {
+            validateProductObject(cleanedDataForJson);
+        }
+
+        setIsDialogOpen(true);
+        
+    } catch (err: any) {
+        console.error('Error preparing dialog:', err);
+        setError(`Failed to load product data for editing: ${err.message}`);
+        // Show error toast
+        toast({ 
+            title: "Error Loading Data",
+            description: `Could not fetch details for product. ${err.message}`,
+            variant: "destructive"
+        });
+        setIsDialogOpen(false); // Don't open dialog if fetch failed
+    }
   };
 
   const handleCloseDialog = () => {
@@ -496,36 +625,38 @@ export default function DataProducts() {
     console.log(`Submitting form. Mode: ${isUpdating ? 'Update' : 'Create'}. ID: ${productId || '(new)'}`);
 
     // Prepare payload carefully
-    const payload = { ...data }; 
+    const payloadRaw = { ...data }; 
     const now = new Date().toISOString();
-    payload.updated_at = now;
+    payloadRaw.updated_at = now;
 
     // Convert state arrays back to objects before submitting
-    payload.links = linksArrayToObject(linksArray);
-    payload.custom = arrayToObject(customArray);
+    payloadRaw.links = linksArrayToObject(linksArray);
+    payloadRaw.custom = arrayToObject(customArray);
+
+    // Clean the final payload before sending to API
+    const payload = cleanEmptyOptionalStrings(payloadRaw);
 
     try {
         let response;
         if (isUpdating && productId) {
             // --- UPDATE --- 
-            payload.id = productId; // Ensure ID is correct
+            payload.id = productId; 
             // Remove created_at if it exists, backend should preserve original
             if ('created_at' in payload) {
                 delete payload.created_at;
             }
-            console.log("Submitting update payload:", payload);
+            console.log("Submitting cleaned update payload:", JSON.stringify(payload, null, 2));
             response = await put<DataProduct>(`/api/data-products/${productId}`, payload);
         } else {
             // --- CREATE --- 
             payload.created_at = now;
-            // Remove empty ID if backend generates it
+            // Ensure ID exists for creation - generate UUID if missing
             if (!payload.id) {
-                 // Check before deleting to satisfy linter
-                 if ('id' in payload) { 
-                     delete payload.id; 
-                 }
+                 console.log("Generating new UUID for product creation.");
+                 // Simple frontend UUID generation (consider a library like `uuid` for robustness if needed)
+                 payload.id = crypto.randomUUID(); 
             }
-            console.log("Submitting create payload:", payload);
+            console.log("Submitting cleaned create payload:", JSON.stringify(payload, null, 2)); 
             response = await post<DataProduct>('/api/data-products', payload);
         }
 
@@ -592,96 +723,153 @@ export default function DataProducts() {
     return 'default'; // Default for draft, proposed, etc.
   };
 
+  // --- Fetch Schema and Compile --- 
+  useEffect(() => {
+    const schemaName = "dataproduct_schema_v0_0_1";
+    const fetchAndCompileSchema = async () => {
+      if (dataProductSchema || !ajv.current) return;
+      setIsSchemaLoading(true);
+      setValidationStatusMessage("Loading schema...");
+      setSchemaValidationErrors(null);
+      try {
+        const response = await get<object>(`/api/metadata/schemas/${schemaName}`);
+        const schema = checkApiResponse(response, 'Schema Fetch');
+        setDataProductSchema(schema);
+        const validate = ajv.current.compile(schema);
+        setSchemaValidator(() => validate);
+        setValidationStatusMessage("Schema loaded.");
+        console.log("Data Product schema loaded and compiled successfully.");
+      } catch (err: any) {
+        console.error("Error fetching or compiling schema:", err);
+        setValidationStatusMessage(`Error loading schema: ${err.message}`);
+      } finally {
+        setIsSchemaLoading(false);
+      }
+    };
+    fetchAndCompileSchema();
+  }, [get, dataProductSchema]);
+
   // --- Tab Change and JSON Handling Logic ---
 
+  // Function to validate a data product object against the schema
+  const validateProductObject = (data: any) => {
+    console.log("[validateProductObject] Starting validation...");
+    if (!schemaValidator) {
+      setValidationStatusMessage("Schema not loaded yet.");
+      setIsJsonValid(false);
+      setSchemaValidationErrors(null);
+      return false;
+    }
+    const cleanedData = cleanEmptyOptionalStrings(data);
+    console.log("[validateProductObject] Validating cleaned object:", cleanedData);
+    const isValid = schemaValidator(cleanedData);
+    if (isValid) {
+       setValidationStatusMessage("Valid");
+       setIsJsonValid(true);
+       setSchemaValidationErrors(null);
+       console.log("[validateProductObject] Result: VALID");
+    } else {
+       setIsJsonValid(false);
+       setSchemaValidationErrors(schemaValidator.errors ?? []);
+       const errorCount = schemaValidator.errors?.length ?? 0;
+       setValidationStatusMessage(`${errorCount} schema validation error(s)`); 
+       console.log(`[validateProductObject] Result: INVALID (${errorCount} errors)`);
+    }
+    return isValid;
+  };
+
   const handleJsonChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log("[handleJsonChange] Fired");
     const currentJson = event.target.value;
     setJsonString(currentJson);
-    // Basic validation on change
+    setValidationStatusMessage(null); 
+    setSchemaValidationErrors(null); 
+
     try {
-      JSON.parse(currentJson);
-      setIsJsonValid(true);
-      setJsonError(null);
+      const parsedData = JSON.parse(currentJson);
+      console.log("[handleJsonChange] JSON parsed successfully.");
+      setIsJsonValid(true); 
+      setJsonParseError(null);
+      validateProductObject(parsedData);
     } catch (error: any) {      
+      console.log("[handleJsonChange] JSON parsing failed.");
       setIsJsonValid(false);
-      setJsonError(error.message);
+      setJsonParseError(error.message);
+      setValidationStatusMessage("Invalid JSON syntax");
+      setSchemaValidationErrors(null);
     }
   };
 
   const handleTabChange = (newTab: 'ui' | 'json') => {
-    if (newTab === activeTab) return; // No change
+    if (newTab === activeTab) return;
 
-    setJsonError(null); // Clear errors on tab switch attempt
+    setJsonParseError(null);
 
     if (activeTab === 'ui' && newTab === 'json') {
-      // --- Switching UI -> JSON --- 
-      // Use handleSubmit to ensure all state updates (including nested ones) are processed
       handleSubmit((formDataFromRHF) => {
          try {
-           // Now formDataFromRHF should reflect the latest state, including updates from PortMetadataEditor
-
-           // Get the latest state for main links/custom from their dedicated state arrays
            const currentMainLinksObject = linksArrayToObject(linksArray); 
            const currentMainCustomObject = arrayToObject(customArray);
 
-           // Combine the processed RHF data with the explicitly managed state arrays
-           const dataForJson = {
+           const dataForJsonRaw = {
              ...formDataFromRHF, 
              links: currentMainLinksObject, 
              custom: currentMainCustomObject,
            };
 
-           const formattedJson = JSON.stringify(dataForJson, null, 2);
+           const cleanedDataForJson = cleanEmptyOptionalStrings(dataForJsonRaw);
+
+           const formattedJson = JSON.stringify(cleanedDataForJson, null, 2);
            setJsonString(formattedJson);
-           setIsJsonValid(true); // Should be valid coming from UI
-           setActiveTab('json'); // Switch tab only after successful processing
+           setIsJsonValid(true);
+           validateProductObject(cleanedDataForJson); 
+           setActiveTab('json');
          } catch (err) {
            console.error("Error preparing JSON from UI state:", err);
-           setJsonError("Failed to serialize UI state to JSON.");
-           // Prevent switching if serialization fails
+           setJsonParseError("Failed to serialize UI state to JSON.");
          }
-      })(); // Immediately invoke the function returned by handleSubmit
+      })(); 
 
     } else if (activeTab === 'json' && newTab === 'ui') {
-       // --- Switching JSON -> UI --- 
        try {
          const parsedData = JSON.parse(jsonString);
-         // TODO: Add more specific validation against DataProduct schema if needed
+         if (!validateProductObject(parsedData)) {
+             console.error("Cannot switch to UI tab: JSON fails schema validation.");
+             // Show toast notification
+             toast({ 
+                 title: "Invalid JSON", 
+                 description: "Cannot switch to UI editor. Please fix schema validation errors first.",
+                 variant: "destructive"
+             });
+             return; 
+         }
          setIsJsonValid(true);
-         // Update RHF state
          reset(parsedData);
-         // Update state arrays
          setLinksArray(linksObjectToArray(parsedData.links));
          setCustomArray(objectToArray(parsedData.custom));
-         // PortMetadataEditor should re-initialize via its useEffect
          setActiveTab('ui');
        } catch (error: any) {
           console.error("Error parsing JSON:", error);
           setIsJsonValid(false);
-          setJsonError(error.message);
-          // IMPORTANT: Prevent switching to UI tab if JSON is invalid
-          // User must fix JSON first.
+          setJsonParseError(error.message);
        }
     }
   };
   
-  // Handler for submitting from the JSON tab
   const submitFromJson = async () => {
-    setFormError(null); // Clear UI form errors
-    setJsonError(null); // Clear JSON errors
+    setFormError(null);
+    setJsonParseError(null);
 
     try {
       const parsedData = JSON.parse(jsonString);
       setIsJsonValid(true); 
       
-      // Call the shared submit logic
       await onFormSubmit(parsedData); 
 
     } catch (error: any) {
       console.error("Error submitting JSON:", error);
       setIsJsonValid(false);
-      setJsonError(`Invalid JSON: ${error.message}`);
-      // Display error near JSON editor
+      setJsonParseError(`Invalid JSON: ${error.message}`);
     }
   };
 
@@ -766,15 +954,36 @@ export default function DataProducts() {
       enableSorting: false,
     },
     {
+      accessorKey: "created_at",
+      header: ({ column }: { column: Column<DataProduct, unknown> }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Created <ChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const date = row.original.created_at ? new Date(row.original.created_at) : null;
+        return date ? (
+          <div title={date.toLocaleString()}>{date.toLocaleDateString()}</div>
+        ) : (
+          'N/A'
+        );
+      },
+    },
+    {
       accessorKey: "updated_at",
       header: ({ column }: { column: Column<DataProduct, unknown> }) => (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
           Updated <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div>{new Date(row.original.updated_at).toLocaleString()}</div>
-      ),
+      cell: ({ row }) => {
+        const date = row.original.updated_at ? new Date(row.original.updated_at) : null;
+        return date ? (
+          <div title={date.toLocaleString()}>{date.toLocaleDateString()}</div>
+        ) : (
+          'N/A'
+        );
+      },
     },
     {
       id: "actions",
@@ -1525,21 +1734,50 @@ export default function DataProducts() {
                           )}
                           placeholder='Enter valid JSON for the Data Product...'
                        />
-                       {jsonError && (
-                          <p className="text-sm text-destructive">Invalid JSON: {jsonError}</p>
+                       {/* Display Parse Error OR Validation Status Summary */}
+                       {jsonParseError ? (
+                          <p className="text-sm text-destructive">Syntax Error: {jsonParseError}</p>
+                       ) : validationStatusMessage && (
+                          <p className={cn(
+                             "text-sm mt-1", 
+                             isJsonValid ? "text-green-600" : "text-destructive"
+                          )}>
+                            Validation Status: {validationStatusMessage}
+                          </p>
+                       )}
+                       {/* Collapsible Area for Detailed Errors */}
+                       {!isJsonValid && schemaValidationErrors && schemaValidationErrors.length > 0 && (
+                           <Accordion type="single" collapsible className="w-full mt-2">
+                             <AccordionItem value="item-1">
+                               <AccordionTrigger className="text-sm text-destructive hover:no-underline">
+                                   Show {schemaValidationErrors.length} validation details
+                               </AccordionTrigger>
+                               <AccordionContent>
+                                 {/* Wrap preformatted errors in a scrollable area */}
+                                 <ScrollArea className="max-h-[200px] w-full rounded-md border overflow-y-auto"> 
+                                    {/* Add an inner div for padding and direct content wrapping */}
+                                    <div className="p-3"> 
+                                        <pre className="text-xs bg-muted text-destructive whitespace-pre-wrap break-all">
+                                            {JSON.stringify(schemaValidationErrors, null, 2)}
+                                        </pre>
+                                    </div>
+                                 </ScrollArea>
+                               </AccordionContent>
+                             </AccordionItem>
+                           </Accordion>
                        )}
                    </div>
-                   {/* Footer for JSON Tab - Can use the same logic */} 
+                    {/* Footer for JSON Tab */}
                     <DialogFooter className="mt-4">
-                      <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={isSubmitting}>Cancel</Button>
-                      <Button 
-                         type="button" 
-                         onClick={submitFromJson} /* Separate submit handler for JSON */ 
-                         disabled={isSubmitting || !isJsonValid}
-                       >
-                         {isSubmitting ? "Saving..." : (selectedProduct ? 'Update Product' : 'Create Product')}
-                      </Button>
-                    </DialogFooter>
+                     <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={isSubmitting}>Cancel</Button>
+                     <Button 
+                        type="button" 
+                        onClick={submitFromJson}
+                        disabled={isSubmitting || !isJsonValid}
+                      >
+                        {isSubmitting ? "Saving..." : (selectedProduct ? 'Update Product' : 'Create Product')}
+                   </Button>
+                 </DialogFooter>
                 </TabsContent>
            </Tabs>
         </DialogContent>
