@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, AlertCircle, Database, ChevronDown, Upload, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, Database, ChevronDown, Upload, X, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -325,7 +325,6 @@ export default function DataProducts() {
   const [statuses, setStatuses] = useState<DataProductStatus[]>([]);
   const [archetypes, setArchetypes] = useState<DataProductArchetype[]>([]);
   const [owners, setOwners] = useState<DataProductOwner[]>([]);
-  const [metastoreTables, setMetastoreTables] = useState<MetastoreTableInfo[]>([]);
   const [tableSearchQuery, setTableSearchQuery] = useState("");
   const [tableSearchResults, setTableSearchResults] = useState<MetastoreTableInfo[]>([]);
   const [isSearchingTables, setIsSearchingTables] = useState(false);
@@ -450,15 +449,12 @@ export default function DataProducts() {
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
-      // Show loading toast
-      toast({ description: "Loading data products and metadata..." }); 
       try {
-        const [productsResp, statusesResp, archetypesResp, ownersResp, tablesResp] = await Promise.all([
+        const [productsResp, statusesResp, archetypesResp, ownersResp] = await Promise.all([
           get<DataProduct[]>('/api/data-products'),
           get<DataProductStatus[]>('/api/data-products/statuses'),
           get<DataProductArchetype[]>('/api/data-products/archetypes'),
           get<DataProductOwner[]>('/api/data-products/owners'),
-          get<MetastoreTableInfo[]>('/api/metadata/tables')
         ]);
 
         // Use the helper to check responses and extract data
@@ -466,14 +462,12 @@ export default function DataProducts() {
         const statusesData = checkApiResponse(statusesResp, 'Statuses');
         const archetypesData = checkApiResponse(archetypesResp, 'Archetypes');
         const ownersData = checkApiResponse(ownersResp, 'Owners');
-        const tablesData = checkApiResponse(tablesResp, 'Metastore tables');
         
         // Set state with validated data
         setProducts(Array.isArray(productsData) ? productsData : []);
         setStatuses(Array.isArray(statusesData) ? statusesData : []);
         setArchetypes(Array.isArray(archetypesData) ? archetypesData : []);
         setOwners(Array.isArray(ownersData) ? ownersData : []);
-        setMetastoreTables(Array.isArray(tablesData) ? tablesData : []);
 
       } catch (err: any) {
         // Catch errors thrown by checkApiResponse or Promise.all
@@ -483,13 +477,12 @@ export default function DataProducts() {
         setStatuses([]);
         setArchetypes([]);
         setOwners([]);
-        setMetastoreTables([]);
       } finally {
         setLoading(false);
       }
     };
     loadInitialData();
-  }, [get, toast]);
+  }, [get]);
 
   // Function to refetch products only (e.g., after create/update/delete)
   const fetchProducts = async () => {
@@ -1077,9 +1070,11 @@ export default function DataProducts() {
         </Alert>
       )}
 
+      {/* Conditional Rendering for Loading State */} 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+           {/* Use Loader2 for consistency */}
+          <Loader2 className="h-12 w-12 animate-spin text-primary" /> 
         </div>
       ) : (
         <div className="space-y-4">
