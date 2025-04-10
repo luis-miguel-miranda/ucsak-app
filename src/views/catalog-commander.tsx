@@ -332,7 +332,7 @@ const CatalogCommander: React.FC = () => {
       </div>
 
       <div className="flex gap-6 h-[calc(100vh-12rem)]">
-        <Card className="flex-1 flex flex-col h-full">
+        <Card className="flex-1 flex flex-col h-full min-w-0">
           <CardHeader className="flex-none">
             <CardTitle>Source</CardTitle>
           </CardHeader>
@@ -379,7 +379,7 @@ const CatalogCommander: React.FC = () => {
           </Button>
         </div>
 
-        <Card className="flex-1 flex flex-col h-full">
+        <Card className="flex-1 flex flex-col h-full min-w-0">
           <CardHeader className="flex-none">
             <CardTitle>Target</CardTitle>
           </CardHeader>
