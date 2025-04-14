@@ -7,6 +7,7 @@ import yaml
 from fastapi import APIRouter, HTTPException, UploadFile, File, Body, Depends
 from pydantic import ValidationError
 import uuid
+from sqlalchemy.orm import Session
 
 from api.controller.data_products_manager import DataProductsManager
 from api.models.data_products import DataProduct # Use the updated model
@@ -16,6 +17,9 @@ from databricks.sdk.errors import PermissionDenied # Import specific error
 # Import the dependency function
 from api.common.workspace_client import get_workspace_client_dependency
 
+# Import the DB session dependency
+from api.common.database import get_db
+
 # Configure logging
 from api.common.logging import setup_logging, get_logger
 setup_logging(level=logging.INFO)
@@ -23,34 +27,14 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api", tags=["data-products"])
 
-# --- Manager Dependency --- 
-_data_products_manager_instance: Optional[DataProductsManager] = None
-async def get_data_products_manager(
-    ws_client: WorkspaceClient = Depends(get_workspace_client_dependency(timeout=60))
+# --- Helper to get manager instance with dependencies ---
+def get_data_products_manager(
+    db: Session = Depends(get_db),
+    ws_client: WorkspaceClient = Depends(get_workspace_client_dependency()) # Add ws_client dep
 ) -> DataProductsManager:
-    """Dependency to get or create the DataProductsManager instance with injected client."""
-    global _data_products_manager_instance
-    if _data_products_manager_instance is None:
-        logger.info("Initializing DataProductsManager instance.")
-        manager = DataProductsManager(ws_client=ws_client)
-        
-        # Load initial data from YAML if it exists
-        YAML_PATH = Path(__file__).parent.parent / 'data' / 'data_products.yaml'
-        if YAML_PATH.exists():
-            logger.info(f"Attempting to load initial data products from {YAML_PATH} into manager.")
-            manager.load_from_yaml(str(YAML_PATH))
-        else:
-            logger.warning(f"Data products YAML file not found at {YAML_PATH}. Manager starts empty.")
-            
-        _data_products_manager_instance = manager
-        
-    # Inject ws_client into existing instance if it wasn't present (e.g., during testing setup)
-    # Though ideally, the instance is always created with the client via this dependency.
-    if not _data_products_manager_instance._ws_client and ws_client:
-        logger.warning("Injecting WorkspaceClient into existing DataProductsManager instance.")
-        _data_products_manager_instance._ws_client = ws_client
-        
-    return _data_products_manager_instance
+    """Injects dependencies and returns a DataProductsManager instance."""
+    # Pass both db and ws_client to the manager
+    return DataProductsManager(db=db, ws_client=ws_client) 
 
 # --- ORDERING CRITICAL: Define ALL static paths before ANY dynamic paths --- 
 

@@ -304,7 +304,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="container py-6">
+    <div className="py-6">
       <div className="max-w-2xl mx-auto text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <UnityCatalogLogo />

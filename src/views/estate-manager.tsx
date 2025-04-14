@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, Globe } from 'lucide-react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -333,9 +333,11 @@ export default function EstateManager() {
   });
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="py-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <Globe className="w-8 h-8" /> Estate Manager
+      </h1>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Estate Manager</h1>
         <Button onClick={() => openDialog()}>Add Estate</Button>
       </div>
 

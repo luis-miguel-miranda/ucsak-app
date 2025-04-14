@@ -4,10 +4,28 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, TypeVar
 
 from .logging import get_logger
+from sqlalchemy import create_engine, Index # Need Index for type checking
+from sqlalchemy.orm import sessionmaker, Session as SQLAlchemySession
+from sqlalchemy.ext.declarative import declarative_base
+import os
+from sqlalchemy.schema import CreateTable, CreateIndex # Import DDL elements
+
+from .config import get_settings, Settings
+from .logging import get_logger
+# Import SDK components
+from api.common.workspace_client import get_workspace_client
+from databricks.sdk.errors import NotFound, DatabricksError 
 
 logger = get_logger(__name__)
 
 T = TypeVar('T')
+
+# Define the base class for SQLAlchemy models
+Base = declarative_base()
+
+# Singleton engine instance
+_engine = None
+_SessionLocal = None
 
 @dataclass
 class InMemorySession:
@@ -169,20 +187,191 @@ class DatabaseManager:
 # Global database manager instance
 db_manager: Optional[DatabaseManager] = None
 
-def init_db() -> None:
-    """Initialize the global database manager."""
-    global db_manager
-    db_manager = DatabaseManager()
-
-def get_db() -> InMemorySession:
-    """Get a database session from the global manager.
+def get_db_url(settings: Settings) -> str:
+    """Constructs the Databricks SQLAlchemy URL."""
+    token = os.getenv("DATABRICKS_TOKEN") # Prefer token from env for security
+    if not token:
+        logger.warning("DATABRICKS_TOKEN environment variable not set. Relying on SDK default credential provider.")
+        # databricks-sqlalchemy uses default creds if token is None
     
-    Returns:
-        In-memory session
+    if not settings.DATABRICKS_HOST or not settings.DATABRICKS_HTTP_PATH:
+         raise ValueError("DATABRICKS_HOST and DATABRICKS_HTTP_PATH must be configured in settings.")
+
+    # Ensure host doesn't have https:// prefix
+    host = settings.DATABRICKS_HOST.replace("https://", "")
+
+    # Construct the URL for databricks-sqlalchemy dialect
+    # See: https://github.com/databricks/databricks-sqlalchemy
+    # Example: databricks://token:{token}@{host}?http_path={http_path}&catalog={catalog}&schema={schema}
+    url = (
+        f"databricks://token:{token}@{host}"
+        f"?http_path={settings.DATABRICKS_HTTP_PATH}"
+        f"&catalog={settings.DATABRICKS_CATALOG}"
+        f"&schema={settings.DATABRICKS_SCHEMA}"
+    )
+    logger.debug(f"Constructed Databricks SQLAlchemy URL (token redacted)")
+    return url
+
+def ensure_catalog_schema_exists(settings: Settings):
+    """Checks if the configured catalog and schema exist, creates them if not."""
+    logger.info("Ensuring required catalog and schema exist...")
+    try:
+        # Get a workspace client instance (use the underlying client to bypass caching)
+        caching_ws_client = get_workspace_client(settings)
+        ws_client = caching_ws_client._client # Access raw client
         
-    Raises:
-        RuntimeError: If database manager is not initialized
-    """
-    if not db_manager:
-        raise RuntimeError("Database manager not initialized")
-    return db_manager.get_session()
+        catalog_name = settings.DATABRICKS_CATALOG
+        schema_name = settings.DATABRICKS_SCHEMA
+        full_schema_name = f"{catalog_name}.{schema_name}"
+
+        # 1. Check/Create Catalog
+        try:
+            logger.debug(f"Checking existence of catalog: {catalog_name}")
+            ws_client.catalogs.get(catalog_name)
+            logger.info(f"Catalog '{catalog_name}' already exists.")
+        except NotFound:
+            logger.warning(f"Catalog '{catalog_name}' not found. Attempting to create...")
+            try:
+                ws_client.catalogs.create(name=catalog_name)
+                logger.info(f"Successfully created catalog: {catalog_name}")
+            except DatabricksError as e:
+                logger.critical(f"Failed to create catalog '{catalog_name}': {e}. Check permissions.", exc_info=True)
+                raise ConnectionError(f"Failed to create required catalog '{catalog_name}': {e}") from e
+        except DatabricksError as e:
+            logger.error(f"Error checking catalog '{catalog_name}': {e}", exc_info=True)
+            raise ConnectionError(f"Failed to check catalog '{catalog_name}': {e}") from e
+
+        # 2. Check/Create Schema
+        try:
+            logger.debug(f"Checking existence of schema: {full_schema_name}")
+            ws_client.schemas.get(full_schema_name)
+            logger.info(f"Schema '{full_schema_name}' already exists.")
+        except NotFound:
+            logger.warning(f"Schema '{full_schema_name}' not found. Attempting to create...")
+            try:
+                ws_client.schemas.create(catalog_name=catalog_name, name=schema_name)
+                logger.info(f"Successfully created schema: {full_schema_name}")
+            except DatabricksError as e:
+                logger.critical(f"Failed to create schema '{full_schema_name}': {e}. Check permissions.", exc_info=True)
+                raise ConnectionError(f"Failed to create required schema '{full_schema_name}': {e}") from e
+        except DatabricksError as e:
+            logger.error(f"Error checking schema '{full_schema_name}': {e}", exc_info=True)
+            raise ConnectionError(f"Failed to check schema '{full_schema_name}': {e}") from e
+            
+    except Exception as e:
+        logger.critical(f"An unexpected error occurred during catalog/schema check/creation: {e}", exc_info=True)
+        raise ConnectionError(f"Failed during catalog/schema setup: {e}") from e
+
+def init_db(run_create_all: bool = True) -> None:
+    """Initializes the database engine and sessionmaker."""
+    global _engine, _SessionLocal
+    if _engine:
+        logger.warning("Database engine already initialized.")
+        return
+
+    settings = get_settings()
+    
+    if not all([settings.DATABRICKS_HOST, settings.DATABRICKS_HTTP_PATH, settings.DATABRICKS_CATALOG, settings.DATABRICKS_SCHEMA]):
+         logger.error("Cannot initialize database: Missing required Databricks settings.")
+         raise ConnectionError("Missing required Databricks connection settings.")
+
+    try:
+        # Ensure Catalog and Schema exist
+        ensure_catalog_schema_exists(settings)
+        
+        # Create SQLAlchemy engine
+        db_url = get_db_url(settings)
+        _engine = create_engine(db_url, echo=settings.DEBUG)
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+        logger.info(f"Database engine initialized for: {settings.DATABRICKS_HOST}")
+
+        if run_create_all:
+            # Import all models here so Base knows about them
+            from api.db_models import data_products 
+            logger.info("Checking/creating database tables (conditional indexes)...")
+            
+            # --- Conditionally Modify Metadata BEFORE DDL Generation ---
+            is_databricks = _engine.dialect.name == 'databricks'
+            if is_databricks:
+                logger.info("Databricks dialect detected. Removing Index objects from metadata before DDL generation.")
+                # Iterate through tables and remove associated Index objects
+                # This prevents create_all from attempting to create them
+                indexes_to_remove = []
+                for table in Base.metadata.tables.values():
+                    # Find indexes associated directly with this table via Column(index=True)
+                    # We check the column's index attribute, not just table.indexes 
+                    # as table.indexes might include functional indexes etc.
+                    for col in table.columns:
+                         if col.index:
+                             # Find the actual Index object SQLAlchemy created for this column
+                             # This is a bit involved as Index name isn't guaranteed
+                             # Let's try removing ALL indexes associated with the table for simplicity
+                             # as UC doesn't support any CREATE INDEX.
+                             logger.debug(f"Preparing to remove indexes associated with table: {table.name}")
+                             # Collect indexes associated with the table to avoid modifying while iterating
+                             for idx in list(table.indexes): # Iterate over a copy
+                                  if idx not in indexes_to_remove:
+                                       indexes_to_remove.append(idx)
+                                       logger.debug(f"Marked index {idx.name} for removal from metadata.")
+                
+                # Actually remove them from the metadata's central index collection if necessary
+                # In newer SQLAlchemy, removing from table.indexes might be sufficient
+                for idx in indexes_to_remove:
+                     try:
+                         # Attempt removal from the table's collection first
+                         if hasattr(idx, 'table') and idx in idx.table.indexes:
+                              idx.table.indexes.remove(idx)
+                         # Attempt removal from metadata collection (less common needed)
+                         # if idx in Base.metadata.indexes:
+                         #     Base.metadata.indexes.remove(idx)
+                         logger.info(f"Successfully removed index {idx.name} from metadata for DDL generation.")
+                     except Exception as remove_err:
+                         logger.warning(f"Could not fully remove index {idx.name} from metadata: {remove_err}")
+            # --- End Conditional Metadata Modification --- 
+
+            # Now, call create_all. It will operate on the potentially modified metadata.
+            logger.info("Executing Base.metadata.create_all()...")
+            Base.metadata.create_all(bind=_engine)
+            logger.info("Database tables checked/created by create_all.")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}", exc_info=True)
+        _engine = None
+        _SessionLocal = None
+        # Simplify error propagation
+        raise ConnectionError(f"Failed to initialize database connection: {e}") from e
+
+def get_db() -> SQLAlchemySession:
+    """FastAPI dependency to get a DB session."""
+    if not _SessionLocal:
+        logger.error("Database not initialized. Call init_db() first.")
+        # Raise a more specific error for API consumers if needed
+        raise RuntimeError("Database session factory not initialized.")
+
+    db = _SessionLocal()
+    try:
+        yield db
+        db.commit() # Commit transaction if no exceptions occurred
+        logger.debug("Database transaction committed.")
+    except Exception as e:
+        logger.error(f"Database transaction failed, rolling back: {e}", exc_info=False) # Avoid logging full trace unless needed
+        db.rollback()
+        raise # Re-raise the exception to be handled by FastAPI error handlers
+    finally:
+        db.close()
+        logger.debug("Database session closed.")
+
+def get_engine():
+    """Returns the SQLAlchemy engine instance."""
+    if not _engine:
+         raise RuntimeError("Database engine not initialized.")
+    return _engine
+
+def get_session_factory():
+    """Returns the initialized SQLAlchemy session factory (_SessionLocal)."""
+    if not _SessionLocal:
+        # This case should ideally not be hit if init_db was called successfully
+        # But added as a safeguard.
+        logger.error("get_session_factory called before database initialization or after failure.")
+        raise RuntimeError("Database session factory not available.")
+    return _SessionLocal

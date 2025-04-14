@@ -1,4 +1,5 @@
 import Navigation from './navigation';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
+        <Breadcrumbs />
         {children}
       </main>
     </div>

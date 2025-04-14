@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useApi } from '@/hooks/use-api';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 interface AppSettings {
   id: string;
@@ -74,9 +75,22 @@ export default function Settings() {
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!settings) return;
+    const { name, value } = e.target;
+    setSettings({ ...settings, [name]: value });
+  };
+
+  const handleSwitchChange = (checked: boolean) => {
+    if (!settings) return;
+    setSettings({ ...settings, enableBackgroundJobs: checked });
+  };
+
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+    <div className="py-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <SettingsIcon className="w-8 h-8" /> Settings
+      </h1>
       
       <Tabs defaultValue="general" className="space-y-4">
         <TabsList>
@@ -97,7 +111,7 @@ export default function Settings() {
                 <Switch
                   id="background-jobs"
                   checked={settings.enableBackgroundJobs}
-                  onCheckedChange={(checked) => setSettings({ ...settings, enableBackgroundJobs: checked })}
+                  onCheckedChange={handleSwitchChange}
                 />
                 <Label htmlFor="background-jobs">Enable Background Jobs</Label>
               </div>
@@ -116,41 +130,51 @@ export default function Settings() {
                 <Label htmlFor="host">Host</Label>
                 <Input
                   id="host"
+                  name="databricksHost"
                   value={settings.databricksHost}
-                  onChange={(e) => setSettings({ ...settings, databricksHost: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="https://<your-workspace>.cloud.databricks.com"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="token">Token</Label>
                 <Input
                   id="token"
+                  name="databricksToken"
                   type="password"
                   value={settings.databricksToken}
-                  onChange={(e) => setSettings({ ...settings, databricksToken: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="dapi..."
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="warehouse">Warehouse ID</Label>
                 <Input
                   id="warehouse"
+                  name="databricksWarehouseId"
                   value={settings.databricksWarehouseId}
-                  onChange={(e) => setSettings({ ...settings, databricksWarehouseId: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="1234abcd5678efgh"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="catalog">Catalog</Label>
                 <Input
                   id="catalog"
+                  name="databricksCatalog"
                   value={settings.databricksCatalog}
-                  onChange={(e) => setSettings({ ...settings, databricksCatalog: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="main"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="schema">Schema</Label>
                 <Input
                   id="schema"
+                  name="databricksSchema"
                   value={settings.databricksSchema}
-                  onChange={(e) => setSettings({ ...settings, databricksSchema: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="uc_swiss_knife"
                 />
               </div>
             </CardContent>
@@ -168,25 +192,31 @@ export default function Settings() {
                 <Label htmlFor="repo">Repository URL</Label>
                 <Input
                   id="repo"
+                  name="gitRepoUrl"
                   value={settings.gitRepoUrl}
-                  onChange={(e) => setSettings({ ...settings, gitRepoUrl: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="https://github.com/your-org/your-repo.git"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="branch">Branch</Label>
                 <Input
                   id="branch"
+                  name="gitBranch"
                   value={settings.gitBranch}
-                  onChange={(e) => setSettings({ ...settings, gitBranch: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="main"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="git-token">Token</Label>
                 <Input
                   id="git-token"
+                  name="gitToken"
                   type="password"
                   value={settings.gitToken}
-                  onChange={(e) => setSettings({ ...settings, gitToken: e.target.value })}
+                  onChange={handleChange}
+                  placeholder="ghp_... or similar"
                 />
               </div>
             </CardContent>

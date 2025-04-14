@@ -7,6 +7,7 @@ import { Toaster } from './components/ui/toaster';
 // Import views
 import Home from './views/home';
 import DataProducts from './views/data-products';
+import DataProductDetails from './views/data-product-details';
 import DataContracts from './views/data-contracts';
 import BusinessGlossary from './views/business-glossary';
 import MasterDataManagement from './views/master-data-management';
@@ -32,6 +33,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/data-products" element={<DataProducts />} />
+              <Route path="/data-products/:productId" element={<DataProductDetails />} />
               <Route path="/data-contracts" element={<DataContracts />} />
               <Route path="/business-glossary" element={<BusinessGlossary />} />
               <Route path="/master-data" element={<MasterDataManagement />} />

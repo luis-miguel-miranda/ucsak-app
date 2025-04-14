@@ -262,8 +262,8 @@ export default function MasterDataManagement() {
   };
 
   return (
-    <div className="container py-6">
-      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
+    <div className="py-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
         <GitCompare className="w-8 h-8" />
         Master Data Management
       </h1>

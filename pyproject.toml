@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.21.0"]
+requires = ["hatchling>=1.21.0", "hatch-requirements-txt~=0.4.1"]
 build-backend = "hatchling.build"
 
 [project]
@@ -9,28 +9,11 @@ description = "Unified Catalog Application"
 authors = [
     { name="larsgeorge", email="lars.george@gmail.com" }
 ]
-requires-python = ">=3.8,<3.13"
-dependencies = [
-    "fastapi>=0.109.2",
-    "uvicorn>=0.27.1",
-    "python-multipart>=0.0.9",
-    "flask-cors>=4.0.0",
-    "python-dotenv>=1.0.1",
-    "databricks-sdk>=0.20.0",
-    "databricks-sql-connector>=3.4.0",
-    "pandas>=2.1.0",
-    "numpy>=1.24.3",
-    "python-dateutil>=2.8.2",
-    "pytz>=2023.3",
-    "six>=1.16.0",
-    "typing-extensions>=4.9.0",
-    "werkzeug>=3.0.1",
-    "pyyaml>=6.0.1",
-    "requests>=2.31.0",
-    "pydantic-settings>=2.2.1",
-    "GitPython>=3.1.44",
-    "pyarrow>=15.0.0"
-]
+requires-python = ">=3.10,<3.13"
+dynamic = ["dependencies"]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["api"]

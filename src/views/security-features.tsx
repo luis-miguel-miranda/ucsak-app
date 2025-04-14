@@ -143,12 +143,11 @@ const SecurityFeatures: React.FC = () => {
   };
 
   return (
-    <div className="container py-6">
+    <div className="py-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <Gavel className="w-8 h-8" /> Security Features
+      </h1>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold flex items-center gap-2">
-          <Gavel className="w-8 h-8" />
-          Security Features
-        </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>

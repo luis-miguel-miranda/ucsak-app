@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function About() {
   return (
-    <div className="container py-8">
-      <div className="flex items-center gap-3 mb-8">
-        <Info className="w-8 h-8 text-primary" />
-        <h1 className="text-4xl font-bold">About Unity Catalog Swiss Army Knife</h1>
-      </div>
+    <div className="py-6">
+      <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
+        <Info className="w-8 h-8" />
+        About This Application
+      </h1>
       
       <div className="prose max-w-none mb-12">
         <p className="text-lg text-muted-foreground">

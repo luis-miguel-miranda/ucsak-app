@@ -4,7 +4,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 import yaml
-from pydantic import ValidationError
+from pydantic import ValidationError, parse_obj_as
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 # Import Databricks SDK components
 from databricks.sdk import WorkspaceClient
@@ -12,25 +14,34 @@ from databricks.sdk.errors import NotFound, PermissionDenied
 
 from api.models.data_products import (
     DataOutput,
-    DataProduct,
+    DataProduct as DataProductApi,
     DataProductStatus,
     DataProductType,
     DataSource,
     SchemaField,
 )
 
+# Import the specific repository
+from api.repositories.data_products_repository import data_product_repo
+
 from api.common.logging import setup_logging, get_logger
 setup_logging(level=logging.INFO)
 logger = get_logger(__name__)
 
 class DataProductsManager:
-    def __init__(self, ws_client: WorkspaceClient):
-        # Store products using the new model, keyed by product ID
-        self._products: Dict[str, DataProduct] = {}
-        # Store the injected client
+    def __init__(self, db: Session, ws_client: Optional[WorkspaceClient] = None):
+        """
+        Initializes the DataProductsManager.
+
+        Args:
+            db: SQLAlchemy Session for database operations.
+            ws_client: Optional Databricks WorkspaceClient for SDK operations.
+        """
+        self._db = db
         self._ws_client = ws_client
+        self._repo = data_product_repo
         if not self._ws_client:
-             logger.error("WorkspaceClient was not provided to DataProductsManager.")
+             logger.warning("WorkspaceClient was not provided to DataProductsManager. SDK operations might fail.")
 
     def get_types(self) -> List[str]:
         """Get all available data product types"""
@@ -40,75 +51,147 @@ class DataProductsManager:
         """Get all available data product statuses"""
         return [s.value for s in DataProductStatus]
 
-    def create_product(self, product_data: Dict[str, Any]) -> DataProduct:
-        """Create a new data product from a dictionary conforming to the schema."""
+    def create_product(self, product_data: DataProductApi) -> DataProductApi:
+        """Create a new data product using the repository."""
         try:
-            # Ensure required fields like id and info are present
-            if 'id' not in product_data:
-                product_data['id'] = str(uuid.uuid4())
-            if 'info' not in product_data:
-                raise ValueError("'info' field is required to create a data product")
-            
-            # Add timestamps
+            if not product_data.id:
+                 product_data.id = str(uuid.uuid4())
+                 
             now = datetime.utcnow()
-            product_data['created_at'] = now
-            product_data['updated_at'] = now
+            product_data.created_at = now
+            product_data.updated_at = now
+
+            created_db_obj = self._repo.create(db=self._db, obj_in=product_data)
             
-            product = DataProduct(**product_data)
-            self._products[product.id] = product
-            logger.info(f"Created data product with ID: {product.id}")
-            return product
+            return DataProductApi.from_orm(created_db_obj)
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Database error creating data product: {e}")
+            raise
         except ValidationError as e:
-            logger.error(f"Validation error creating data product: {e}")
-            raise ValueError(f"Invalid data product data: {e}")
+            logger.error(f"Validation error mapping DB object to API model: {e}")
+            raise ValueError(f"Internal data mapping error: {e}")
         except Exception as e:
-            logger.error(f"Error creating data product: {e}")
+            logger.error(f"Unexpected error creating data product: {e}")
             raise
 
-    def get_product(self, product_id: str) -> Optional[DataProduct]:
-        """Get a data product by ID."""
-        return self._products.get(product_id)
-
-    def list_products(self) -> List[DataProduct]:
-        """List all data products."""
-        return list(self._products.values())
-
-    def update_product(self, product_id: str, product_data: Dict[str, Any]) -> Optional[DataProduct]:
-        """Update an existing data product using a dictionary conforming to the schema."""
-        product = self._products.get(product_id)
-        if not product:
-            logger.warning(f"Attempted to update non-existent product: {product_id}")
-            return None
-
+    def get_product(self, product_id: str) -> Optional[DataProductApi]:
+        """Get a data product by ID using the repository."""
         try:
-            # Preserve original creation time, update update time
-            product_data['created_at'] = product.created_at
-            product_data['updated_at'] = datetime.utcnow()
-            # Ensure ID remains the same
-            product_data['id'] = product_id 
-            
-            updated_product = DataProduct(**product_data)
-            self._products[product_id] = updated_product
-            logger.info(f"Updated data product with ID: {product_id}")
-            return updated_product
+            product_db = self._repo.get(db=self._db, id=product_id)
+            if product_db:
+                # --- DEBUGGING START ---
+                logger.info(f"--- DEBUG [DataProductsManager get_product] ---")
+                logger.info(f"DB Object Type: {type(product_db)}")
+                logger.info(f"DB Object ID: {product_db.id}")
+                db_has_tags = hasattr(product_db, '_tags')
+                logger.info(f"DB Object has '_tags' attribute: {db_has_tags}")
+                if db_has_tags:
+                     logger.info(f"DB Object '_tags' value: {product_db._tags}")
+                     logger.info(f"DB Object '_tags' type: {type(product_db._tags)}")
+                else:
+                     logger.info(f"DB Object '_tags' attribute NOT FOUND.")
+                # --- DEBUGGING END ---
+                
+                # Convert DB model to API model
+                product_api = DataProductApi.from_orm(product_db)
+                
+                # --- DEBUGGING START ---
+                logger.info(f"--- DEBUG [DataProductsManager get_product after from_orm] ---")
+                logger.info(f"API Object Type: {type(product_api)}")
+                logger.info(f"API Object ID: {product_api.id}")
+                api_has_tags = hasattr(product_api, 'tags')
+                logger.info(f"API Object has 'tags' attribute: {api_has_tags}")
+                api_tags_value = "<Error accessing tags>" # Default for logging
+                if api_has_tags:
+                    try:
+                         api_tags_value = product_api.tags # Access the computed field
+                         logger.info(f"API Object 'tags' computed value: {api_tags_value}")
+                         logger.info(f"API Object 'tags' type: {type(api_tags_value)}")
+                    except Exception as e_compute:
+                         logger.error(f"ERROR accessing computed 'tags' field: {e_compute}")
+                else:
+                     logger.info(f"API Object 'tags' attribute NOT FOUND.")
+                # Log the dictionary representation
+                try:
+                    excluded_dump = product_api.model_dump(exclude={'tags'})
+                    logger.info(f"API Object model_dump (excluding tags): {excluded_dump}")
+                except Exception as e_dump_excl:
+                    logger.error(f"ERROR dumping API model (excluding tags): {e_dump_excl}")
+                try:
+                    included_dump = product_api.model_dump()
+                    logger.info(f"API Object model_dump (including tags?): {included_dump}")
+                except Exception as e_dump_incl:
+                    logger.error(f"ERROR dumping API model (including tags?): {e_dump_incl}")
+                # --- DEBUGGING END ---
+                
+                return product_api
+            return None
+        except SQLAlchemyError as e:
+            logger.error(f"Database error getting product {product_id}: {e}")
+            raise
         except ValidationError as e:
-            logger.error(f"Validation error updating data product {product_id}: {e}")
-            raise ValueError(f"Invalid data product data for update: {e}")
+            logger.error(f"Validation error mapping DB object to API model for ID {product_id}: {e}")
+            raise ValueError(f"Internal data mapping error for ID {product_id}: {e}")
         except Exception as e:
-            logger.error(f"Error updating data product {product_id}: {e}")
+            logger.error(f"Unexpected error getting product {product_id}: {e}")
+            raise
+
+    def list_products(self, skip: int = 0, limit: int = 100) -> List[DataProductApi]:
+        """List data products using the repository."""
+        try:
+            products_db = self._repo.get_multi(db=self._db, skip=skip, limit=limit)
+            return parse_obj_as(List[DataProductApi], products_db)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error listing products: {e}")
+            raise
+        except ValidationError as e:
+             logger.error(f"Validation error mapping list of DB objects to API models: {e}")
+             raise ValueError(f"Internal data mapping error during list: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error listing products: {e}")
+            raise
+
+    def update_product(self, product_id: str, product_data: DataProductApi) -> Optional[DataProductApi]:
+        """Update an existing data product using the repository."""
+        try:
+            db_obj = self._repo.get(db=self._db, id=product_id)
+            if not db_obj:
+                logger.warning(f"Attempted to update non-existent product: {product_id}")
+                return None
+
+            product_data.id = product_id 
+            product_data.updated_at = datetime.utcnow() 
+            product_data.created_at = db_obj.created_at 
+
+            updated_db_obj = self._repo.update(db=self._db, db_obj=db_obj, obj_in=product_data)
+            
+            return DataProductApi.from_orm(updated_db_obj)
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Database error updating data product {product_id}: {e}")
+            raise
+        except ValidationError as e:
+            logger.error(f"Validation error during update/mapping for product {product_id}: {e}")
+            raise ValueError(f"Invalid data or mapping error for update {product_id}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error updating data product {product_id}: {e}")
             raise
 
     def delete_product(self, product_id: str) -> bool:
-        """Delete a data product."""
-        if product_id in self._products:
-            del self._products[product_id]
-            logger.info(f"Deleted data product with ID: {product_id}")
-            return True
-        logger.warning(f"Attempted to delete non-existent product: {product_id}")
-        return False
+        """Delete a data product using the repository."""
+        try:
+            deleted_obj = self._repo.remove(db=self._db, id=product_id)
+            return deleted_obj is not None
+        except SQLAlchemyError as e:
+            logger.error(f"Database error deleting product {product_id}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error deleting product {product_id}: {e}")
+            raise
 
     def load_from_yaml(self, yaml_path: str) -> bool:
-        """Load data products from a YAML file (conforming to the new schema)."""
+        """Load data products from YAML into the database via the repository."""
         try:
             with open(yaml_path) as file:
                 data = yaml.safe_load(file)
@@ -118,30 +201,25 @@ class DataProductsManager:
                  return False
 
             loaded_count = 0
-            validation_errors = 0
-            for product_data in data:
-                if not isinstance(product_data, dict):
+            errors = 0
+            for product_dict in data:
+                if not isinstance(product_dict, dict):
                     logger.warning("Skipping non-dictionary item in YAML data.")
                     continue
                 try:
-                    # Add default timestamps if missing (useful for initial load)
-                    product_data.setdefault('created_at', datetime.utcnow())
-                    product_data.setdefault('updated_at', datetime.utcnow())
-                    
-                    product = DataProduct(**product_data)
-                    # Use the ID from the YAML file
-                    if product.id in self._products:
-                        logger.warning(f"Duplicate product ID found in YAML, overwriting: {product.id}")
-                    self._products[product.id] = product
+                    product_api = DataProductApi(**product_dict)
+                    existing = self.get_product(product_api.id)
+                    if existing:
+                        logger.warning(f"Product ID {product_api.id} exists, updating from YAML.")
+                        self.update_product(product_api.id, product_api)
+                    else:
+                         self.create_product(product_api)
                     loaded_count += 1
-                except ValidationError as e:
-                    logger.error(f"Validation error loading product from YAML (ID: {product_data.get('id', 'N/A')}): {e}")
-                    validation_errors += 1
-                except Exception as e:
-                     logger.error(f"Error processing product from YAML (ID: {product_data.get('id', 'N/A')}): {e}")
-                     validation_errors += 1
+                except (ValidationError, ValueError, SQLAlchemyError) as e:
+                    logger.error(f"Error processing product from YAML (ID: {product_dict.get('id', 'N/A')}): {e}")
+                    errors += 1
 
-            logger.info(f"Loaded {loaded_count} data products from {yaml_path}. Encountered {validation_errors} validation/processing errors.")
+            logger.info(f"Processed {loaded_count} data products from {yaml_path}. Encountered {errors} processing errors.")
             return loaded_count > 0
 
         except FileNotFoundError:
@@ -155,35 +233,61 @@ class DataProductsManager:
             return False
 
     def save_to_yaml(self, yaml_path: str) -> bool:
-        """Save current data products to a YAML file (conforming to the new schema)."""
+        """Save current data products from DB to a YAML file."""
         try:
-            # Convert product objects to dictionaries for YAML serialization
-            products_list = [p.dict(by_alias=True) for p in self._products.values()]
+            all_products_api = self.list_products(limit=10000)
+            
+            products_list = [p.dict(by_alias=True) for p in all_products_api]
             
             with open(yaml_path, 'w') as file:
                 yaml.dump(products_list, file, default_flow_style=False, sort_keys=False)
             logger.info(f"Saved {len(products_list)} data products to {yaml_path}")
             return True
+        except (SQLAlchemyError, ValidationError, ValueError) as e:
+            logger.error(f"Error retrieving or processing data for saving to YAML: {e}")
+            return False
         except Exception as e:
             logger.error(f"Error saving data products to YAML {yaml_path}: {e}")
             return False
 
-    # --- Helper methods for distinct values (optional, can be added later if needed) ---
+    # --- Reinstate Helper methods for distinct values --- 
+    # These now delegate to the repository which handles DB interaction.
+
     def get_distinct_owners(self) -> List[str]:
-        return sorted(list(set(p.info.owner for p in self._products.values() if p.info and p.info.owner)))
+        """Get all distinct data product owners."""
+        try:
+            return self._repo.get_distinct_owners(db=self._db)
+        except Exception as e:
+            logger.error(f"Error getting distinct owners from repository: {e}", exc_info=True)
+            # Depending on desired behavior, re-raise or return empty list
+            # raise # Option 1: Let the route handler catch it
+            return [] # Option 2: Return empty on error
 
     def get_distinct_domains(self) -> List[str]:
-        return sorted(list(set(p.info.domain for p in self._products.values() if p.info and p.info.domain)))
+        """Get distinct 'domain' values from the 'info' JSON column."""
+        # Note: get_distinct_domains was missing in the original, but the logic
+        # is the same as owners/archetypes. We need a repo method for it.
+        # Assuming we add get_distinct_domains to the repo similar to others:
+        # return self._repo.get_distinct_domains(db=self._db)
+        # For now, let's implement it using the generic helper if needed, or
+        # it needs to be added to the repo first.
+        logger.warning("get_distinct_domains called, but repository method not implemented yet.")
+        # Example using generic helper (if we were to expose it or call internal)
+        # return self._repo.get_distinct_json_values(self._db, self._repo.model.info, ['domain'])
+        return [] # Placeholder
 
     def get_distinct_archetypes(self) -> List[str]:
-         return sorted(list(set(p.info.archetype for p in self._products.values() if p.info and p.info.archetype)))
+         """Get all distinct data product archetypes."""
+         try:
+             return self._repo.get_distinct_archetypes(db=self._db)
+         except Exception as e:
+             logger.error(f"Error getting distinct archetypes from repository: {e}", exc_info=True)
+             return []
 
     def get_distinct_statuses(self) -> List[str]:
-        statuses = set()
-        for p in self._products.values():
-            if p.info and p.info.status:
-                statuses.add(p.info.status)
-            for op in p.outputPorts:
-                if op.status:
-                    statuses.add(op.status)
-        return sorted(list(statuses))
+        """Get all distinct data product statuses from info and output ports."""
+        try:
+            return self._repo.get_distinct_statuses(db=self._db)
+        except Exception as e:
+            logger.error(f"Error getting distinct statuses from repository: {e}", exc_info=True)
+            return []

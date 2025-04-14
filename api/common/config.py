@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 from .logging import get_logger
@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     sync_repository: Optional[str] = None
     enabled_jobs: List[str] = Field(default_factory=list)
     updated_at: Optional[datetime] = None
+
+    # Demo Mode Flag
+    APP_DEMO_MODE: bool = Field(False, env='APP_DEMO_MODE')
 
     class Config:
         env_file = DOTENV_FILE
@@ -121,11 +124,11 @@ class ConfigManager:
 
 # Global configuration instances
 _settings: Optional[Settings] = None
-config_manager: Optional[ConfigManager] = None
+_config_manager: Optional[ConfigManager] = None
 
 def init_config() -> None:
     """Initialize the global configuration instances."""
-    global _settings, config_manager
+    global _settings, _config_manager
 
     # Load environment variables from .env file if it exists
     if DOTENV_FILE.exists():
@@ -135,7 +138,7 @@ def init_config() -> None:
         logger.info("No .env file found, using existing environment variables")
         _settings = Settings()
 
-    config_manager = ConfigManager(_settings)
+    _config_manager = ConfigManager(_settings)
 
 def get_settings() -> Settings:
     """Get the global settings instance.
@@ -159,6 +162,6 @@ def get_config() -> ConfigManager:
     Raises:
         RuntimeError: If configuration manager is not initialized
     """
-    if not config_manager:
+    if not _config_manager:
         raise RuntimeError("Configuration manager not initialized")
-    return config_manager
+    return _config_manager

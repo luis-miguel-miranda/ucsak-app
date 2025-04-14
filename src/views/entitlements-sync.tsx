@@ -337,10 +337,9 @@ export default function EntitlementsSync() {
   });
 
   return (
-    <div className="container py-6">
-      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
-        <ArrowLeftRight className="w-8 h-8" />
-        Entitlements Sync
+    <div className="py-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <ArrowLeftRight className="w-8 h-8" /> Entitlements Sync
       </h1>
       <div className="flex justify-between items-center mb-8">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

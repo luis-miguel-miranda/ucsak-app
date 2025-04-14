@@ -669,10 +669,9 @@ export default function BusinessGlossary() {
   };
 
   return (
-    <div className="container py-6">
-      <h1 className="text-4xl font-bold mb-6 flex items-center gap-2">
-        <Book className="w-8 h-8" />
-        Business Glossary
+    <div className="py-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <Book className="w-8 h-8" /> Business Glossary
       </h1>
 
       <div className="flex justify-between items-center mb-6">
