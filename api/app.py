@@ -27,11 +27,16 @@ from api.routes import (
     settings_routes,
     user_routes,
     metadata_routes,
+    data_asset_reviews_routes,
 )
 
 from api.common.logging import setup_logging, get_logger
 from api.common.database import init_db, get_session_factory, SQLAlchemySession
 from api.controller.data_products_manager import DataProductsManager
+from api.controller.data_asset_reviews_manager import DataAssetReviewManager
+from databricks.sdk import WorkspaceClient
+from api.common.workspace_client import get_workspace_client
+from api.controller.notifications_manager import NotificationsManager
 
 # Initialize configuration and logging first
 init_config()
@@ -73,6 +78,32 @@ def load_demo_data(db_session: SQLAlchemySession, settings: Settings):
             logger.info("Data Products table is not empty. Skipping demo data loading.")
     except Exception as e:
          logger.error(f"Error during Data Products demo data check/load: {e}", exc_info=True)
+
+    # --- Data Asset Reviews --- #
+    try:
+        logger.debug("Checking Data Asset Reviews for demo data loading...")
+        # Ensure dependencies for the manager are available
+        # Note: Getting ws_client might be complex outside request context.
+        # Consider alternative ways to provide it during startup if needed,
+        # or make ws_client optional in the manager for loading.
+        # Assuming get_workspace_client() works here for simplicity.
+        # Assuming a simple NotificationsManager instantiation works.
+        ws_client = get_workspace_client() # Placeholder - adjust if needed
+        notifications_mgr = NotificationsManager()
+        dar_manager = DataAssetReviewManager(db=db_session, ws_client=ws_client, notifications_manager=notifications_mgr)
+        YAML_PATH = Path('api/data/data_asset_reviews.yaml')
+        if YAML_PATH.exists():
+            # load_from_yaml now includes the check for empty table
+            logger.info(f"Attempting demo data load for Data Asset Reviews from {YAML_PATH}...")
+            success = dar_manager.load_from_yaml(str(YAML_PATH))
+            if success:
+                logger.info("Successfully loaded demo data for Data Asset Reviews.")
+            # else: # load_from_yaml logs errors/warnings internally
+            #    logger.error("Failed to load demo data for Data Asset Reviews.")
+        else:
+            logger.warning(f"Demo mode enabled but {YAML_PATH} not found.")
+    except Exception as e:
+         logger.error(f"Error during Data Asset Reviews demo data check/load: {e}", exc_info=True)
 
     # --- Add similar blocks for other services --- 
 
@@ -187,6 +218,7 @@ compliance_routes.register_routes(app)
 master_data_management_routes.register_routes(app)
 security_features_routes.register_routes(app)
 metadata_routes.register_routes(app)
+data_asset_reviews_routes.register_routes(app)
 
 # Define other specific API routes BEFORE the catch-all
 @app.get("/api/time")

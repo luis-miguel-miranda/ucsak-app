@@ -1,217 +1,149 @@
-import { Info, Github, Shield, BookOpen, FileText, Users, Lock, CheckCircle, Settings, Database, GitBranch, RefreshCw } from 'lucide-react';
+import { Info, Github, Shield, BookOpen, FileText, Users, Lock, CheckCircle, Settings, Database, GitBranch, RefreshCw, BookOpenCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { getLandingPageFeatures, FeatureConfig, FeatureMaturity } from '@/config/features';
+import React from 'react';
+import { useFeatureVisibilityStore } from '@/stores/feature-visibility-store';
+import { cn } from '@/lib/utils';
 
 export default function About() {
+  const allowedMaturities = useFeatureVisibilityStore((state) => state.allowedMaturities);
+
+  const features = getLandingPageFeatures(allowedMaturities);
+
+  const detailedDescriptions: { [key: string]: string[] } = {
+      'data-products': [
+          '• Organize assets like tables, models, jobs.',
+          '• Use tags for categorization (e.g., domain, owner).',
+          '• Visualize relationships between assets.',
+      ],
+      'data-contracts': [
+          '• Based on Open Data Contract Standard (ODCS).',
+          '• Define schema, quality rules, SLOs.',
+          '• Verify access privileges automatically.',
+      ],
+      'business-glossary': [
+          '• Hierarchical structure (Company, Dept, Team).',
+          '• Term lifecycle (Draft, Approved, Deprecated).',
+          '• Link terms directly to data assets.',
+      ],
+      'master-data': [
+          '• Powered by open-source Zingg.ai.',
+          '• Entity resolution and deduplication.',
+          '• Create golden records for key entities.',
+      ],
+       'compliance': [
+          '• Define custom compliance rules.',
+          '• Run automated checks against data products.',
+          '• Track compliance score over time.',
+      ],
+      'estate-manager': [
+          '• Central view of multiple workspaces.',
+          '• Monitor resource usage and costs.',
+          '• Manage configurations across estates.',
+      ],
+       'security': [
+          '• Enable Differential Privacy on tables.',
+          '• Configure Row-Level and Column-Level Security.',
+          '• Manage fine-grained access policies.',
+      ],
+      'entitlements': [
+          '• Define reusable personas (e.g., Analyst, Engineer).',
+          '• Assign personas to Databricks groups.',
+          '• Simplify privilege management at scale.',
+      ],
+       'entitlements-sync': [
+          '• Keep entitlements aligned with external systems (e.g., IDP).',
+          '• Detect and resolve synchronization conflicts.',
+          '• Maintain audit logs of all changes.',
+      ],
+       'catalog-commander': [
+          '• Dual-pane interface for browsing catalogs.',
+          '• Copy/move tables and schemas easily.',
+          '• Perform bulk operations on assets.',
+      ],
+  };
+
   return (
-    <div className="py-6">
-      <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
-        <Info className="w-8 h-8" />
-        About This Application
-      </h1>
-      
-      <div className="prose max-w-none mb-12">
-        <p className="text-lg text-muted-foreground">
-          The Unity Catalog Swiss Army Knife is a comprehensive tool for managing Databricks Unity Catalog,
-          providing a unified interface for data governance, security, and management.
-        </p>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold mb-6">About UCSAK App</h1>
+      <p className="text-lg text-muted-foreground mb-10">
+        The Databricks Unified Control Plane (UCSAK - Unity Catalog Swiss Army Knife)
+        provides a centralized interface for managing various aspects of your
+        Databricks environment, focusing on governance, security, and data management
+        best practices.
+      </p>
+
+      <h2 className="text-3xl font-semibold mb-8">Core Features</h2>
+
+      {features.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {features.map((feature: FeatureConfig) => (
+              <Card key={feature.id} className="flex flex-col relative">
+               {feature.maturity !== 'ga' && (
+                       <span className={cn(
+                          "absolute top-2 right-2 text-xs font-semibold px-2 py-0.5 rounded-full z-10",
+                          feature.maturity === 'beta' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" : "",
+                          feature.maturity === 'alpha' ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300" : ""
+                       )}>
+                          {feature.maturity.toUpperCase()}
+                       </span>
+                  )}
+              <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                  <feature.icon className="w-6 h-6 text-primary" />
+                  <CardTitle>{feature.name}</CardTitle>
+                  </div>
+                  <CardDescription>{feature.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                  {detailedDescriptions[feature.id] && (
+                  <ul className="space-y-1.5 text-sm text-muted-foreground mt-2">
+                      {detailedDescriptions[feature.id].map((point, index) => (
+                      <li key={index}>{point}</li>
+                      ))}
+                  </ul>
+                  )}
+              </CardContent>
+              </Card>
+          ))}
+          </div>
+       ) : (
+           <p className="text-muted-foreground text-center mb-12">No features available for the selected feature previews.</p>
+       )}
+
+      <h2 className="text-3xl font-semibold mb-6">Technology Stack</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 text-center">
+        <div className="p-4 border rounded-lg bg-card text-card-foreground">
+          <p className="font-semibold">Frontend</p>
+          <p className="text-sm text-muted-foreground">React, TypeScript, Shadcn UI, Tailwind CSS, Vite</p>
+        </div>
+        <div className="p-4 border rounded-lg bg-card text-card-foreground">
+          <p className="font-semibold">Backend</p>
+          <p className="text-sm text-muted-foreground">Python, FastAPI</p>
+        </div>
+        <div className="p-4 border rounded-lg bg-card text-card-foreground">
+          <p className="font-semibold">Database</p>
+          <p className="text-sm text-muted-foreground">Databricks SQL / Delta</p>
+        </div>
+        <div className="p-4 border rounded-lg bg-card text-card-foreground">
+          <p className="font-semibold">Platform</p>
+          <p className="text-sm text-muted-foreground">Databricks Apps</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Database className="w-5 h-5 text-primary" />
-              <CardTitle>Data Products</CardTitle>
-            </div>
-            <CardDescription>Group and manage Databricks assets with tags</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Tag-based asset organization</li>
-              <li>• Domain-based categorization</li>
-              <li>• Asset relationship management</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              <CardTitle>Data Contracts</CardTitle>
-            </div>
-            <CardDescription>Implement technical metadata and quality controls</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Open Data Contract Standard</li>
-              <li>• Quality control implementation</li>
-              <li>• Access privilege verification</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <CardTitle>Business Glossary</CardTitle>
-            </div>
-            <CardDescription>Create and manage business terms across organizational units</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Hierarchical organization</li>
-              <li>• Term lifecycle management</li>
-              <li>• Asset assignment</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              <CardTitle>Master Data Management</CardTitle>
-            </div>
-            <CardDescription>Implement MDM using Zingg.ai</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Entity resolution</li>
-              <li>• Data deduplication</li>
-              <li>• Golden record creation</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <CardTitle>Entitlements</CardTitle>
-            </div>
-            <CardDescription>Manage access privileges through personas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Persona-based access control</li>
-              <li>• Directory group integration</li>
-              <li>• Privilege management</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-primary" />
-              <CardTitle>Entitlements Sync</CardTitle>
-            </div>
-            <CardDescription>Synchronize entitlements with external systems</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Automated synchronization</li>
-              <li>• Conflict resolution</li>
-              <li>• Audit logging</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-primary" />
-              <CardTitle>Security Features</CardTitle>
-            </div>
-            <CardDescription>Enable advanced security features</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Differential privacy</li>
-              <li>• Row-level security</li>
-              <li>• Column-level security</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              <CardTitle>Compliance</CardTitle>
-            </div>
-            <CardDescription>Create and verify compliance rules</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Rule creation and management</li>
-              <li>• Compliance scoring</li>
-              <li>• Verification workflows</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <GitBranch className="w-5 h-5 text-primary" />
-              <CardTitle>Catalog Commander</CardTitle>
-            </div>
-            <CardDescription>Explore and manage data assets</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Side-by-side catalog explorer</li>
-              <li>• Asset rearrangement</li>
-              <li>• Schema management</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-primary" />
-              <CardTitle>Settings</CardTitle>
-            </div>
-            <CardDescription>Configure and manage application settings</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Job configuration</li>
-              <li>• Git integration</li>
-              <li>• System settings</li>
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="prose max-w-none">
-        <h2 className="text-2xl font-semibold mt-8 mb-4">Source Code</h2>
-        <p className="mb-4 text-muted-foreground">
-          The source code for this application is available on GitHub:
-        </p>
-        <a
-          href="https://github.com/your-org/unity-catalog-swiss-army-knife"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
-        >
-          <Github className="w-4 h-4" />
-          View on GitHub
-        </a>
-
-        <h2 className="text-2xl font-semibold mt-8 mb-4">License</h2>
-        <p className="mb-4 text-muted-foreground">
-          This project is licensed under the Apache License 2.0.
-        </p>
-
-        <h2 className="text-2xl font-semibold mt-8 mb-4">Contributing</h2>
-        <p className="mb-4 text-muted-foreground">
-          We welcome contributions! Please see our contributing guidelines in the repository.
-        </p>
+      <h2 className="text-3xl font-semibold mb-6">Contribute & Learn More</h2>
+      <div className="flex flex-col md:flex-row gap-4">
+        <Button asChild size="lg">
+          <a href="https://github.com/larsgeorge/ucsak-app" target="_blank" rel="noopener noreferrer">
+            <Github className="mr-2 h-5 w-5" /> View on GitHub
+          </a>
+        </Button>
+        <Button variant="outline" asChild size="lg" disabled>
+          <a href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" onClick={(e) => e.preventDefault()}>
+            <BookOpenCheck className="mr-2 h-5 w-5" /> Read Documentation (Coming Soon)
+          </a>
+        </Button>
       </div>
     </div>
   );

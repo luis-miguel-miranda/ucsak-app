@@ -7,11 +7,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, FlaskConical, Beaker } from 'lucide-react';
+import { useFeatureVisibilityStore } from '@/stores/feature-visibility-store';
 
-interface UserInfo {
+interface UserInfoData {
   email: string | null;
   username: string | null;
   user: string | null;
@@ -19,9 +22,10 @@ interface UserInfo {
 }
 
 export default function UserInfo() {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const hasFetched = useRef(false);
+  const { showBeta, showAlpha, actions } = useFeatureVisibilityStore();
   
   useEffect(() => {
     if (hasFetched.current) return;
@@ -29,10 +33,14 @@ export default function UserInfo() {
     async function fetchUserInfo() {
       try {
         const response = await fetch('/api/user/info');
+        if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         setUserInfo(data);
-      } catch (err) {
-        setError('Failed to load user information');
+      } catch (err: any) {
+        console.error('Failed to load user information:', err);
+        setError(err.message || 'Failed to load user information');
       }
     }
     
@@ -40,15 +48,14 @@ export default function UserInfo() {
     hasFetched.current = true;
   }, []);
 
-  const displayName = userInfo?.username || userInfo?.email || userInfo?.user || 'n/a';
-  const initials = displayName.charAt(0).toUpperCase();
+  const displayName = userInfo?.username || userInfo?.email || userInfo?.user || 'Loading...';
+  const initials = displayName === 'Loading...' ? '?' : displayName.charAt(0).toUpperCase();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/avatars/01.png" alt="@user" />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -60,21 +67,41 @@ export default function UserInfo() {
             {userInfo?.email && (
               <p className="text-xs leading-none text-muted-foreground">{userInfo.email}</p>
             )}
-            {userInfo?.ip && (
-              <p className="text-xs leading-none text-muted-foreground">IP: {userInfo.ip}</p>
-            )}
+            {!userInfo && !error && <p className="text-xs text-muted-foreground">Loading info...</p>}
             {error && (
               <p className="text-xs text-destructive">Error: {error}</p>
             )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+            <DropdownMenuItem disabled>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+            </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2 py-1.5">Feature Previews</DropdownMenuLabel>
+             <DropdownMenuCheckboxItem
+                checked={showBeta}
+                onCheckedChange={actions.toggleBeta}
+                onSelect={(e) => e.preventDefault()}
+            >
+                <FlaskConical className="mr-2 h-4 w-4" />
+                <span>Show Beta Features</span>
+            </DropdownMenuCheckboxItem>
+             <DropdownMenuCheckboxItem
+                checked={showAlpha}
+                onCheckedChange={actions.toggleAlpha}
+                 onSelect={(e) => e.preventDefault()}
+            >
+                <Beaker className="mr-2 h-4 w-4" />
+                <span>Show Alpha Features</span>
+            </DropdownMenuCheckboxItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

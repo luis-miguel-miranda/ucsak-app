@@ -1,81 +1,80 @@
-import { Link, useLocation } from 'react-router-dom';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Home } from 'lucide-react';
 import React from 'react';
-import useBreadcrumbStore from '@/stores/breadcrumb-store';
+import { Link, useLocation } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { getFeatureNameByPath } from '@/config/features'; // Import the helper
 
-// Temporary mapping - ideally sourced from a shared config
-const pathMap: { [key: string]: string } = {
-  'data-products': 'Data Products',
-  'data-contracts': 'Data Contracts',
-  'business-glossary': 'Business Glossary',
-  'master-data': 'Master Data Management',
-  'compliance': 'Compliance',
-  'estate-manager': 'Estate Manager',
-  'security': 'Security Features',
-  'entitlements': 'Entitlements',
-  'entitlements-sync': 'Entitlements Sync',
-  'catalog-commander': 'Catalog Commander',
-  'settings': 'Settings',
-  'about': 'About',
-};
+interface BreadcrumbsProps extends React.HTMLAttributes<HTMLElement> {}
 
-export default function Breadcrumbs() {
+export function Breadcrumbs({ className, ...props }: BreadcrumbsProps) {
   const location = useLocation();
   const pathnames = location.pathname.split('/').filter((x) => x);
-  const dynamicTitle = useBreadcrumbStore((state) => state.dynamicTitle);
+
+  // Temporary mapping - ideally sourced from a shared config
+  // const pathMap: { [key: string]: string } = {
+  //   'data-products': 'Data Products',
+  //   'data-contracts': 'Data Contracts',
+  //   'business-glossary': 'Business Glossary',
+  //   'master-data': 'Master Data Management',
+  //   'compliance': 'Compliance',
+  //   'estate-manager': 'Estate Manager',
+  //   'security': 'Security Features',
+  //   'entitlements': 'Entitlements',
+  //   'entitlements-sync': 'Entitlements Sync',
+  //   'catalog-commander': 'Catalog Commander',
+  //   'settings': 'Settings',
+  //   'about': 'About',
+  // };
+
+  // Function to get display name (using the new helper)
+  const getDisplayName = (pathSegment: string): string => {
+      // Use the helper function from features config
+      return getFeatureNameByPath(pathSegment);
+  };
+
 
   return (
-    <Breadcrumb className="mb-4">
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          {pathnames.length === 0 ? (
-            <span className="flex items-center">
-              <Home className="mr-1 h-4 w-4 flex-shrink-0" />
-              <BreadcrumbPage>Home</BreadcrumbPage>
-            </span>
-          ) : (
-            <BreadcrumbLink asChild>
-              <Link to="/" className="flex items-center">
-                <Home className="h-4 w-4 flex-shrink-0" />
-                <span className="sr-only">Home</span>
-              </Link>
-            </BreadcrumbLink>
-          )}
-        </BreadcrumbItem>
-        {pathnames.length > 0 && <BreadcrumbSeparator />}
+    <nav
+      aria-label="breadcrumb"
+      className={cn('mb-4 text-sm text-muted-foreground', className)}
+      {...props}
+    >
+      <ol className="list-none p-0 inline-flex items-center space-x-1">
+        <li>
+          <Link to="/" className="hover:text-primary">
+            Home
+          </Link>
+        </li>
+        {pathnames.length > 0 && (
+          <li>
+            <ChevronRight className="h-4 w-4" />
+          </li>
+        )}
         {pathnames.map((value, index) => {
-          const last = index === pathnames.length - 1;
           const to = `/${pathnames.slice(0, index + 1).join('/')}`;
-          let name = pathMap[value] || value;
-
-          if (last && pathnames[index - 1] === 'data-products' && dynamicTitle) {
-            name = dynamicTitle;
-          }
+          const isLast = index === pathnames.length - 1;
+          const displayName = getDisplayName(value);
 
           return (
             <React.Fragment key={to}>
-              <BreadcrumbItem>
-                {last ? (
-                  <BreadcrumbPage>{name}</BreadcrumbPage>
+              <li>
+                {isLast ? (
+                  <span className="font-medium text-foreground">{displayName}</span>
                 ) : (
-                  <BreadcrumbLink asChild>
-                    <Link to={to}>{name}</Link>
-                  </BreadcrumbLink>
+                  <Link to={to} className="hover:text-primary">
+                    {displayName}
+                  </Link>
                 )}
-              </BreadcrumbItem>
-              {!last && <BreadcrumbSeparator />}
+              </li>
+              {!isLast && (
+                <li>
+                  <ChevronRight className="h-4 w-4" />
+                </li>
+              )}
             </React.Fragment>
           );
         })}
-      </BreadcrumbList>
-    </Breadcrumb>
+      </ol>
+    </nav>
   );
 } 

@@ -20,6 +20,8 @@ import About from './views/about';
 import NotFound from './views/not-found';
 import EntitlementsSync from './views/entitlements-sync';
 import EstateManager from './views/estate-manager';
+import DataAssetReviews from './views/data-asset-reviews';
+import DataAssetReviewDetails from './views/data-asset-review-details';
 
 export default function App() {
   return (
@@ -45,6 +47,8 @@ export default function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/about" element={<About />} />
               <Route path="/estate-manager" element={<EstateManager />} />
+              <Route path="/data-asset-reviews" element={<DataAssetReviews />} />
+              <Route path="/data-asset-reviews/:requestId" element={<DataAssetReviewDetails />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
