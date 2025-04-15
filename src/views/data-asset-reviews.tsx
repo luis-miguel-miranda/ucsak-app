@@ -45,7 +45,7 @@ export default function DataAssetReviews() {
         setLoading(true);
         setError(null);
         try {
-            const response = await get<DataAssetReviewRequest[]>('/api/data-asset-reviews/');
+            const response = await get<DataAssetReviewRequest[]>('/api/data-asset-reviews');
             const requestsData = checkApiResponse(response, 'Review Requests');
             setRequests(Array.isArray(requestsData) ? requestsData : []);
         } catch (err: any) {
