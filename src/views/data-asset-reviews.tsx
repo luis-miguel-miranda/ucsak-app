@@ -111,7 +111,7 @@ export default function DataAssetReviews() {
                     Request ID <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
             ),
-            cell: ({ row }) => <div className="font-mono text-xs">{row.original.id.substring(0, 8)}...</div>,
+            cell: ({ row }) => <div className="text-xs">{row.original.id}</div>,
         },
         {
             accessorKey: "status",

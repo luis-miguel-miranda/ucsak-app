@@ -66,9 +66,9 @@ export default function About() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-6">About UCSAK App</h1>
+      <h1 className="text-4xl font-bold mb-6">About Unity Catalog Swiss Army Knife</h1>
       <p className="text-lg text-muted-foreground mb-10">
-        The Databricks Unified Control Plane (UCSAK - Unity Catalog Swiss Army Knife)
+        The Databricks Unity Catalog Swiss Army Knife
         provides a centralized interface for managing various aspects of your
         Databricks environment, focusing on governance, security, and data management
         best practices.
