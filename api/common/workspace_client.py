@@ -200,17 +200,14 @@ def get_workspace_client(settings: Optional[Settings] = None, timeout: int = 30)
     return CachingWorkspaceClient(client, timeout=timeout)
 
 def get_workspace_client_dependency(timeout: int = 30):
-    """FastAPI dependency for getting a workspace client.
+    """Returns the actual dependency function for FastAPI."""
     
-    Args:
-        timeout: Timeout in seconds for API calls
-        
-    Returns:
-        FastAPI dependency function
-    """
-    def dependency(settings: Settings = Depends(get_settings)):
-        return get_workspace_client(settings, timeout)
-    return dependency
+    def _get_ws_client() -> Optional[WorkspaceClient]:
+        """The actual FastAPI dependency function that gets the client."""
+        client = get_workspace_client(timeout=timeout)
+        return client
+
+    return _get_ws_client
 
 def get_sql_connection(settings: Settings = Depends(get_settings)):
     """Create and return a Databricks SQL connection.

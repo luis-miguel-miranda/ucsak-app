@@ -15,19 +15,19 @@ from api.routes import (
     business_glossary_routes,
     catalog_commander_routes,
     compliance_routes,
+    data_asset_reviews_routes,
     data_contract_routes,
     data_product_routes,
     entitlements_routes,
     entitlements_sync_routes,
     estate_manager_routes,
     master_data_management_routes,
+    metadata_routes,
     notifications_routes,
     search_routes,
     security_features_routes,
     settings_routes,
     user_routes,
-    metadata_routes,
-    data_asset_reviews_routes,
 )
 
 from api.common.logging import setup_logging, get_logger
@@ -161,9 +161,9 @@ async def shutdown_event():
 STATIC_ASSETS_PATH = Path(__file__).parent.parent / "static"
 logger.info(f"STATIC_ASSETS_PATH: {STATIC_ASSETS_PATH}")
 
-mimetypes.add_type('application/javascript', '.js')
-mimetypes.add_type('image/svg+xml', '.svg')
-mimetypes.add_type('image/png', '.png')
+# mimetypes.add_type('application/javascript', '.js')
+# mimetypes.add_type('image/svg+xml', '.svg')
+# mimetypes.add_type('image/png', '.png')
 
 # Create single FastAPI app with settings dependency
 app = FastAPI(
@@ -202,23 +202,29 @@ app.add_middleware(ErrorHandlingMiddleware)
 # Mount static files for the React application
 app.mount("/static", StaticFiles(directory=STATIC_ASSETS_PATH, html=True), name="static")
 
+# Register data asset reviews FIRST for diagnostics
+data_asset_reviews_routes.register_routes(app)
+
 # Register routes from each module
+# Data Management features
 data_product_routes.register_routes(app)
 data_contract_routes.register_routes(app)
 business_glossary_routes.register_routes(app)
+master_data_management_routes.register_routes(app)
+compliance_routes.register_routes(app)
+estate_manager_routes.register_routes(app)
+# Security features
+security_features_routes.register_routes(app)
 entitlements_routes.register_routes(app)
 entitlements_sync_routes.register_routes(app)
-estate_manager_routes.register_routes(app)
+# Tools features
 catalog_commander_routes.register_routes(app)
+# Auxiliary services
+metadata_routes.register_routes(app)
+notifications_routes.register_routes(app)
+search_routes.register_routes(app)
 settings_routes.register_routes(app)
 user_routes.register_routes(app)
-search_routes.register_routes(app)
-notifications_routes.register_routes(app)
-compliance_routes.register_routes(app)
-master_data_management_routes.register_routes(app)
-security_features_routes.register_routes(app)
-metadata_routes.register_routes(app)
-data_asset_reviews_routes.register_routes(app)
 
 # Define other specific API routes BEFORE the catch-all
 @app.get("/api/time")

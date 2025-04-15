@@ -341,12 +341,11 @@ def init_db(run_create_all: bool = True) -> None:
         # Simplify error propagation
         raise ConnectionError(f"Failed to initialize database connection: {e}") from e
 
-def get_db() -> SQLAlchemySession:
-    """FastAPI dependency to get a DB session."""
-    if not _SessionLocal:
-        logger.error("Database not initialized. Call init_db() first.")
-        # Raise a more specific error for API consumers if needed
-        raise RuntimeError("Database session factory not initialized.")
+def get_db():
+    global _SessionLocal
+    if _SessionLocal is None:
+        logger.error("Database session factory not initialized! Call init_db() first.")
+        raise RuntimeError("Database session factory not available.")
 
     db = _SessionLocal()
     try:

@@ -92,6 +92,64 @@ class CatalogCommanderManager:
         logger.info(f"Successfully retrieved {len(result)} tables for schema {catalog_name}.{schema_name}")
         return result
 
+    def list_views(self, catalog_name: str, schema_name: str) -> List[Dict[str, Any]]:
+        """List all views in a schema.
+
+        Args:
+            catalog_name: Name of the catalog
+            schema_name: Name of the schema
+
+        Returns:
+            List of view information dictionaries
+        """
+        logger.info(f"Fetching views for schema: {catalog_name}.{schema_name}")
+        try:
+            # Use tables.list and filter for views
+            all_tables = list(self.client.tables.list(catalog_name=catalog_name, schema_name=schema_name))
+            views = [tbl for tbl in all_tables if hasattr(tbl, 'table_type') and tbl.table_type == 'VIEW']
+
+            result = [{
+                'id': f"{catalog_name}.{schema_name}.{view.name}",
+                'name': view.name,
+                'type': 'view',
+                'children': [],
+                'hasChildren': False
+            } for view in views]
+
+            logger.info(f"Successfully retrieved {len(result)} views for schema {catalog_name}.{schema_name}")
+            return result
+        except Exception as e:
+            logger.error(f"Error listing views for {catalog_name}.{schema_name}: {e!s}", exc_info=True)
+            raise
+
+    def list_functions(self, catalog_name: str, schema_name: str) -> List[Dict[str, Any]]:
+        """List all functions in a schema.
+
+        Args:
+            catalog_name: Name of the catalog
+            schema_name: Name of the schema
+
+        Returns:
+            List of function information dictionaries
+        """
+        logger.info(f"Fetching functions for schema: {catalog_name}.{schema_name}")
+        try:
+            functions = list(self.client.functions.list(catalog_name=catalog_name, schema_name=schema_name))
+
+            result = [{
+                'id': function.full_name, # Functions usually have full_name
+                'name': function.name,
+                'type': 'function',
+                'children': [],
+                'hasChildren': False
+            } for function in functions]
+
+            logger.info(f"Successfully retrieved {len(result)} functions for schema {catalog_name}.{schema_name}")
+            return result
+        except Exception as e:
+            logger.error(f"Error listing functions for {catalog_name}.{schema_name}: {e!s}", exc_info=True)
+            raise
+
     def get_dataset(self, dataset_path: str) -> Dict[str, Any]:
         """Get dataset content and schema from a specific path.
         

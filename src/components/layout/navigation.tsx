@@ -63,7 +63,7 @@ export function Navigation({ isCollapsed }: NavigationProps) {
                       {item.name}
                       {item.maturity !== 'ga' && (
                           <span className={cn(
-                              "ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full",
+                              "ml-auto text-[8px] font-semibold px-1.5 py-0.5 rounded-full",
                               item.maturity === 'beta' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" : "",
                               item.maturity === 'alpha' ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300" : ""
                           )}>
@@ -89,7 +89,7 @@ export function Navigation({ isCollapsed }: NavigationProps) {
                     {item.name}
                     {item.maturity !== 'ga' && (
                         <span className={cn(
-                            "ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full",
+                            "ml-auto text-[9px] font-semibold px-1.5 py-0 rounded-full",
                             item.maturity === 'beta' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" : "",
                             item.maturity === 'alpha' ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300" : ""
                         )}>

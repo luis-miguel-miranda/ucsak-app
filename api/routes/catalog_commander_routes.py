@@ -70,6 +70,40 @@ async def list_tables(
         logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
+@router.get('/catalogs/{catalog_name}/schemas/{schema_name}/views')
+async def list_views(
+    catalog_name: str,
+    schema_name: str,
+    catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)
+):
+    """List all views in a schema."""
+    try:
+        logger.info(f"Fetching views for schema: {catalog_name}.{schema_name}")
+        views = catalog_manager.list_views(catalog_name, schema_name)
+        logger.info(f"Successfully fetched {len(views)} views for schema {catalog_name}.{schema_name}")
+        return views
+    except Exception as e:
+        error_msg = f"Failed to fetch views for schema {catalog_name}.{schema_name}: {e!s}"
+        logger.error(error_msg, exc_info=True)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@router.get('/catalogs/{catalog_name}/schemas/{schema_name}/functions')
+async def list_functions(
+    catalog_name: str,
+    schema_name: str,
+    catalog_manager: CatalogCommanderManager = Depends(get_catalog_manager)
+):
+    """List all functions in a schema."""
+    try:
+        logger.info(f"Fetching functions for schema: {catalog_name}.{schema_name}")
+        functions = catalog_manager.list_functions(catalog_name, schema_name)
+        logger.info(f"Successfully fetched {len(functions)} functions for schema {catalog_name}.{schema_name}")
+        return functions
+    except Exception as e:
+        error_msg = f"Failed to fetch functions for schema {catalog_name}.{schema_name}: {e!s}"
+        logger.error(error_msg, exc_info=True)
+        raise HTTPException(status_code=500, detail=error_msg)
+
 @router.get('/catalogs/dataset/{dataset_path:path}')
 async def get_dataset(
     dataset_path: str,

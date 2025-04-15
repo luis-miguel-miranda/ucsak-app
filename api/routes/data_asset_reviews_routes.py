@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 # Import API models
@@ -25,11 +26,7 @@ from api.common.logging import setup_logging, get_logger
 setup_logging(level=logging.INFO)
 logger = get_logger(__name__)
 
-router = APIRouter(
-    prefix="/api/data-asset-reviews",
-    tags=["Data Asset Reviews"],
-    responses={404: {"description": "Not found"}},
-)
+router = APIRouter(prefix="/api", tags=["data-asset-reviews"])
 
 # --- Dependency for Manager --- #
 # NOTE: This assumes a NotificationsManager instance can be obtained.
@@ -42,6 +39,7 @@ router = APIRouter(
 def get_notifications_manager() -> NotificationsManager:
     # This is a placeholder. Replace with actual way to get the manager instance.
     # Option 1: Simple instantiation (if stateless)
+    logger.critical("--- Entered get_notifications_manager dependency function ---")
     return NotificationsManager()
     # Option 2: Dependency Injection (if NotificationsManager is complex)
     # Depends on how NotificationsManager is set up elsewhere
@@ -53,11 +51,12 @@ def get_data_asset_review_manager(
     notifications_manager: NotificationsManager = Depends(get_notifications_manager)
 ) -> DataAssetReviewManager:
     """Injects dependencies and returns a DataAssetReviewManager instance."""
+    logger.critical("--- Entered get_data_asset_review_manager dependency function ---") 
     return DataAssetReviewManager(db=db, ws_client=ws_client, notifications_manager=notifications_manager)
 
 # --- Routes --- #
 
-@router.post("/", response_model=DataAssetReviewRequestApi, status_code=status.HTTP_201_CREATED)
+@router.post("/data-asset-reviews", response_model=DataAssetReviewRequestApi, status_code=status.HTTP_201_CREATED)
 def create_review_request(
     request_in: DataAssetReviewRequestCreate,
     manager: DataAssetReviewManager = Depends(get_data_asset_review_manager)
@@ -74,22 +73,39 @@ def create_review_request(
         logger.exception(f"Unexpected error creating review request: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error creating review request.")
 
-@router.get("/", response_model=List[DataAssetReviewRequestApi])
+@router.get("/data-asset-reviews")
 def list_review_requests(
     skip: int = 0,
     limit: int = 100,
     manager: DataAssetReviewManager = Depends(get_data_asset_review_manager)
 ):
     """Retrieve a list of data asset review requests."""
+    logger.critical("--- Entered list_review_requests function ---") 
     logger.info(f"Listing data asset review requests (skip={skip}, limit={limit})")
     try:
         requests = manager.list_review_requests(skip=skip, limit=limit)
-        return requests
+        logger.info(f"Manager returned: {requests} (Type: {type(requests)})", extra={"requests_value": requests})
+        
+        if not requests:
+            logger.info("Condition 'not requests' is TRUE. Returning JSONResponse({'items': []}).")
+            return JSONResponse(content={"items": []})
+        else:
+            logger.info("Condition 'not requests' is FALSE. Returning manager result directly.")
+            return requests
+            
+    except HTTPException as http_exc:
+        # Re-raise HTTPExceptions directly if they occur
+        logger.warning(f"HTTPException caught in list_review_requests: {http_exc.status_code} - {http_exc.detail}")
+        raise http_exc
     except Exception as e:
-        logger.exception(f"Error listing review requests: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error listing review requests.")
+        # Catch any other exception, log it clearly, and raise a standard 500
+        logger.exception(f"Unexpected error in list_review_requests: {e}") # Use logger.exception to include traceback
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Internal server error processing request: {e}"
+        )
 
-@router.get("/{request_id}", response_model=DataAssetReviewRequestApi)
+@router.get("/data-asset-reviews/{request_id}", response_model=DataAssetReviewRequestApi)
 def get_review_request(
     request_id: str,
     manager: DataAssetReviewManager = Depends(get_data_asset_review_manager)
@@ -108,7 +124,7 @@ def get_review_request(
         logger.exception(f"Error getting review request {request_id}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error getting review request.")
 
-@router.put("/{request_id}/status", response_model=DataAssetReviewRequestApi)
+@router.put("/data-asset-reviews/{request_id}/status", response_model=DataAssetReviewRequestApi)
 def update_review_request_status(
     request_id: str,
     status_update: DataAssetReviewRequestUpdateStatus,
@@ -128,7 +144,7 @@ def update_review_request_status(
         logger.exception(f"Error updating status for request {request_id}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error updating request status.")
 
-@router.put("/{request_id}/assets/{asset_id}/status", response_model=ReviewedAssetApi)
+@router.put("/data-asset-reviews/{request_id}/assets/{asset_id}/status", response_model=ReviewedAssetApi)
 def update_reviewed_asset_status(
     request_id: str,
     asset_id: str,
@@ -155,7 +171,7 @@ def update_reviewed_asset_status(
         logger.exception(f"Error updating status for asset {asset_id}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error updating asset status.")
 
-@router.delete("/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/data-asset-reviews/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_review_request(
     request_id: str,
     manager: DataAssetReviewManager = Depends(get_data_asset_review_manager)
@@ -174,7 +190,7 @@ def delete_review_request(
 
 # --- Routes for Asset Content/Preview --- #
 
-@router.get("/{request_id}/assets/{asset_id}/definition")
+@router.get("/data-asset-reviews/{request_id}/assets/{asset_id}/definition")
 async def get_asset_definition(
     request_id: str,
     asset_id: str,
@@ -208,7 +224,7 @@ async def get_asset_definition(
         logger.exception(f"Error getting definition for asset {asset_id}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error getting asset definition.")
 
-@router.get("/{request_id}/assets/{asset_id}/preview")
+@router.get("/data-asset-reviews/{request_id}/assets/{asset_id}/preview")
 async def get_table_preview(
     request_id: str,
     asset_id: str,

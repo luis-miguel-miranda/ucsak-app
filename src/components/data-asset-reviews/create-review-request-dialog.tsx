@@ -151,16 +151,43 @@ export default function CreateReviewRequestDialog({ isOpen, onOpenChange, api, o
         if (!nodeType) return [];
         setLoadingNodes(prev => new Set(prev).add(nodeId));
         try {
-            let url = '';
+            let urls: string[] = [];
             if (nodeType === 'catalog') {
-                url = `/api/catalogs/${nodeId}/schemas`;
+                urls.push(`/api/catalogs/${nodeId}/schemas`);
             } else if (nodeType === 'schema') {
                 const [catalogName, schemaName] = nodeId.split('.');
-                url = `/api/catalogs/${catalogName}/schemas/${schemaName}/tables`;
+                if (!catalogName || !schemaName) {
+                    throw new Error(`Invalid schema FQN: ${nodeId}`);
+                }
+                // Fetch tables, views, and functions concurrently for a schema
+                urls.push(`/api/catalogs/${catalogName}/schemas/${schemaName}/tables`);
+                urls.push(`/api/catalogs/${catalogName}/schemas/${schemaName}/views`);
+                urls.push(`/api/catalogs/${catalogName}/schemas/${schemaName}/functions`);
             }
-            if (!url) return [];
-            const response = await get<CatalogItem[]>(url);
-            return checkApiResponse(response, 'Children');
+
+            if (urls.length === 0) return [];
+
+            // Use Promise.all to fetch from all URLs concurrently
+            const responses = await Promise.all(urls.map(url => get<CatalogItem[]>(url)));
+
+            // Combine results and check for errors
+            let combinedResults: CatalogItem[] = [];
+            responses.forEach((response, index) => {
+                try {
+                     // Check each response individually
+                    const data = checkApiResponse(response, `Children from ${urls[index]}`);
+                    if (Array.isArray(data)) {
+                         combinedResults = combinedResults.concat(data);
+                    }
+                } catch (err: any) {
+                    // Log individual fetch errors but continue combining results from others
+                    console.error(`Error fetching children from ${urls[index]}:`, err);
+                    toast({ title: 'Partial Load Error', description: `Could not load some children for ${nodeId}: ${err.message}`, variant: 'default' });
+                }
+            });
+
+            return combinedResults;
+
         } catch (err: any) {
             console.error('Error fetching children:', err);
             toast({ title: 'Error', description: `Could not load children for ${nodeId}: ${err.message}`, variant: 'destructive' });
@@ -317,7 +344,10 @@ export default function CreateReviewRequestDialog({ isOpen, onOpenChange, api, o
                                 id="reviewer-email"
                                 type="email"
                                 value={reviewerEmail}
-                                onChange={(e) => setReviewerEmail(e.target.value)}
+                                onChange={(e) => {
+                                    setReviewerEmail(e.target.value);
+                                    setFormError(null);
+                                }}
                                 required
                             />
                         </div>
@@ -327,7 +357,10 @@ export default function CreateReviewRequestDialog({ isOpen, onOpenChange, api, o
                         <Textarea
                             id="notes"
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            onChange={(e) => {
+                                setNotes(e.target.value);
+                                setFormError(null);
+                            }}
                             placeholder="Add any relevant context for the reviewer..."
                             rows={3}
                         />
@@ -358,7 +391,7 @@ export default function CreateReviewRequestDialog({ isOpen, onOpenChange, api, o
                     {formError && (
                         <Alert variant="destructive" className="mx-1">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{formError}</AlertDescription>
+                            <AlertDescription className="break-words">{formError}</AlertDescription>
                         </Alert>
                     )}
                 </form>
