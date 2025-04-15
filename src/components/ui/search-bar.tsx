@@ -4,7 +4,7 @@ import { Input } from './input';
 import { Button } from './button';
 import { Card } from './card';
 import { ScrollArea } from './scroll-area';
-import { Search, FileText, Database, Book, Shield } from 'lucide-react';
+import { Search, FileText, Database, Book, Shield, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SearchResult {
@@ -48,11 +48,22 @@ export default function SearchBar({ variant = 'default', placeholder = 'Search..
 
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/search?search_term=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+          let errorDetails = await response.text();
+          try {
+            const errorJson = JSON.parse(errorDetails);
+            errorDetails = errorJson.detail || errorDetails;
+          } catch (parseError) {
+            // Ignore if not JSON
+          }
+          throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorDetails}`);
+        }
         const data = await response.json();
-        setResults(data);
+        setResults(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Search error:', error);
+        setResults([]);
       } finally {
         setIsLoading(false);
       }
@@ -115,8 +126,9 @@ export default function SearchBar({ variant = 'default', placeholder = 'Search..
         <Card className="absolute z-50 w-full mt-1 shadow-lg">
           <ScrollArea className="h-[300px]">
             {isLoading ? (
-              <div className="flex items-center justify-center p-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <div className="flex items-center justify-center p-4 gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Loading...</span>
               </div>
             ) : results.length > 0 ? (
               <div className="p-2">

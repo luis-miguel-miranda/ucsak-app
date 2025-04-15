@@ -24,11 +24,15 @@ from api.models.data_products import (
 # Import the specific repository
 from api.repositories.data_products_repository import data_product_repo
 
+# Import Search Interfaces
+from api.common.search_interfaces import SearchableAsset, SearchIndexItem
+
 from api.common.logging import setup_logging, get_logger
 setup_logging(level=logging.INFO)
 logger = get_logger(__name__)
 
-class DataProductsManager:
+# Inherit from SearchableAsset
+class DataProductsManager(SearchableAsset):
     def __init__(self, db: Session, ws_client: Optional[WorkspaceClient] = None):
         """
         Initializes the DataProductsManager.
@@ -291,3 +295,38 @@ class DataProductsManager:
         except Exception as e:
             logger.error(f"Error getting distinct statuses from repository: {e}", exc_info=True)
             return []
+
+    # --- Implementation of SearchableAsset --- 
+    def get_search_index_items(self) -> List[SearchIndexItem]:
+        """Fetches data products and maps them to SearchIndexItem format."""
+        logger.info("Fetching data products for search indexing...")
+        items = []
+        try:
+            # Fetch all products (adjust limit if needed, but potentially large)
+            # Consider fetching only necessary fields if performance becomes an issue
+            products_api = self.list_products(limit=10000) # Fetch Pydantic models
+            
+            for product in products_api:
+                if not product.id or not product.info or not product.info.title:
+                     logger.warning(f"Skipping product due to missing id or info.title: {product}")
+                     continue
+                     
+                items.append(
+                    SearchIndexItem(
+                        id=f"product::{product.id}",
+                        type="data-product",
+                        title=product.info.title,
+                        description=product.info.description or "",
+                        link=f"/data-products/{product.id}",
+                        tags=product.tags or []
+                        # Add other fields like owner, status, domain if desired
+                        # owner=product.info.owner,
+                        # status=product.info.status,
+                        # domain=product.info.domain
+                    )
+                )
+            logger.info(f"Prepared {len(items)} data products for search index.")
+            return items
+        except Exception as e:
+            logger.error(f"Error fetching or mapping data products for search: {e}", exc_info=True)
+            return [] # Return empty list on error

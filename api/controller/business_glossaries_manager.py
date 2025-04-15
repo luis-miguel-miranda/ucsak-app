@@ -7,11 +7,15 @@ import yaml
 
 from api.models.business_glossary import BusinessGlossary, Domain, GlossaryTerm
 
+# Import Search Interfaces
+from api.common.search_interfaces import SearchableAsset, SearchIndexItem
+
 from api.common.logging import setup_logging, get_logger
 setup_logging(level=logging.INFO)
 logger = get_logger(__name__)
 
-class BusinessGlossariesManager:
+# Inherit from SearchableAsset
+class BusinessGlossariesManager(SearchableAsset):
     def __init__(self):
         self._domains: Dict[str, Domain] = {}
         self._glossaries: Dict[str, BusinessGlossary] = {}
@@ -383,9 +387,45 @@ class BusinessGlossariesManager:
         return bool(glossary.terms.pop(term_id, None))
 
     def get_counts(self):
-        """Get counts of glossaries and terms"""
-        total_terms = sum(len(glossary.terms) for glossary in self._glossaries.values())
+        domain_count = len(self._domains)
+        glossary_count = len(self._glossaries)
+        term_count = sum(len(g.terms) for g in self._glossaries.values())
         return {
-            'glossaries': len(self._glossaries),
-            'terms': total_terms
+            "domains": domain_count,
+            "glossaries": glossary_count,
+            "terms": term_count
         }
+
+    # --- Implementation of SearchableAsset --- 
+    def get_search_index_items(self) -> List[SearchIndexItem]:
+        """Fetches glossary terms and maps them to SearchIndexItem format."""
+        logger.info("Fetching glossary terms for search indexing...")
+        items = []
+        try:
+            # Use the existing list_terms method
+            terms = self.list_terms()
+            
+            for term in terms:
+                if not term.id or not term.name:
+                    logger.warning(f"Skipping term due to missing id or name: {term}")
+                    continue
+                    
+                items.append(
+                    SearchIndexItem(
+                        id=f"term::{term.id}",
+                        type="glossary-term",
+                        title=term.name,
+                        description=term.definition or "",
+                        # Adjust link format based on frontend routing
+                        link=f"/business-glossaries?termId={term.id}", 
+                        tags=term.tags or []
+                        # Add other fields if needed (e.g., domain, owner)
+                        # domain=term.domain,
+                        # owner=term.owner,
+                    )
+                )
+            logger.info(f"Prepared {len(items)} glossary terms for search index.")
+            return items
+        except Exception as e:
+            logger.error(f"Error fetching or mapping glossary terms for search: {e}", exc_info=True)
+            return [] # Return empty list on error

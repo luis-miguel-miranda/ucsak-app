@@ -17,11 +17,15 @@ from api.models.data_contracts import (
     SecurityClassification,
 )
 
+# Import Search Interfaces
+from api.common.search_interfaces import SearchableAsset, SearchIndexItem
+
 from api.common.logging import setup_logging, get_logger
 setup_logging(level=logging.INFO)
 logger = get_logger(__name__)
 
-class DataContractsManager:
+# Inherit from SearchableAsset
+class DataContractsManager(SearchableAsset):
     def __init__(self):
         self._contracts: Dict[str, DataContract] = {}
 
@@ -388,3 +392,38 @@ class DataContractsManager:
             'created': contract.created_at.isoformat() + 'Z',
             'updated': contract.updated_at.isoformat() + 'Z'
         }
+
+    # --- Implementation of SearchableAsset --- 
+    def get_search_index_items(self) -> List[SearchIndexItem]:
+        """Fetches data contracts and maps them to SearchIndexItem format."""
+        logger.info("Fetching data contracts for search indexing...")
+        items = []
+        try:
+            # Use the existing list_contracts method
+            contracts = self.list_contracts()
+            
+            for contract in contracts:
+                # Adapt field access based on DataContract model structure
+                if not contract.id or not contract.name:
+                    logger.warning(f"Skipping contract due to missing id or name: {contract}")
+                    continue
+                
+                # Assuming DataContract has .tags attribute (add if missing)
+                tags = getattr(contract, 'tags', []) 
+                    
+                items.append(
+                    SearchIndexItem(
+                        id=f"contract::{contract.id}",
+                        type="data-contract",
+                        title=contract.name, # Use direct .name
+                        description=contract.description or "", # Use direct .description
+                        # Adjust link format based on frontend routing
+                        link=f"/data-contracts/{contract.id}", 
+                        tags=tags
+                    )
+                )
+            logger.info(f"Prepared {len(items)} data contracts for search index.")
+            return items
+        except Exception as e:
+            logger.error(f"Error fetching or mapping data contracts for search: {e}", exc_info=True)
+            return [] # Return empty list on error

@@ -39,7 +39,6 @@ router = APIRouter(prefix="/api", tags=["data-asset-reviews"])
 def get_notifications_manager() -> NotificationsManager:
     # This is a placeholder. Replace with actual way to get the manager instance.
     # Option 1: Simple instantiation (if stateless)
-    logger.critical("--- Entered get_notifications_manager dependency function ---")
     return NotificationsManager()
     # Option 2: Dependency Injection (if NotificationsManager is complex)
     # Depends on how NotificationsManager is set up elsewhere
@@ -51,7 +50,6 @@ def get_data_asset_review_manager(
     notifications_manager: NotificationsManager = Depends(get_notifications_manager)
 ) -> DataAssetReviewManager:
     """Injects dependencies and returns a DataAssetReviewManager instance."""
-    logger.critical("--- Entered get_data_asset_review_manager dependency function ---") 
     return DataAssetReviewManager(db=db, ws_client=ws_client, notifications_manager=notifications_manager)
 
 # --- Routes --- #
@@ -80,21 +78,15 @@ def list_review_requests(
     manager: DataAssetReviewManager = Depends(get_data_asset_review_manager)
 ):
     """Retrieve a list of data asset review requests."""
-    logger.critical("--- Entered list_review_requests function ---") 
     logger.info(f"Listing data asset review requests (skip={skip}, limit={limit})")
     try:
         requests = manager.list_review_requests(skip=skip, limit=limit)
-        logger.info(f"Manager returned: {requests} (Type: {type(requests)})", extra={"requests_value": requests})
-        
         if not requests:
-            logger.info("Condition 'not requests' is TRUE. Returning JSONResponse({'items': []}).")
             return JSONResponse(content={"items": []})
         else:
-            logger.info("Condition 'not requests' is FALSE. Returning manager result directly.")
             return requests
             
     except HTTPException as http_exc:
-        # Re-raise HTTPExceptions directly if they occur
         logger.warning(f"HTTPException caught in list_review_requests: {http_exc.status_code} - {http_exc.detail}")
         raise http_exc
     except Exception as e:
