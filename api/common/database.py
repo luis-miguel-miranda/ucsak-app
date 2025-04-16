@@ -15,7 +15,7 @@ from .logging import get_logger
 # Import SDK components
 from api.common.workspace_client import get_workspace_client
 from databricks.sdk.errors import NotFound, DatabricksError 
-
+from databricks.sdk.core import Config, oauth_service_principal
 logger = get_logger(__name__)
 
 T = TypeVar('T')
@@ -278,10 +278,40 @@ def init_db(run_create_all: bool = True) -> None:
     try:
         # Ensure Catalog and Schema exist
         ensure_catalog_schema_exists(settings)
+
+        def get_credentials():
+            config = Config(
+                host=os.getenv("DATABRICKS_HOST"),
+                client_id=os.getenv("DATABRICKS_CLIENT_ID"),
+                client_secret=os.getenv("DATABRICKS_CLIENT_SECRET")
+            )
+            return oauth_service_principal(config)
         
+        logger.info(f"Environment for DB connection: {settings.ENV}")
+        if settings.ENV.startswith('LOCAL'):
+            connect_args = {
+                "server_hostname": settings.DATABRICKS_HOST,
+                "http_path": settings.DATABRICKS_HTTP_PATH,
+                "access_token": settings.DATABRICKS_TOKEN,
+            }
+        else:
+            cfg = Config() # Hands in SQL host and OAuth function when run in Databricks
+            connect_args = {
+                "server_hostname": cfg.host,
+                "http_path": settings.DATABRICKS_HTTP_PATH,
+                "credentials_provider": lambda: cfg.authenticate,
+                "auth_type": "databricks-oauth",
+            }
+
         # Create SQLAlchemy engine
         db_url = get_db_url(settings)
-        _engine = create_engine(db_url, echo=settings.DEBUG)
+        logger.info(f"Database URL: {db_url}")
+        logger.info(f"Connect args: {connect_args}")
+        _engine = create_engine(
+            db_url, 
+            connect_args=connect_args,
+            echo=settings.DEBUG,
+        )
         _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
         logger.info(f"Database engine initialized for: {settings.DATABRICKS_HOST}")
 

@@ -29,7 +29,7 @@ from .logging import get_logger
 from .middleware import ErrorHandlingMiddleware, LoggingMiddleware
 from .notifications import NotificationService, get_notification_service
 from .search import SearchService, get_search_service
-from .workspace_client import CachingWorkspaceClient, get_sql_connection, get_workspace_client
+from .workspace_client import CachingWorkspaceClient, get_workspace_client
 
 __all__ = [
     "ConfigManager",
