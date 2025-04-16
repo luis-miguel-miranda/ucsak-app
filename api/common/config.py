@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     DATABRICKS_HTTP_PATH: Optional[str] = None # Will be computed by validator
 
     # Environment
-    ENV: str = "LOCAL"  # LOCAL, DEV, PROD
+    ENV: str = "PROD"  # LOCAL, DEV, PROD
 
     # Application settings
     DEBUG: bool = Field(False, env='DEBUG')
