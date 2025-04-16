@@ -1,18 +1,18 @@
 {
-  "_vendor-BbMx8q9L.js": {
-    "file": "vendor-BbMx8q9L.js",
+  "_vendor-ZIJ_X5tk.js": {
+    "file": "vendor-ZIJ_X5tk.js",
     "name": "vendor"
   },
   "index.html": {
-    "file": "index-Fo2Z1Sof.js",
+    "file": "index-DJjxqbl9.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
     "imports": [
-      "_vendor-BbMx8q9L.js"
+      "_vendor-ZIJ_X5tk.js"
     ],
     "css": [
-      "index-DPxqrTVi.css"
+      "index-TR-X-4xU.css"
     ]
   }
 }
