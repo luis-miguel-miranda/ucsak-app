@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeftRight, Plus, Trash2, Edit2, Clock, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
+import { ArrowLeftRight, Plus, Trash2, Edit2, Clock, CheckCircle2, XCircle, ChevronDown, Loader2 } from 'lucide-react'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -432,8 +432,8 @@ export default function EntitlementsSync() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="animate-spin h-8 w-8 text-primary" />
         </div>
       ) : (
         <div className="space-y-4">

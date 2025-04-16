@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Settings, Plus, Edit2, Trash2, Shield } from 'lucide-react';
+import { User, Settings, Plus, Edit2, Trash2, Shield, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -349,8 +349,8 @@ const Entitlements: React.FC = () => {
           <CardContent>
             <ScrollArea className="h-[70vh]">
               {isLoading ? (
-                <div className="flex justify-center p-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 className="animate-spin h-8 w-8 text-primary" />
                 </div>
               ) : personas.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">

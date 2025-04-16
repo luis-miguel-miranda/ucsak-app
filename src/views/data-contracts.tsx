@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, AlertCircle, FileText, Upload, Download, ChevronDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, FileText, Upload, Download, ChevronDown, Loader2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import {
   ColumnDef,
@@ -450,11 +450,10 @@ export default function DataContracts() {
 
   return (
     <div className="py-6">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        <FileText className="w-8 h-8" />
-        Data Contracts
-      </h1>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+          <FileText className="w-8 h-8" />Data Contracts
+        </h1>
         <div className="flex space-x-2">
           <Button onClick={handleCreateContract} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -476,7 +475,7 @@ export default function DataContracts() {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Loader2 className="animate-spin h-12 w-12 text-primary" />
         </div>
       ) : (
         <div className="space-y-4">
@@ -961,7 +960,7 @@ datasets:
             <input {...getInputProps()} />
             {uploading ? (
               <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <Loader2 className="animate-spin h-8 w-8 text-primary" />
               </div>
             ) : (
               <>

@@ -670,12 +670,11 @@ export default function BusinessGlossary() {
 
   return (
     <div className="py-6">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        <Book className="w-8 h-8" /> Business Glossary
-      </h1>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Business Glossary</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+          <Book className="w-8 h-8" /> Business Glossary
+        </h1>
         <div className="flex space-x-2">
           <Button onClick={handleCreateTerm}>
             <Plus className="h-4 w-4 mr-2" />

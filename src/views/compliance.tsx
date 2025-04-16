@@ -375,12 +375,11 @@ export default function Compliance() {
 
   return (
     <div className="py-6">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        <Scale className="w-8 h-8" />
-        Compliance
-      </h1>
-
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+          <Scale className="w-8 h-8" />
+          Compliance
+        </h1>
         <Button onClick={handleCreateRule} className="gap-2">
           <Plus className="h-4 w-4" />
           Create Rule

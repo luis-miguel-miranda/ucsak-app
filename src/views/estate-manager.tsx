@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, MoreHorizontal, Globe } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, Globe, Plus } from 'lucide-react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -337,9 +337,6 @@ export default function EstateManager() {
       <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
         <Globe className="w-8 h-8" /> Estate Manager
       </h1>
-      <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => openDialog()}>Add Estate</Button>
-      </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -409,6 +406,12 @@ export default function EstateManager() {
               </Button>
             </div>
           )}
+          <div className="flex justify-between items-center">
+            <Button onClick={() => openDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Estate
+            </Button>
+          </div>
         </div>
 
         <Card>

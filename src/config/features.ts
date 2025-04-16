@@ -14,7 +14,6 @@ import {
     ClipboardCheck, // Added icon for Data Asset Review
     type LucideIcon, // Import LucideIcon type
   } from 'lucide-react';
-  import React from 'react'; // Import React for ComponentType
   
   export type FeatureMaturity = 'ga' | 'beta' | 'alpha';
   export type FeatureGroup = 'Data Management' | 'Security' | 'Tools' | 'System';
@@ -63,16 +62,6 @@ import {
       showInLanding: true,
     },
     {
-      id: 'master-data',
-      name: 'Master Data Management',
-      path: '/master-data',
-      description: 'Ensure data quality and consistency using Zingg.ai.',
-      icon: Users,
-      group: 'Data Management',
-      maturity: 'alpha', // Requires external setup
-      showInLanding: true,
-    },
-    {
       id: 'compliance',
       name: 'Compliance',
       path: '/compliance',
@@ -90,6 +79,16 @@ import {
       icon: Globe,
       group: 'Data Management',
       maturity: 'alpha',
+      showInLanding: true,
+    },
+    {
+      id: 'master-data',
+      name: 'Master Data Management',
+      path: '/master-data',
+      description: 'Build a golden record of your data.',
+      icon: Users,
+      group: 'Data Management',
+      maturity: 'alpha', // Requires external setup
       showInLanding: true,
     },
     // Security
