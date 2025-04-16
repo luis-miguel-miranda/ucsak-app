@@ -12,7 +12,7 @@ This package provides common utilities for:
 - FastAPI middleware and dependencies
 """
 
-from .config import ConfigManager, get_config, get_settings, init_config
+from .config import ConfigManager, get_config_manager, get_settings, init_config
 from .database import InMemorySession, get_db
 from .deps import (
     get_db_dep,
@@ -33,7 +33,7 @@ from .workspace_client import CachingWorkspaceClient, get_sql_connection, get_wo
 
 __all__ = [
     "ConfigManager",
-    "get_config",
+    "get_config_manager",
     "get_settings",
     "init_config",
     'get_db',

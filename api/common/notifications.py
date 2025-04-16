@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from .config import get_config
+from .config import get_config_manager
 from .logging import get_logger
 
 logger = get_logger(__name__)
@@ -78,7 +78,7 @@ class NotificationService:
 
     def __init__(self) -> None:
         """Initialize the notification service."""
-        config = get_config()
+        config = get_config_manager()
         self.notifications_dir = config.data_dir / 'notifications'
         self.notifications_dir.mkdir(parents=True, exist_ok=True)
         self.notifications: Dict[str, List[Notification]] = {}

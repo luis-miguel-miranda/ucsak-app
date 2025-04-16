@@ -138,6 +138,7 @@ def init_config() -> None:
         logger.info("No .env file found, using existing environment variables")
         _settings = Settings()
 
+    logger.info(f"Initializing config manager with settings: {_settings}")
     _config_manager = ConfigManager(_settings)
 
 def get_settings() -> Settings:
@@ -153,7 +154,7 @@ def get_settings() -> Settings:
         raise RuntimeError("Settings not initialized")
     return _settings
 
-def get_config() -> ConfigManager:
+def get_config_manager() -> ConfigManager:
     """Get the global configuration manager instance.
     
     Returns:

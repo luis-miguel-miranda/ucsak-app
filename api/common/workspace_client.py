@@ -219,12 +219,14 @@ def get_sql_connection(settings: Settings = Depends(get_settings)):
         SQL connection instance
     """
     if settings.ENV == 'LOCAL':
+        logger.info(f"Creating PAT-based SQL connection to {settings.DATABRICKS_HOST} with warehouse {settings.DATABRICKS_WAREHOUSE_ID}")
         return sql.connect(
             server_hostname=settings.DATABRICKS_HOST,
             http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",
             access_token=settings.DATABRICKS_TOKEN
         )
     else:
+        logger.info(f"Creating credentials-based SQL connection to {settings.DATABRICKS_HOST} with warehouse {settings.DATABRICKS_WAREHOUSE_ID}")
         return sql.connect(
             server_hostname=settings.DATABRICKS_HOST,
             http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",

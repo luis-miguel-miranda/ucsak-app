@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
-from .config import get_config
+from .config import get_config_manager
 from .logging import get_logger
 
 logger = get_logger(__name__)
@@ -24,7 +24,7 @@ class SearchService:
 
     def __init__(self) -> None:
         """Initialize the search service."""
-        config = get_config()
+        config = get_config_manager()
         self.index_dir = config.data_dir / 'search'
         self.index_dir.mkdir(parents=True, exist_ok=True)
         self.indices: Dict[str, SearchIndex] = {}
