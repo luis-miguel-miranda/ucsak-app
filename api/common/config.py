@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 
 from .logging import get_logger
 
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     DATABRICKS_SCHEMA: str
     DATABRICKS_VOLUME: str
     DATABRICKS_TOKEN: Optional[str] = None  # Optional since handled by SDK
-    DATABRICKS_HTTP_PATH: Optional[str] = None  # Optional since handled by SDK
+    DATABRICKS_HTTP_PATH: Optional[str] = None # Will be computed by validator
 
     # Environment
     ENV: str = "LOCAL"  # LOCAL, DEV, PROD
@@ -57,6 +58,13 @@ class Settings(BaseSettings):
     class Config:
         env_file = DOTENV_FILE
         case_sensitive = True
+
+    @model_validator(mode='after')
+    def compute_databricks_http_path(self) -> 'Settings':
+        """Compute the DATABRICKS_HTTP_PATH after validation."""
+        if self.DATABRICKS_WAREHOUSE_ID:
+            self.DATABRICKS_HTTP_PATH = f"/sql/1.0/warehouses/{self.DATABRICKS_WAREHOUSE_ID}"
+        return self
 
     def to_dict(self):
         return {

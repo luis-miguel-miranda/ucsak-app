@@ -222,13 +222,13 @@ def get_sql_connection(settings: Settings = Depends(get_settings)):
         logger.info(f"Creating PAT-based SQL connection to {settings.DATABRICKS_HOST} with warehouse {settings.DATABRICKS_WAREHOUSE_ID}")
         return sql.connect(
             server_hostname=settings.DATABRICKS_HOST,
-            http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",
+            http_path=settings.DATABRICKS_HTTP_PATH,
             access_token=settings.DATABRICKS_TOKEN
         )
     else:
         logger.info(f"Creating credentials-based SQL connection to {settings.DATABRICKS_HOST} with warehouse {settings.DATABRICKS_WAREHOUSE_ID}")
         return sql.connect(
             server_hostname=settings.DATABRICKS_HOST,
-            http_path=f"/sql/1.0/warehouses/{settings.DATABRICKS_WAREHOUSE_ID}",
+            http_path=settings.DATABRICKS_HTTP_PATH,
             credentials_provider=lambda: settings.authenticate
         )
