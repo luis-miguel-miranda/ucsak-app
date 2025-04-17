@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 
 import yaml
 from pydantic import ValidationError, parse_obj_as
@@ -55,9 +55,13 @@ class DataProductsManager(SearchableAsset):
         """Get all available data product statuses"""
         return [s.value for s in DataProductStatus]
 
-    def create_product(self, product_data: DataProductApi) -> DataProductApi:
+    def create_product(self, product_data: Union[Dict[str, Any], DataProductApi]) -> DataProductApi:
         """Create a new data product using the repository."""
         try:
+            # Convert dict to Pydantic model if needed
+            if isinstance(product_data, dict):
+                product_data = DataProductApi(**product_data)
+                
             if not product_data.id:
                  product_data.id = str(uuid.uuid4())
                  
